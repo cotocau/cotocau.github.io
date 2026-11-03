@@ -1776,7 +1776,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-03-4';
+const APP_VER = 'cau-2026-11-03-5';
 const SUPA = { url: 'https://fzctetcrmrtxwzisxsig.supabase.co/rest/v1/partidas', key: 'sb_publishable_dg8jQx8W7KcVCcEg2KPVnA_ExvQR1gb' };
 function deviceId() {
   try { let id = localStorage.getItem('cau.uid'); if (!id) { id = Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4); localStorage.setItem('cau.uid', id); } return id; } catch (e) { return 'anon'; }
@@ -2297,40 +2297,42 @@ const NETP = { ch: null, count: null, tracking: false, opening: null, open: [], 
 // Mesas abiertas: el anfitrión puede anunciar su sala para que entre cualquiera con la app (partida rápida).
 // Lo que llega de otros móviles se limpia: código de 6 letras, modalidad conocida, nombre limpio.
 function netPresenceSync(st) {
-  const all = Object.values(st || {}).map(a => a && a.find(x => x && x.code)).filter(Boolean);
+  const all = Object.values(st || {}).map(a => a && a.find(x => x && x.mesa)).filter(Boolean);
   NETP.count = all.length; NETP.synced = true;
   const mine = NET && NET.role === 'host' ? NET.code : null;
-  NETP.open = all.filter(x => x.open && !x.started && /^[A-Z]{6}$/.test(x.code) && x.code !== mine && NETMODES().some(m => m[0] === x.mode))
+  NETP.open = all.filter(x => x.open && !x.started && typeof x.code === 'string' && /^[A-Z]{6}$/.test(x.code) && x.code !== mine && NETMODES().some(m => m[0] === x.mode))
     .map(x => ({ code: x.code, mode: x.mode, host: cleanName(x.host) || L('Anfitrión', 'Amfitrió'), free: Math.max(0, Math.min(3, x.free | 0)), people: Math.max(1, Math.min(4, x.people | 0)) }))
     .filter(x => x.free > 0).sort((a, b) => b.people - a.people || a.code.localeCompare(b.code));
   const el = $('netcount'); if (el) el.textContent = netCountTxt();
   const ol = $('netopen'); if (ol) ol.innerHTML = netOpenListHTML();
 }
-const netOpenListHTML = () => !NETP.synced ? `<p class="desc">${L('Buscando mesas…', 'Buscant taules…')}</p>`
+const netOpenListHTML = () => NETP.err && !NETP.synced ? `<p class="desc">${L('No se pueden ver las mesas ahora mismo. Comprueba la conexión.', 'No es poden veure les taules ara mateix. Comprova la connexió.')}</p>` : !NETP.synced ? `<p class="desc">${L('Buscando mesas…', 'Buscant taules…')}</p>`
   : !NETP.open.length ? `<p class="desc">${L('Ahora mismo no hay ninguna mesa abierta.', 'Ara mateix no hi ha cap taula oberta.')}</p>`
   : NETP.open.slice(0, 8).map(x => `<div class="netopen-row"><div><b>${esc(x.host)}</b> · ${netModeName(x.mode)}<small>${x.free === 1 ? L('Falta 1 persona', 'Falta 1 persona') : L(`${x.free} sitios libres`, `${x.free} llocs lliures`)}</small></div><button class="btn primary" type="button" data-act="net-open-join" data-code="${x.code}">${L('Entrar', 'Entrar')}</button></div>`).join('');
 const netCountTxt = () => NETP.count == null ? '' : L(`Mesas en uso: ${Math.min(NETP.count, NET_MAX_TABLES)}/${NET_MAX_TABLES}`, `Taules en ús: ${Math.min(NETP.count, NET_MAX_TABLES)}/${NET_MAX_TABLES}`);
+// Las mesas se anuncian con mensajes normales (como las salas) en el canal «cc-mesas»: cada anfitrión dice cada pocos segundos
+// que su mesa existe; solo las abiertas llevan código y nombre. Quien entra pregunta «hola» y los anfitriones contestan al momento.
 async function netPresenceOpen() {
   if (NETP.ch) return NETP.ch;
-  if (/net=local/.test(location.search) || /net=local/.test(location.hash)) {   // pruebas entre pestañas: cada anfitrión se anuncia cada 2 s
-    const bc = new BroadcastChannel('cc-mesas'), seen = new Map(); let mine = null;
-    const sync = () => { const now = Date.now(); for (const [k, v] of seen) if (now - v.t > 7000) seen.delete(k); const st = {}; for (const [k, v] of seen) st[k] = [v.p]; if (mine) st[NET_PKEY] = [mine]; netPresenceSync(st); };
-    bc.onmessage = e => { const m = e.data; if (!m || !m.k) return; if (m.p) seen.set(m.k, { p: m.p, t: Date.now() }); else seen.delete(m.k); sync(); };
-    const iv = setInterval(() => { if (mine) bc.postMessage({ k: NET_PKEY, p: mine }); sync(); }, 2000);
-    bc.postMessage({ k: 'hola' });
-    NETP.ch = { local: true, track: async p => { mine = p; bc.postMessage({ k: NET_PKEY, p }); sync(); }, untrack: async () => { mine = null; bc.postMessage({ k: NET_PKEY, p: null }); sync(); }, close: () => { clearInterval(iv); bc.close(); } };
-    setTimeout(sync, 2300);
-    return NETP.ch;
-  }
   if (NETP.opening) return NETP.opening;
   NETP.opening = (async () => {
     try {
-      const client = await netClient();
-      const ch = client.channel('cc-mesas', { config: { private: NET_PRIVATE, presence: { key: NET_PKEY } } });
-      ch.on('presence', { event: 'sync' }, () => { try { netPresenceSync(ch.presenceState()); } catch (e) {} });
-      await new Promise((res, rej) => { const to = setTimeout(() => rej(new Error('timeout')), 10000); ch.subscribe(st => { if (st === 'SUBSCRIBED') { clearTimeout(to); res(); } else if (st === 'CHANNEL_ERROR' || st === 'TIMED_OUT') { clearTimeout(to); rej(new Error(st)); } }); });
-      NETP.ch = ch; return ch;
-    } catch (e) { return null; } finally { NETP.opening = null; }
+      const seen = new Map(); let mine = null, last = 0, lastHola = 0, tr = null;
+      const sync = () => { const now = Date.now(); for (const [k, v] of seen) if (now - v.t > (v.p.started ? 45000 : 14000)) seen.delete(k); const st = {}; for (const [k, v] of seen) st[k] = [v.p]; if (mine) st[NET_PKEY] = [mine]; netPresenceSync(st); };
+      const say = () => { if (mine && tr) { last = Date.now(); try { tr.send({ k: NET_PKEY, p: mine }); } catch (e) {} } };
+      tr = await netOpen('cc-mesas', m => {
+        if (!m || typeof m.k !== 'string' || m.k.length > 24) return;
+        if (m.k === 'hola') { if (Date.now() - lastHola > 1000) { lastHola = Date.now(); say(); } return; }
+        if (m.p && typeof m.p === 'object' && m.p.mesa) { if (seen.size < 300 || seen.has(m.k)) seen.set(m.k, { p: m.p, t: Date.now() }); } else seen.delete(m.k);
+        sync();
+      });
+      const iv = setInterval(() => { if (mine && Date.now() - last >= (mine.started ? 15000 : 4000)) say(); sync(); }, 2000);
+      try { tr.send({ k: 'hola' }); } catch (e) {}
+      setTimeout(sync, 2500);
+      NETP.ch = { track: async p => { mine = p; say(); sync(); }, untrack: async () => { mine = null; try { tr.send({ k: NET_PKEY, p: null }); } catch (e) {} sync(); }, close: () => { clearInterval(iv); try { tr.close(); } catch (e) {} } };
+      NETP.err = false;
+      return NETP.ch;
+    } catch (e) { NETP.err = true; const ol = $('netopen'); if (ol) ol.innerHTML = netOpenListHTML(); return null; } finally { NETP.opening = null; }
   })();
   return NETP.opening;
 }
@@ -2338,7 +2340,7 @@ async function netPresenceOpen() {
 function netPresenceClose() {
   if (!NETP.ch || (NET && NET.role === 'host')) return;
   const ch = NETP.ch; NETP.ch = null; NETP.count = null; NETP.tracking = false; NETP.open = []; NETP.synced = false; NETP.last = '';
-  try { if (ch.local) ch.close(); else netOpen.client && netOpen.client.removeChannel(ch); } catch (e) {}
+  try { ch.close(); } catch (e) {}
 }
 async function netPresenceWatch() { const ch = await netPresenceOpen(); if (ch && NET && NET.role === 'host') netPresenceTrack(true); }
 async function netPresenceTrack(on) {
@@ -2346,8 +2348,9 @@ async function netPresenceTrack(on) {
   try {
     if (on && NET && NET.role === 'host') {
       // lo que se anuncia: si la mesa está abierta, también quién la abre y cuántos sitios quedan para personas
-      const p = { code: NET.code, mode: NET.mode, started: !!NET.started };
-      if (NET.open) Object.assign(p, { open: true, host: NET.name, free: NET.seats.filter(x => x.kind === 'free').length, people: NET.seats.filter(x => x.kind === 'host' || x.kind === 'human').length });
+      // las mesas con invitación solo cuentan para «Mesas en uso»: no dicen su código a nadie
+      const p = { mesa: 1, started: !!NET.started };
+      if (NET.open) Object.assign(p, { code: NET.code, mode: NET.mode, open: true, host: NET.name, free: NET.seats.filter(x => x.kind === 'free').length, people: NET.seats.filter(x => x.kind === 'host' || x.kind === 'human').length });
       const k = JSON.stringify(p); if (k === NETP.last && NETP.tracking) return;
       NETP.last = k; await ch.track(p); NETP.tracking = true;
     } else if (!on && NETP.tracking) { await ch.untrack(); NETP.tracking = false; NETP.last = ''; }
@@ -2523,7 +2526,7 @@ let netLink = null, netLinkOk = false;
 async function netQuick(name) {
   showPanel(`<h2>${L('Buscando mesa…', 'Buscant taula…')}</h2>`); cover();
   const ch = await netPresenceOpen();
-  for (let i = 0; ch && !NETP.synced && i < 15; i++) await sleep(200);
+  for (let i = 0; ch && !NETP.synced && i < 15; i++) await new Promise(r => setTimeout(r, 200));
   const t = NETP.open[0];
   if (t) return netJoin(t.code, name, true);
   netHost(name, 'cotocau', true);
