@@ -214,10 +214,12 @@ button{font:inherit;color:inherit}
 .fan .fc{position:absolute;left:50%;bottom:0;transform-origin:50% 120%;--cw:74px}
 .fan .fc .card{--cw:74px;box-shadow:0 8px 18px rgba(0,0,0,.55)}
 .tut{display:flex;flex-direction:column;gap:12px}
-.coach{margin:4px 12px 0;padding:9px 12px;border:1px solid rgba(227,178,79,.55);background:rgba(227,178,79,.12);border-radius:12px;font-size:13.5px;line-height:1.4;color:var(--ink)}
+.coach{position:relative;z-index:6;margin:4px 12px 0;padding:9px 12px;border:1px solid rgba(227,178,79,.55);background:linear-gradient(rgba(227,178,79,.12),rgba(227,178,79,.12)),var(--panel);box-shadow:0 6px 18px rgba(0,0,0,.45);border-radius:12px;font-size:13.5px;line-height:1.4;color:var(--ink)}
 .coach b{color:var(--gold)}
 .coach-go{display:flex;justify-content:flex-end;margin-top:8px}.coach-go .btn{padding:7px 22px;font-size:14px}
-.coach.paused{border-color:var(--gold);box-shadow:0 0 0 3px rgba(227,178,79,.18)}
+.coach.paused{border-color:var(--gold);box-shadow:0 0 0 3px rgba(227,178,79,.18),0 10px 30px rgba(0,0,0,.6)}
+/* pausa del tutorial: la explicación flota sobre tu mano (que no hace falta mientras tanto) y deja la mesa entera a la vista */
+.coach.paused{position:fixed;z-index:12;left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));bottom:calc(10px + env(safe-area-inset-bottom,0px));margin:0 auto;max-width:588px;max-height:60vh;overflow:auto}
 .netmodes{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .netcount{text-align:center;font-size:12px;opacity:.7;margin:6px 0 0}
 .netcode{font:800 44px/1 var(--f-display);letter-spacing:.18em;color:var(--gold);text-align:center;margin:4px 0}
@@ -1782,7 +1784,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-03-6';
+const APP_VER = 'cau-2026-11-03-7';
 const SUPA = { url: 'https://fzctetcrmrtxwzisxsig.supabase.co/rest/v1/partidas', key: 'sb_publishable_dg8jQx8W7KcVCcEg2KPVnA_ExvQR1gb' };
 function deviceId() {
   try { let id = localStorage.getItem('cau.uid'); if (!id) { id = Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4); localStorage.setItem('cau.uid', id); } return id; } catch (e) { return 'anon'; }
