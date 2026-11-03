@@ -1791,7 +1791,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-03-8';
+const APP_VER = 'cau-2026-11-03-9';
 const SUPA = { url: 'https://fzctetcrmrtxwzisxsig.supabase.co/rest/v1/partidas', key: 'sb_publishable_dg8jQx8W7KcVCcEg2KPVnA_ExvQR1gb' };
 function deviceId() {
   try { let id = localStorage.getItem('cau.uid'); if (!id) { id = Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4); localStorage.setItem('cau.uid', id); } return id; } catch (e) { return 'anon'; }
@@ -2279,8 +2279,9 @@ function showMenu() {
   panelBack = null;
   if (TUTG) exitGuided();
   if (SETTINGS.share == null) return showShareAsk();
+  const firstMenu = !netAutoTried; netAutoTried = true;   // volver sola a la partida online solo al abrir la app, no al salir de ella
   if (netLink && !NET) { const c = netLink; netLink = null; return showInvite(c); }
-  if (!NET && !netAutoTried) { netAutoTried = true; const r = netRoomGet(); if (r) return netJoin(r.code, r.name, false, true); }   // al abrir la app: vuelve sola a su partida online
+  if (!NET && firstMenu) { const r = netRoomGet(); if (r) return netJoin(r.code, r.name, false, true); }   // al abrir la app: vuelve sola a su partida online
   const cont = hasSaved && savedActive() ? `<button class="btn primary" type="button" data-act="continue">${L('Continuar', 'Continuar')}<small class="contlbl">${esc(continueLabel())}</small></button>` : '';
   const fan = [[0, -24], [10, -8], [20, 8], [30, 24]].map(([id, a]) => `<div class="fc" style="transform:translateX(-50%) rotate(${a}deg)">${cardHTML(coCard(id))}</div>`).join('');
   showPanel(`<div class="menu" style="display:flex;flex-direction:column;gap:14px"><div class="fan" aria-hidden="true">${fan}</div><div class="logo">CotoCau</div><p class="tag">Els jocs de cartes de les filaes d'Alcoi</p><p class="desc" style="text-align:center;opacity:.6;margin:0">v. ${APP_VER.replace('cau-', '')}</p><div class="stack">${!NET && netRoomGet() ? `<button class="btn primary" type="button" data-act="net-rejoin">${L('Volver a la partida online', 'Tornar a la partida online')}<small class="contlbl">${L('Sala', 'Sala')} ${netRoomGet().code}</small></button>` : ''}${cont}<button class="btn ${cont ? '' : 'primary'}" type="button" data-act="play">${L('Jugar', 'Jugar')}</button><button class="btn" type="button" data-act="settings">${L('Ajustes', 'Ajustos')}</button><button class="btn" type="button" data-act="tutorial">Tutorial</button><button class="btn" type="button" data-act="rules">${L('Reglas', 'Regles')}</button></div></div>`);
@@ -2720,7 +2721,13 @@ async function netHostMsg(m) {
   if (!NET || NET.role !== 'host' || !m || !m.id) return;
   const seatOf = id => NET.seats.findIndex(x => x.kind === 'human' && x.id === id);
   if (NET.kicked && NET.kicked.has(m.id)) return;
-  if (m.t === 'leave') { if (seatOf(m.id) < 0 && !NET.started) { const ch = NET.priv[m.id]; delete NET.priv[m.id]; try { ch && ch.close(); } catch (e) {} } return; }
+  // Alguien sale: en la sala su sitio queda libre al momento; en plena partida pasa a «sin conexión» ya (juega un bot) y puede volver
+  if (m.t === 'leave') {
+    const q = seatOf(m.id);
+    if (!NET.started) { const ch = NET.priv[m.id]; delete NET.priv[m.id]; setTimeout(() => { try { ch && ch.close(); } catch (e) {} }, 300); if (q > 0) { NET.seats[q] = { kind: 'free' }; netLobby(); } return; }
+    if (q > 0 && NET.seats[q].online) { NET.seats[q].online = false; NET.seats[q].last = 0; netSchedule(); render(); if (!busy) loop(); }
+    return;
+  }
   if (m.t === 'hi') { const q = seatOf(m.id); if (q > 0) { NET.seats[q].online = true; NET.seats[q].last = Date.now(); if (NET.seats[q].away && G) netSetAway(q, false); } if (NET.started) { netSend({ t: 'start' }); netSchedule(); render(); } else netLobby(); return; }
   if (m.t === 'rx') { const q = seatOf(m.id); if (q > 0) netRxHost(NET.seats[q], m.k); return; }
   if (m.t === 'ping') { const q = seatOf(m.id); if (q > 0) { const was = NET.seats[q].online; NET.seats[q].last = Date.now(); NET.seats[q].online = true; if (!was) { NAMES[q] = NET.seats[q].name; netSchedule(); if (NET.started) render(); if (NET.started && !busy) loop(); } } return; }
@@ -2759,7 +2766,7 @@ function netHostTick() {
   netWaitCheck();
   if (NET.vote) netVoteSend();
   const now = Date.now();
-  for (const q of [1, 2, 3]) { const st = NET.seats[q]; if (st.kind !== 'human') continue; const on = now - (st.last || 0) < 15000; if (on !== st.online) { st.online = on; if (NET.started) { netSchedule(); render(); if (!on && !busy) loop(); } else netLobby(); } }
+  for (const q of [1, 2, 3]) { const st = NET.seats[q]; if (st.kind !== 'human') continue; const on = now - (st.last || 0) < 15000; if (on !== st.online) { st.online = on; if (NET.started) { netSchedule(); render(); if (!on && !busy) loop(); } else { if (!on) NET.seats[q] = { kind: 'free' }; netLobby(); } } }   // en la sala, quien pierde la conexión deja su sitio libre
 }
 function netStart() {
   for (const q of [1, 2, 3]) if (NET.seats[q].kind === 'free') NET.seats[q] = { kind: 'bot' };
@@ -2895,7 +2902,7 @@ async function netJoin(code, name, autoSit, rejoin) {
   name = cleanName(name) || L('Jugador', 'Jugador');
   if (!/^[A-Z]{4,6}$/.test(code)) return showOnline(L('El código son 6 letras.', 'El codi són 6 lletres.'));
   if (!SETTINGS.alias) { SETTINGS.alias = name; saveSettings(); }
-  NET = { role: 'guest', code, name, lastHost: Date.now(), seats: null, priv: null, autoSit: !!autoSit, rejoin: !!rejoin, joinT: Date.now() };
+  NET = { role: 'guest', code, name, lastHost: Date.now(), seats: null, priv: null, autoSit: !!autoSit || !!rejoin, rejoin: !!rejoin, joinT: Date.now() };   // al volver a una sala, se sienta solo si su sitio se liberó
   showPanel(`<h2>${L('Conectando…', 'Connectant…')}</h2>`); cover();
   try { NET.keys = await netKeys(true); NET.id = await netIdOf(NET.keys.raw); NET.pub = await netOpen('cc-' + code, netGuestPub); }
   catch (e) { NET = null; return showOnline(L('No se ha podido conectar. Comprueba la conexión a internet.', 'No s\'ha pogut connectar. Comprova la connexió a internet.') + ' (' + esc(e.message) + ')'); }
