@@ -1102,6 +1102,11 @@ function coPlay(G, p, cid) {
     if (c.s !== lead && !G.voids[p].includes(lead)) G.voids[p].push(lead);
     if (c.s !== lead && c.s !== G.trump && team(w.p) !== team(p) && !G.voids[p].includes(G.trump) && !(w.c.s === G.trump)) G.voids[p].push(G.trump);
   }
+  // carga sobre baza del compañero: si carga X puntos de un palo, no lleva cartas de más puntos de ese palo
+  if (G.trick.length === 3 && coArrastre(G) && CPTS[c.r] > 0 && team(coTrickWinner(G, G.trick).p) === team(p) && !(c.s !== G.trick[0].c.s && c.s === G.trump)) {
+    if (!G.noHi) G.noHi = [[], [], [], []];
+    for (let r = 0; r < 10; r++) if (CPTS[r] > CPTS[c.r]) { const id = c.s * 10 + r; if (!G.noHi[p].includes(id)) G.noHi[p].push(id); }
+  }
   if (G.trick.length === 0) G.canSing = null;          // al salir a la baza siguiente se cierra el cante
   if (G.rec && G.trick.length === 0) G.rec.cur = `B${G.trickNo + 1} (${G.stock.length ? 'montón ' + G.stock.length : 'arrastre'}): `;
   if (G.rec) G.rec.cur += `${G.trick.length ? ', ' : ''}${SEATC[p]} ${cn(c)}`;
@@ -1287,6 +1292,7 @@ function coDeterminize0(G, p) {
       for (let i = 0; i < pool.length && h.length < n;) {
         const c = pool[i];
         if (G.voids[q].includes(c.s) && tries < 25) { i++; continue; }
+        if (G.noHi && G.noHi[q].includes(c.id) && tries < 20) { i++; continue; }
         h.push(c); pool.splice(i, 1);
       }
       if (h.length < n) { ok = false; break; }
@@ -1752,7 +1758,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-02-19';
+const APP_VER = 'cau-2026-11-03-1';
 const SUPA = { url: 'https://fzctetcrmrtxwzisxsig.supabase.co/rest/v1/partidas', key: 'sb_publishable_dg8jQx8W7KcVCcEg2KPVnA_ExvQR1gb' };
 function deviceId() {
   try { let id = localStorage.getItem('cau.uid'); if (!id) { id = Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4); localStorage.setItem('cau.uid', id); } return id; } catch (e) { return 'anon'; }
