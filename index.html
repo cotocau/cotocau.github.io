@@ -1758,7 +1758,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-03-1';
+const APP_VER = 'cau-2026-11-03-2';
 const SUPA = { url: 'https://fzctetcrmrtxwzisxsig.supabase.co/rest/v1/partidas', key: 'sb_publishable_dg8jQx8W7KcVCcEg2KPVnA_ExvQR1gb' };
 function deviceId() {
   try { let id = localStorage.getItem('cau.uid'); if (!id) { id = Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4); localStorage.setItem('cau.uid', id); } return id; } catch (e) { return 'anon'; }
@@ -2231,7 +2231,7 @@ const SUPA_BASE = SUPA.url.replace(/\/rest\/v1\/.*$/, '');
 let supaLoading = null;
 function loadSupabase() {
   if (window.supabase) return Promise.resolve();
-  if (!supaLoading) supaLoading = new Promise((res, rej) => { const sc = document.createElement('script'); sc.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js'; sc.onload = res; sc.onerror = () => { supaLoading = null; rej(new Error('no se pudo cargar')); }; document.head.appendChild(sc); });
+  if (!supaLoading) supaLoading = new Promise((res, rej) => { const sc = document.createElement('script'); sc.src = './supabase-2.49.4.js'; sc.integrity = 'sha384-rwykjmWNwVxboyFmvK9OXN0wj9hnMHA2aAHtits54DuACyCq0M2PrSNxhRb+hvXT'; /* copia propia de la librería (comprobada el 3 nov): con su huella, el móvil la rechaza si alguien la cambia */ sc.onload = res; sc.onerror = () => { supaLoading = null; rej(new Error('no se pudo cargar')); }; document.head.appendChild(sc); });
   return supaLoading;
 }
 // Canales privados de Supabase: cada móvil abre una sesión anónima (el usuario no ve nada) y solo con sesión se entra en las salas.
