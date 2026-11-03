@@ -216,6 +216,8 @@ button{font:inherit;color:inherit}
 .tut{display:flex;flex-direction:column;gap:12px}
 .coach{margin:4px 12px 0;padding:9px 12px;border:1px solid rgba(227,178,79,.55);background:rgba(227,178,79,.12);border-radius:12px;font-size:13.5px;line-height:1.4;color:var(--ink)}
 .coach b{color:var(--gold)}
+.coach-go{display:flex;justify-content:flex-end;margin-top:8px}.coach-go .btn{padding:7px 22px;font-size:14px}
+.coach.paused{border-color:var(--gold);box-shadow:0 0 0 3px rgba(227,178,79,.18)}
 .netmodes{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .netcount{text-align:center;font-size:12px;opacity:.7;margin:6px 0 0}
 .netcode{font:800 44px/1 var(--f-display);letter-spacing:.18em;color:var(--gold);text-align:center;margin:4px 0}
@@ -223,8 +225,24 @@ button{font:inherit;color:inherit}
 .netseat{display:flex;align-items:center;justify-content:space-between;gap:8px;border:1px solid var(--line);border-radius:12px;padding:8px 10px}
 .netseat b{font-size:14px}.netseat small{display:block;color:var(--ink-soft);font-size:12px}
 .netseat.me{border-color:var(--gold)}.netseat small.netme{color:var(--gold);font-weight:700}
-.netinvite{width:100%}
+.netquick{width:100%;font-size:15px;padding:10px 14px}
+.netopen{display:flex;flex-direction:column;gap:6px}.netopen .desc{margin:0;font-size:13px}
+.netopen-row{display:flex;align-items:center;justify-content:space-between;gap:8px;border:1px solid var(--line);border-radius:12px;padding:7px 10px}.netopen-row small{display:block;color:var(--ink-soft);font-size:12px}
+.netinvite{width:100%;display:flex;align-items:center;justify-content:center;gap:8px}.netinvite svg.wa{width:24px;height:24px;flex:none}
 .seatsw{display:flex;gap:4px;flex:none}.seatsw .btn{padding:6px 10px;font-size:13px;min-height:0}
+/* sala: mesa dibujada con los cuatro sitios (tú abajo, compañero enfrente, rivales a los lados) */
+.nt{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) minmax(0,1fr);gap:8px 6px;align-items:center;margin:2px 0}
+.nt-s{display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;min-width:0}
+.nt-p2{grid-column:2;grid-row:1}.nt-p3{grid-column:1;grid-row:2}.nt-p1{grid-column:3;grid-row:2}.nt-p0{grid-column:2;grid-row:3}
+.nt-s .av{width:42px;height:42px;font-size:19px}
+.nt-s .av.free{border-style:dashed;opacity:.7;font-size:17px}
+.nt-s.me .av{box-shadow:0 0 0 4px rgba(227,178,79,.4)}
+.nt-nm{font-weight:700;font-size:13px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nt-sub{font-size:11px;color:var(--ink-soft);margin-top:-3px}
+.nt-s.me .nt-sub{color:var(--gold);font-weight:700}
+.nt-felt{grid-column:2;grid-row:2;aspect-ratio:5/4;border-radius:18px;background:radial-gradient(ellipse at 50% 40%,var(--felt),var(--felt-deep) 80%);box-shadow:inset 0 0 0 1px rgba(227,178,79,.3),inset 0 0 30px rgba(0,0,0,.5);display:grid;place-items:center;text-align:center;padding:6px;font:700 15px/1.1 var(--f-display);color:var(--gold);letter-spacing:.04em}
+.nt .seatsw{flex-direction:column;gap:3px;width:100%;max-width:104px}.nt .seatsw .btn{padding:4px 6px;font-size:12px}
+.nt-s>.btn{padding:5px 10px;font-size:12px}
 .rxbar{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:10px}.rxbar.wait{opacity:.45;pointer-events:none}
 .btn.rx{padding:6px 10px;font-size:13px;min-height:0}
 .rxfeed{display:flex;flex-direction:column;align-items:center;gap:4px;min-height:24px;margin-top:8px}
@@ -293,7 +311,7 @@ button{font:inherit;color:inherit}
   </header>
   <nav class="tools">
     <button class="btn" id="btnMenu" type="button">Menú</button>
-    <button class="btn" id="btnRules" type="button">Reglas</button>
+    <button class="btn" id="btnRules" type="button" hidden>Reglas</button>
     <button class="btn" id="btnLog" type="button">Historial</button>
     <button class="btn" id="btnLast" type="button" hidden>Última baza</button>
   </nav>
@@ -1758,7 +1776,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-03-3';
+const APP_VER = 'cau-2026-11-03-4';
 const SUPA = { url: 'https://fzctetcrmrtxwzisxsig.supabase.co/rest/v1/partidas', key: 'sb_publishable_dg8jQx8W7KcVCcEg2KPVnA_ExvQR1gb' };
 function deviceId() {
   try { let id = localStorage.getItem('cau.uid'); if (!id) { id = Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4); localStorage.setItem('cau.uid', id); } return id; } catch (e) { return 'anon'; }
@@ -1927,7 +1945,8 @@ function render() {
   $('hand').classList.remove('co-hand');
   document.body.classList.toggle('deck-clasica', SETTINGS.deck === 'clasica');
   renderScore(0); renderScore(1);
-  if (TUTG && TUTG.cau) { $('coach').hidden = false; $('coach').innerHTML = tutCauCoach(); }
+  if (TUTG && TUTG.cau) { $('coach').hidden = false; $('coach').innerHTML = TUTG.pause ? tutPauseHTML() : tutCauCoach(); }
+  $('coach').classList.toggle('paused', !!(TUTG && TUTG.pause));
   $('info').textContent = L(`Mano ${S.handNo} · Reparto ${Math.max(1, S.round)}/3 · Mazo ${S.deck.length}`, `Mà ${S.handNo} · Repartiment ${Math.max(1, S.round)}/3 · Baralla ${S.deck.length}`);
   $('lbl0').textContent = TEAMN[0]; $('lbl1').textContent = TEAMN[1];
   $('brand').textContent = 'Cau';
@@ -1960,6 +1979,7 @@ async function drainFeed(untilDeal) {
 }
 
 async function doPlay(p, cid) {
+  const tutD = TUTG && TUTG.cau && S.round === 1 ? 13 - S.hands.reduce((a, h) => a + h.length, 0) : 0;   // jugada nº tutD del primer reparto guiado
   const sim = clone(S); sim.feed = [];
   const res = applyPlay(sim, p, cid);
   const special = res.ev.find(e => ['bac','rebac','sv','limpia'].includes(e.k));
@@ -1989,12 +2009,14 @@ async function doPlay(p, cid) {
   afterPlay(sim);
   if (sim.round !== roundBefore && sim.phase !== 'handEnd') sim.bubbles = sim.bubbles.map((b, i) => sim.sung && sim.sung[i] ? b : '');
   S = sim;
+  if (tutD) { render(); await tutPause(tutCauAfter(tutD)); }
   if (S.round !== roundBefore && S.phase !== 'handEnd' && S.phase !== 'gameEnd') {
     // las cartas nuevas no se ven hasta que llegan volando
     dealView = { n: [0, 0, 0, 0], table: true, tableIds: new Set(), temp: null };
     render(); await drainFeed(true);
     narr = L(`Reparto ${S.round} de 3.`, `Repartiment ${S.round} de 3.`);
     await animateDeal(false);
+    if (TUTG && TUTG.cau) await tutPause(S.round === 2 ? L('<b>Segundo reparto:</b> 3 cartas más a cada uno. La mesa sigue como estaba, y en cada mano hay 3 repartos.', '<b>Segon repartiment:</b> 3 cartes més a cadascú. El tapet continua com estava, i en cada mà hi ha 3 repartiments.') : L('<b>Último reparto.</b> Aquí todos los que tienen pareja cantan de nit al principio. Al acabar, quien capturó el último se lleva lo que queda en la mesa, y cada pareja suma un punto por cada carta por encima de 20.', '<b>Últim repartiment.</b> Ací tots els que tenen parella canten de nit al principi. En acabar, qui va arreplegar l\'últim s\'endú el que queda al tapet, i cada parella suma un punt per cada carta per damunt de 20.'));
   }
   render();
   await drainFeed();
@@ -2046,7 +2068,12 @@ async function animateDeal(withTable) {
 async function beginHand() {
   dealView = { n: [0,0,0,0], table: false, tableIds: new Set(), temp: null };
   busy = true; const gen = GEN;
-  try { await animateDeal(true); await drainFeed(); } finally { if (gen === GEN) busy = false; }
+  const tut = TUTG && TUTG.cau && !TUTG.intro;
+  try {
+    if (tut) { TUTG.intro = true; for (const t of tutCauIntro(0)) await tutPause(t); if (gen !== GEN) return; }
+    await animateDeal(true); await drainFeed();
+    if (tut && gen === GEN) for (const t of tutCauIntro(1)) await tutPause(t);
+  } finally { if (gen === GEN) busy = false; }
   if (gen !== GEN) return;
   render(); loop();
 }
@@ -2112,14 +2139,14 @@ function rulesCoto() {
   <h3>Cartas</h3><ul><li>Orden de fuerza: as, tres, rey, sota, caballo, 7, 6, 5, 4, 2.</li><li>Puntos: as 11, tres 10, rey 4, sota 3, caballo 2; el resto, 0. Con las 10 de últimas hay 130 puntos por mano.</li><li>Cualquier triunfo gana a cualquier carta de otro palo. Si no hay triunfo, gana la más alta del palo de salida.</li></ul>
   <h3>Reparto</h3><ul><li>6 cartas a cada uno, de una en una. La siguiente se deja boca arriba bajo el montón: es la pinta y marca el triunfo.</li><li>Reparte quien hizo las 10 de últimas en la mano anterior. Sale el de su derecha.</li></ul>
   <h3>Mientras queda montón</h3><ul><li>Tirada libre: no hay que asistir ni matar.</li><li>Después de cada baza roban todos, empezando por quien la ha ganado, que sale en la siguiente.</li><li><b>Cantes:</b> rey y sota del mismo palo. Las 40 si es de triunfo, las 20 si no. Se canta cuando tu pareja acaba de ganar una baza, antes de salir a la siguiente; se pueden cantar varios a la vez y también es opcional.</li><li><b>Cambiar el 7:</b> si la pinta es figura, tres o as, quien tenga el 7 de triunfo la puede cambiar mientras quede montón, si su pareja ya ha ganado alguna baza.</li></ul>
-  <h3>Arrastre (sin montón)</h3><ul><li>Siempre hay que seguir el palo.</li><li>Si va ganando un rival: hay que superarle si se puede. Sin el palo, hay que fallar con triunfo, y si ya hay un triunfo, echar uno más alto si se tiene.</li><li>Si va ganando tu compañero: cualquier carta del palo; sin el palo, carta libre.</li></ul>
+  <h3>Arrastre (sin montón)</h3><ul><li>Siempre hay que seguir el palo.</li><li>Si va ganando un rival: hay que superarle si se puede. Sin el palo, hay que matar con triunfo, y si ya hay un triunfo, echar uno más alto si se tiene.</li><li>Si va ganando tu compañero: cualquier carta del palo; sin el palo, carta libre.</li></ul>
   <h3>Partida y coto</h3><ul><li>Se gana con 101 puntos: las 50 primeras son malas y a partir de ahí, buenas (51 buenas).</li><li>Si al acabar la mano las dos parejas pasan de 50 buenas, gana la que hizo las 10 de últimas.</li><li>Si nadie llega, se juega otra mano de vueltas sumando, y la partida acaba en el momento en que una pareja llega a 101 (con bazas o cantes): «se sale».</li><li>El coto se juega al mejor de 5 partidas (o de 3, en Ajustes).</li></ul>`,
   `<h2>Regles del Coto</h2>
   <p>El guinyot d'Alcoi: quatre jugadors en dues parelles, baralla espanyola de 40 cartes. Es juga cap a la dreta.</p>
   <h3>Cartes</h3><ul><li>Ordre de força: as, tres, rei, sota, cavall, 7, 6, 5, 4, 2.</li><li>Punts: as 11, tres 10, rei 4, sota 3, cavall 2; la resta, 0. Amb les 10 d'últimes hi ha 130 punts per mà.</li><li>Qualsevol triomf guanya a qualsevol carta d'un altre pal. Si no hi ha triomf, guanya la més alta del pal d'eixida.</li></ul>
   <h3>Repartiment</h3><ul><li>6 cartes a cadascú, d'una en una. La següent es deixa cap per amunt davall del munt: és la pinta i marca el triomf.</li><li>Reparteix qui va fer les 10 d'últimes en la mà anterior. Ix el de la seua dreta.</li></ul>
   <h3>Mentre queda munt</h3><ul><li>Tirada lliure: no cal assistir ni matar.</li><li>Després de cada basa roben tots, començant per qui l'ha guanyada, que ix en la següent.</li><li><b>Cants:</b> rei i sota del mateix pal. Les 40 si és de triomf, les 20 si no. Es canta quan la teua parella acaba de guanyar una basa, abans d'eixir a la següent; se'n poden cantar diversos alhora i també és opcional.</li><li><b>Canviar el 7:</b> si la pinta és figura, tres o as, qui tinga el 7 de triomf la pot canviar mentre quede munt, si la seua parella ja ha guanyat alguna basa.</li></ul>
-  <h3>Arrossegament (sense munt)</h3><ul><li>Sempre cal seguir el pal.</li><li>Si guanya un rival: cal superar-lo si es pot. Sense el pal, cal fallar amb triomf, i si ja hi ha un triomf, tirar-ne un de més alt si se'n té.</li><li>Si guanya el teu company: qualsevol carta del pal; sense el pal, carta lliure.</li></ul>
+  <h3>Arrossegament (sense munt)</h3><ul><li>Sempre cal seguir el pal.</li><li>Si guanya un rival: cal superar-lo si es pot. Sense el pal, cal matar amb triomf, i si ja hi ha un triomf, tirar-ne un de més alt si se'n té.</li><li>Si guanya el teu company: qualsevol carta del pal; sense el pal, carta lliure.</li></ul>
   <h3>Partida i coto</h3><ul><li>Es guanya amb 101 punts: els 50 primers són males i a partir d'ací, bones (51 bones).</li><li>Si en acabar la mà les dues parelles passen de 50 bones, guanya la que va fer les 10 d'últimes.</li><li>Si ningú no hi arriba, es juga una altra mà de voltes sumant, i la partida acaba en el moment en què una parella arriba a 101 (amb bases o cants): «s'ix».</li><li>El coto es juga al millor de 5 partides (o de 3, en Ajustos).</li></ul>`);
 }
 function rulesCotoCau() {
@@ -2266,20 +2293,41 @@ async function netOpen(name, onMsg) {
   return { send: m => ch.send({ type: 'broadcast', event: 'm', payload: m }), close: () => client.removeChannel(ch) };
 }
 // Mesas en uso: cada sala abierta se anuncia en un canal común (Presence). Si falla, simplemente no se muestra.
-const NETP = { ch: null, count: null, tracking: false, opening: null };
+const NETP = { ch: null, count: null, tracking: false, opening: null, open: [], synced: false, last: '' };
+// Mesas abiertas: el anfitrión puede anunciar su sala para que entre cualquiera con la app (partida rápida).
+// Lo que llega de otros móviles se limpia: código de 6 letras, modalidad conocida, nombre limpio.
+function netPresenceSync(st) {
+  const all = Object.values(st || {}).map(a => a && a.find(x => x && x.code)).filter(Boolean);
+  NETP.count = all.length; NETP.synced = true;
+  const mine = NET && NET.role === 'host' ? NET.code : null;
+  NETP.open = all.filter(x => x.open && !x.started && /^[A-Z]{6}$/.test(x.code) && x.code !== mine && NETMODES().some(m => m[0] === x.mode))
+    .map(x => ({ code: x.code, mode: x.mode, host: cleanName(x.host) || L('Anfitrión', 'Amfitrió'), free: Math.max(0, Math.min(3, x.free | 0)), people: Math.max(1, Math.min(4, x.people | 0)) }))
+    .filter(x => x.free > 0).sort((a, b) => b.people - a.people || a.code.localeCompare(b.code));
+  const el = $('netcount'); if (el) el.textContent = netCountTxt();
+  const ol = $('netopen'); if (ol) ol.innerHTML = netOpenListHTML();
+}
+const netOpenListHTML = () => !NETP.synced ? `<p class="desc">${L('Buscando mesas…', 'Buscant taules…')}</p>`
+  : !NETP.open.length ? `<p class="desc">${L('Ahora mismo no hay ninguna mesa abierta.', 'Ara mateix no hi ha cap taula oberta.')}</p>`
+  : NETP.open.slice(0, 8).map(x => `<div class="netopen-row"><div><b>${esc(x.host)}</b> · ${netModeName(x.mode)}<small>${x.free === 1 ? L('Falta 1 persona', 'Falta 1 persona') : L(`${x.free} sitios libres`, `${x.free} llocs lliures`)}</small></div><button class="btn primary" type="button" data-act="net-open-join" data-code="${x.code}">${L('Entrar', 'Entrar')}</button></div>`).join('');
 const netCountTxt = () => NETP.count == null ? '' : L(`Mesas en uso: ${Math.min(NETP.count, NET_MAX_TABLES)}/${NET_MAX_TABLES}`, `Taules en ús: ${Math.min(NETP.count, NET_MAX_TABLES)}/${NET_MAX_TABLES}`);
 async function netPresenceOpen() {
   if (NETP.ch) return NETP.ch;
-  if (/net=local/.test(location.search) || /net=local/.test(location.hash)) return null;
+  if (/net=local/.test(location.search) || /net=local/.test(location.hash)) {   // pruebas entre pestañas: cada anfitrión se anuncia cada 2 s
+    const bc = new BroadcastChannel('cc-mesas'), seen = new Map(); let mine = null;
+    const sync = () => { const now = Date.now(); for (const [k, v] of seen) if (now - v.t > 7000) seen.delete(k); const st = {}; for (const [k, v] of seen) st[k] = [v.p]; if (mine) st[NET_PKEY] = [mine]; netPresenceSync(st); };
+    bc.onmessage = e => { const m = e.data; if (!m || !m.k) return; if (m.p) seen.set(m.k, { p: m.p, t: Date.now() }); else seen.delete(m.k); sync(); };
+    const iv = setInterval(() => { if (mine) bc.postMessage({ k: NET_PKEY, p: mine }); sync(); }, 2000);
+    bc.postMessage({ k: 'hola' });
+    NETP.ch = { local: true, track: async p => { mine = p; bc.postMessage({ k: NET_PKEY, p }); sync(); }, untrack: async () => { mine = null; bc.postMessage({ k: NET_PKEY, p: null }); sync(); }, close: () => { clearInterval(iv); bc.close(); } };
+    setTimeout(sync, 2300);
+    return NETP.ch;
+  }
   if (NETP.opening) return NETP.opening;
   NETP.opening = (async () => {
     try {
       const client = await netClient();
       const ch = client.channel('cc-mesas', { config: { private: NET_PRIVATE, presence: { key: NET_PKEY } } });
-      ch.on('presence', { event: 'sync' }, () => {
-        try { const st = ch.presenceState(); NETP.count = Object.values(st).filter(a => a && a.some(x => x && x.code)).length; } catch (e) {}
-        const el = $('netcount'); if (el) el.textContent = netCountTxt();
-      });
+      ch.on('presence', { event: 'sync' }, () => { try { netPresenceSync(ch.presenceState()); } catch (e) {} });
       await new Promise((res, rej) => { const to = setTimeout(() => rej(new Error('timeout')), 10000); ch.subscribe(st => { if (st === 'SUBSCRIBED') { clearTimeout(to); res(); } else if (st === 'CHANNEL_ERROR' || st === 'TIMED_OUT') { clearTimeout(to); rej(new Error(st)); } }); });
       NETP.ch = ch; return ch;
     } catch (e) { return null; } finally { NETP.opening = null; }
@@ -2289,13 +2337,21 @@ async function netPresenceOpen() {
 // Quien solo mira la pantalla del online no se queda conectado al salir de ella (cada conexión cuenta para el límite)
 function netPresenceClose() {
   if (!NETP.ch || (NET && NET.role === 'host')) return;
-  const ch = NETP.ch; NETP.ch = null; NETP.count = null; NETP.tracking = false;
-  try { netOpen.client && netOpen.client.removeChannel(ch); } catch (e) {}
+  const ch = NETP.ch; NETP.ch = null; NETP.count = null; NETP.tracking = false; NETP.open = []; NETP.synced = false; NETP.last = '';
+  try { if (ch.local) ch.close(); else netOpen.client && netOpen.client.removeChannel(ch); } catch (e) {}
 }
 async function netPresenceWatch() { const ch = await netPresenceOpen(); if (ch && NET && NET.role === 'host') netPresenceTrack(true); }
 async function netPresenceTrack(on) {
   const ch = on ? await netPresenceOpen() : NETP.ch; if (!ch) return;
-  try { if (on && NET && NET.role === 'host') { await ch.track({ code: NET.code, mode: NET.mode }); NETP.tracking = true; } else if (!on && NETP.tracking) { await ch.untrack(); NETP.tracking = false; } } catch (e) {}
+  try {
+    if (on && NET && NET.role === 'host') {
+      // lo que se anuncia: si la mesa está abierta, también quién la abre y cuántos sitios quedan para personas
+      const p = { code: NET.code, mode: NET.mode, started: !!NET.started };
+      if (NET.open) Object.assign(p, { open: true, host: NET.name, free: NET.seats.filter(x => x.kind === 'free').length, people: NET.seats.filter(x => x.kind === 'host' || x.kind === 'human').length });
+      const k = JSON.stringify(p); if (k === NETP.last && NETP.tracking) return;
+      NETP.last = k; await ch.track(p); NETP.tracking = true;
+    } else if (!on && NETP.tracking) { await ch.untrack(); NETP.tracking = false; NETP.last = ''; }
+  } catch (e) {}
 }
 const netCode = () => Array.from(crypto.getRandomValues(new Uint32Array(6)), v => 'ABCDEFGHJKLMNPQRSTUVWXYZ'[v % 24]).join('');   // 6 letras: unos 190 millones de códigos
 // Seguridad del online: el canal común de la sala solo sirve para saludar. Cada invitado y el anfitrión acuerdan una clave secreta
@@ -2441,6 +2497,8 @@ function showOnline(err) {
   showPanel(`<h2>Online</h2>
   <p>${L('Coto, Cau o CotoCau con amigos, cada uno desde su móvil. Uno crea la sala (el anfitrión) y los demás se unen con el código.', 'Coto, Cau o CotoCau amb amics, cadascú des del seu mòbil. Un crea la sala (l\'amfitrió) i els altres s\'hi uneixen amb el codi.')}</p>
   <div class="opt"><label>${L('Tu nombre', 'El teu nom')}</label><input id="netname" class="netin" maxlength="14" value="${nm}" placeholder="${L('Por ejemplo, Pepe', 'Per exemple, Pepe')}"></div>
+  <div class="opt"><button class="btn primary netquick" type="button" data-act="net-quick">⚡ ${L('Partida rápida', 'Partida ràpida')}</button><p class="desc" style="margin:2px 0 0">${L('Te sienta en una mesa abierta con sitio libre. Si no hay ninguna, abre una y esperas allí (puedes empezar con bots cuando quieras).', 'Et seu en una taula oberta amb lloc lliure. Si no n\'hi ha cap, n\'obri una i esperes allí (pots començar amb bots quan vulgues).')}</p></div>
+  <div class="opt"><label>${L('Mesas abiertas', 'Taules obertes')}</label><div class="netopen" id="netopen">${netOpenListHTML()}</div></div>
   <div class="opt"><label>${L('Crear sala para jugar', 'Crear sala per a jugar')}</label><div class="netmodes">${NETMODES().map(([k, l]) => `<button class="btn primary" type="button" data-act="net-host" data-mode="${k}">${l}</button>`).join('')}</div></div>
   <div class="opt"><label>${L('Unirme a una sala', 'Unir-me a una sala')}</label><div class="devlock"><input id="netcode" class="netin" maxlength="6" autocapitalize="characters" placeholder="${L('Código', 'Codi')}" style="text-transform:uppercase;letter-spacing:.2em"><button class="btn" type="button" data-act="net-join">${L('Unirme', 'Unir-me')}</button></div></div>
   ${err ? `<p class="pwerr">${err}</p>` : ''}
@@ -2450,15 +2508,26 @@ function showOnline(err) {
   netPresenceWatch();
 }
 const netWarnHost = () => `<div class="netwarn">⚠️ ${L('<b>Eres el anfitrión:</b> la partida se juega en tu móvil. Durante la partida <b>no minimices la app ni te salgas</b>, ni dejes que se bloquee la pantalla: la partida se pararía para todos hasta que vuelvas.', '<b>Eres l\'amfitrió:</b> la partida es juga en el teu mòbil. Durant la partida <b>no minimitzes l\'app ni n\'isques</b>, ni deixes que es bloquege la pantalla: la partida es pararia per a tots fins que tornes.')}</div>`;
-const NETMODES = () => [['coto3', L('Coto a 3', 'Coto a 3')], ['coto5', L('Coto a 5', 'Coto a 5')], ['cau', 'Cau'], ['cotocau', 'CotoCau']];
+const NETMODES = () => [['cotocau', 'CotoCau'], ['cau', 'Cau'], ['coto3', L('Coto a 3', 'Coto a 3')], ['coto5', L('Coto a 5', 'Coto a 5')]];   // CotoCau primero, Cau al lado y debajo los dos de Coto
 const netModeName = m => (NETMODES().find(x => x[0] === m) || [0, 'Coto'])[1];
 const NET_MAX_TABLES = 50;
+// logo de WhatsApp (no hay emoji de WhatsApp): bocadillo verde con el teléfono
+const WA_ICON = '<svg class="wa" viewBox="0 0 32 32" aria-hidden="true"><path fill="#fff" d="M16 2.2A13.8 13.8 0 0 0 4.1 22.9L2.3 29.7l7-1.8A13.8 13.8 0 1 0 16 2.2z"/><path fill="#25D366" d="M16 4.5a11.5 11.5 0 0 0-9.8 17.6l.3.4-1.1 4 4.1-1.1.4.2A11.5 11.5 0 1 0 16 4.5z"/><path fill="#fff" d="M12.3 9.6c-.3-.6-.5-.6-.8-.6h-.7c-.2 0-.6.1-1 .5s-1.3 1.2-1.3 3 1.3 3.5 1.5 3.7c.2.2 2.5 4 6.2 5.5 3.1 1.2 3.7 1 4.4.9.7-.1 2.2-.9 2.5-1.7.3-.9.3-1.6.2-1.7-.1-.2-.3-.2-.7-.4l-2.4-1.2c-.3-.1-.6-.2-.8.2l-1.1 1.4c-.2.2-.4.3-.7.1-.4-.2-1.5-.6-2.9-1.8-1.1-1-1.8-2.1-2-2.5-.2-.4 0-.5.2-.7l.5-.6c.2-.2.2-.4.4-.6.1-.2.1-.5 0-.6l-1.5-3.4z"/></svg>';
 // Invitación por enlace: «…/cau/?sala=ABCD» abre la app directamente en esa sala (quien recibe el enlace no necesita la contraseña)
 let netLink = null, netLinkOk = false;
 (() => { try {
   const u = new URL(location.href), c = (u.searchParams.get('sala') || '').toUpperCase();
   if (/^[A-Z]{4,6}$/.test(c)) { netLink = c; u.searchParams.delete('sala'); history.replaceState(null, '', u.pathname + u.search + u.hash); }
 } catch (e) {} })();
+// Partida rápida: la mesa abierta con más gente y sitio libre; si no hay, se abre una (CotoCau) y se espera allí.
+async function netQuick(name) {
+  showPanel(`<h2>${L('Buscando mesa…', 'Buscant taula…')}</h2>`); cover();
+  const ch = await netPresenceOpen();
+  for (let i = 0; ch && !NETP.synced && i < 15; i++) await sleep(200);
+  const t = NETP.open[0];
+  if (t) return netJoin(t.code, name, true);
+  netHost(name, 'cotocau', true);
+}
 function showInvite(code) {
   netLinkOk = true;
   showPanel(`<h2>${L('Te han invitado a jugar', 'T\'han convidat a jugar')}</h2><p style="text-align:center;margin:0">${L('Sala', 'Sala')}</p><div class="netcode">${code}</div>
@@ -2476,12 +2545,12 @@ async function netInvite() {
   if (navigator.share) { try { await navigator.share({ title: 'CotoCau', text: txt, url }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
   window.open('https://wa.me/?text=' + encodeURIComponent(txt + ' ' + url), '_blank');
 }
-async function netHost(name, mode) {
+async function netHost(name, mode, open) {
   name = cleanName(name) || L('Anfitrión', 'Amfitrió');
   mode = NETMODES().some(x => x[0] === mode) ? mode : 'coto5';
   if (NETP.count != null && NETP.count >= NET_MAX_TABLES) return showOnline(L(`Ahora mismo están todas las mesas en uso (${NET_MAX_TABLES}/${NET_MAX_TABLES}). Prueba en un rato.`, `Ara mateix estan totes les taules en ús (${NET_MAX_TABLES}/${NET_MAX_TABLES}). Prova-ho d'ací a una estona.`));
   if (name !== SETTINGS.alias && !SETTINGS.alias) { SETTINGS.alias = name; saveSettings(); }
-  NET = { role: 'host', code: netCode(), name, mode, best: mode === 'coto3' ? 3 : mode === 'coto5' ? 5 : (SETTINGS.cotoBest || 5), started: false, priv: {}, seats: [{ kind: 'host', name }, { kind: 'free' }, { kind: 'free' }, { kind: 'free' }] };
+  NET = { role: 'host', code: netCode(), name, mode, open: !!open, best: mode === 'coto3' ? 3 : mode === 'coto5' ? 5 : (SETTINGS.cotoBest || 5), started: false, priv: {}, seats: [{ kind: 'host', name }, { kind: 'free' }, { kind: 'free' }, { kind: 'free' }] };
   showPanel(`<h2>${L('Creando sala…', 'Creant sala…')}</h2>`); cover();
   try { NET.keys = await netKeys(false); NET.pub = await netOpen('cc-' + NET.code, netHostPub); }
   catch (e) { NET = null; return showOnline(L('No se ha podido conectar. Comprueba la conexión a internet.', 'No s\'ha pogut connectar. Comprova la connexió a internet.') + ' (' + esc(e.message) + ')'); }
@@ -2489,25 +2558,34 @@ async function netHost(name, mode) {
   netPresenceTrack(true);
   netLobby();
 }
+// Mesa dibujada de la sala: sitio 0 abajo (anfitrión), 1 a la derecha, 2 enfrente (su compañero), 3 a la izquierda.
+// c[p] = { kind: 'host'|'human'|'bot'|'free', name, sub, ctrl, me }. Borde dorado = pareja del anfitrión, rojizo = la otra.
+function netTableHTML(c, center) {
+  const seat = p => { const x = c[p], av = x.kind === 'bot' ? '🤖' : x.kind === 'free' ? '👤' : esc((x.name || '?').slice(0, 1).toUpperCase());
+    return `<div class="nt-s nt-p${p}${x.me ? ' me' : ''}"><div class="av${p % 2 ? '' : ' us'}${x.kind === 'free' ? ' free' : ''}${x.live ? ' live' : ''}">${av}</div><div class="nt-nm">${x.name ? esc(x.name) : L('Libre', 'Lliure')}</div>${x.sub ? `<div class="nt-sub">${x.sub}</div>` : ''}${x.ctrl || ''}</div>`; };
+  return `<div class="nt">${[2, 3, 1, 0].map(seat).join('')}<div class="nt-felt">${center}</div></div>`;
+}
 function netLobby() {
   if (!NET || NET.started) return;
-  const rows = [1, 2, 3].map(p => {
-    const st = NET.seats[p];
-    const who = st.kind === 'human' ? `<small>👤 ${esc(st.name)}${st.online ? '' : ' · ' + L('desconectado', 'desconnectat')}</small>` : st.kind === 'free' ? `<small>${L('Esperando a una persona…', 'Esperant una persona…')}</small>` : `<small>🤖 Bot · ${esc(NAMES[p])}</small>`;
-    // persona sentada: se puede sacar; sitio libre o bot: selector «Persona | Bot» que muestra lo elegido
-    const btn = st.kind === 'human' ? `<button class="btn" type="button" data-act="net-kick" data-seat="${p}">${L('Sacar', 'Traure')}</button>`
-      : `<div class="seatsw"><button class="btn ${st.kind === 'free' ? 'primary' : ''}" type="button" data-act="net-seat" data-seat="${p}" data-kind="free">👤 ${L('Persona', 'Persona')}</button><button class="btn ${st.kind === 'bot' ? 'primary' : ''}" type="button" data-act="net-seat" data-seat="${p}" data-kind="bot">🤖 Bot</button></div>`;
-    return `<div class="netseat"><div><b>${seatName(p)}</b>${who}</div>${btn}</div>`;
-  }).join('');
+  // persona sentada: se puede sacar; sitio libre o bot: selector «Persona | Bot» que muestra lo elegido
+  const cells = NET.seats.map((st, p) => {
+    if (p === 0) return { kind: 'host', name: st.name, sub: L('Tú · anfitrión', 'Tu · amfitrió'), me: true, live: true };
+    if (st.kind === 'human') return { kind: 'human', name: st.name, live: st.online, sub: st.online ? '' : L('desconectado', 'desconnectat'), ctrl: `<button class="btn" type="button" data-act="net-kick" data-seat="${p}">${L('Sacar', 'Traure')}</button>` };
+    const sw = `<div class="seatsw"><button class="btn ${st.kind === 'free' ? 'primary' : ''}" type="button" data-act="net-seat" data-seat="${p}" data-kind="free">👤 ${L('Persona', 'Persona')}</button><button class="btn ${st.kind === 'bot' ? 'primary' : ''}" type="button" data-act="net-seat" data-seat="${p}" data-kind="bot">🤖 Bot</button></div>`;
+    return st.kind === 'bot' ? { kind: 'bot', name: NAMES[p], ctrl: sw } : { kind: 'free', name: '', sub: L('esperando…', 'esperant…'), ctrl: sw };
+  });
+  const rows = netTableHTML(cells, netModeName(NET.mode));
   const waiting = NET.seats.some(x => x.kind === 'free');
   const modes = NETMODES().map(([k, l]) => `<button class="btn ${k === NET.mode ? 'primary' : ''}" type="button" data-act="net-mode" data-mode="${k}">${l}</button>`).join('');
   showPanel(`<h2>${L('Sala', 'Sala')} · ${netModeName(NET.mode)}</h2><div class="netcode">${NET.code}</div>
-  <button class="btn primary netinvite" type="button" data-act="net-invite">📲 ${L('Invitar por WhatsApp…', 'Convidar per WhatsApp…')}</button>
+  <button class="btn primary netinvite" type="button" data-act="net-invite">${WA_ICON}${L('Invitar por WhatsApp', 'Convidar per WhatsApp')}</button>
   <p class="desc" style="text-align:center;margin:0">${L('Les llega un enlace que abre la app en esta sala. También pueden entrar en Online con el código.', 'Els arriba un enllaç que obri l\'app en esta sala. També poden entrar en Online amb el codi.')}</p>
-  <div class="netseats">${rows}</div>
-  <div class="opt"><label>${L('Se juega', 'Es juga')}</label><div class="netmodes">${modes}</div></div>${netWarnHost()}
+  ${rows}
+  <div class="opt"><label>${L('Se juega', 'Es juga')}</label><div class="netmodes">${modes}</div></div>
+  <div class="opt"><label>${L('¿Quién puede entrar?', 'Qui pot entrar?')}</label><div class="netmodes"><button class="btn ${NET.open ? '' : 'primary'}" type="button" data-act="net-open" data-on="0">🔒 ${L('Con invitación', 'Amb invitació')}</button><button class="btn ${NET.open ? 'primary' : ''}" type="button" data-act="net-open" data-on="1">🌐 ${L('Mesa abierta', 'Taula oberta')}</button></div><p class="desc" style="margin:2px 0 0">${NET.open ? L('Sale en «Mesas abiertas» y puede entrar cualquiera que tenga la app.', 'Ix en «Taules obertes» i hi pot entrar qualsevol que tinga l\'app.') : L('Solo entra quien tenga el enlace o el código.', 'Només hi entra qui tinga l\'enllaç o el codi.')}</p></div>${netWarnHost()}
   <div class="acts"><button class="btn" type="button" data-act="net-leave">${L('Cerrar sala', 'Tancar sala')}</button><button class="btn primary" type="button" data-act="net-start">${waiting ? L('Empezar (con bots en los libres)', 'Començar (amb bots en els lliures)') : L('Empezar', 'Començar')}</button></div>`);
   cover();
+  netPresenceTrack(true);
   const seats = NET.seats.map((x, p) => ({ kind: x.kind, name: x.kind === 'human' || x.kind === 'host' ? x.name : NAMES[p] }));
   for (const [id, ch] of Object.entries(NET.priv)) { try { ch.send({ t: 'lobby', host: NET.name, mode: NET.mode, seats, me: NET.seats.findIndex(x => x.kind === 'human' && x.id === id) }); } catch (e) {} }
 }
@@ -2638,7 +2716,7 @@ function netStart() {
   else if (md === 'cotocau') { APP.mode = 'cotocau'; APP.M = { stage: 'coto', cur: 'coto', res: {} }; }
   else { APP.mode = 'coto'; APP.M = null; }
   NET.hpanel = null;
-  netSend({ t: 'start' });
+  netSend({ t: 'start' }); netPresenceTrack(true);
   if (first) showPanel(`<h2>${L('¡Empieza la partida!', 'Comença la partida!')}</h2>${netWarnHost()}<div class="acts"><button class="btn primary" type="button" data-act="net-stay">${L('Entendido', 'Entesos')}</button></div>`);
   else closePanel();
   if (md === 'cau') { S = newGame(); S.feed = []; narr = L(`Mano 1. Reparte ${NAMES[S.dealer]}.`, `Mà 1. Reparteix ${NAMES[S.dealer]}.`); beginHand(); }
@@ -2698,11 +2776,11 @@ function netView(g) {
     ui: { dv: coDealView ? { n: [0, 1, 2, 3].map(v => coDealView.n[(v + g) % 4]), stock: coDealView.stock } : null, showLast: coShowLast, reveal: coReveal, pend: coPend, hide: [...coHide], busy: busy || !!coFx }
   };
 }
-async function netJoin(code, name) {
+async function netJoin(code, name, autoSit) {
   name = cleanName(name) || L('Jugador', 'Jugador');
   if (!/^[A-Z]{4,6}$/.test(code)) return showOnline(L('El código son 6 letras.', 'El codi són 6 lletres.'));
   if (!SETTINGS.alias) { SETTINGS.alias = name; saveSettings(); }
-  NET = { role: 'guest', code, name, lastHost: Date.now(), seats: null, priv: null };
+  NET = { role: 'guest', code, name, lastHost: Date.now(), seats: null, priv: null, autoSit: !!autoSit };
   showPanel(`<h2>${L('Conectando…', 'Connectant…')}</h2>`); cover();
   try { NET.keys = await netKeys(true); NET.id = await netIdOf(NET.keys.raw); NET.pub = await netOpen('cc-' + code, netGuestPub); }
   catch (e) { NET = null; return showOnline(L('No se ha podido conectar. Comprueba la conexión a internet.', 'No s\'ha pogut connectar. Comprova la connexió a internet.') + ' (' + esc(e.message) + ')'); }
@@ -2733,12 +2811,15 @@ function netGuestMsg(m) {
     m.host = cleanName(m.host) || L('Anfitrión', 'Amfitrió'); m.seats = (Array.isArray(m.seats) ? m.seats : []).slice(0, 4).map(x => ({ kind: x && x.kind, name: cleanName(x && x.name) }));
     NET.seats = m.seats; NET.host = m.host;
     const mine = typeof m.me === 'number' ? m.me : -1;
-    const rows = [1, 2, 3].map(p => { const x = m.seats[p]; const lbl = [null, L(`Rival de ${esc(m.host)} (derecha)`, `Rival de ${esc(m.host)} (dreta)`), L(`Compañero de ${esc(m.host)}`, `Company de ${esc(m.host)}`), L(`Rival de ${esc(m.host)} (izquierda)`, `Rival de ${esc(m.host)} (esquerra)`)][p];
-      const who = x.kind === 'free' ? `<button class="btn ${mine > 0 ? '' : 'primary'}" type="button" data-act="net-sit" data-seat="${p}">${mine > 0 ? L('Cambiarme aquí', 'Canviar-me ací') : L('Sentarme aquí', 'Seure ací')}</button>`
-        : p === mine ? `<small class="netme">👤 ${L('Tú', 'Tu')} (${esc(x.name)})</small>` : `<small>${x.kind === 'bot' ? '🤖 Bot' : '👤 ' + esc(x.name)}</small>`;
-      return `<div class="netseat${p === mine ? ' me' : ''}"><div><b>${lbl}</b></div>${who}</div>`; }).join('');
+    if (NET.autoSit && mine < 0) { const f = [1, 2, 3].find(p => m.seats[p] && m.seats[p].kind === 'free'); NET.autoSit = false; if (f) netSend({ t: 'sit', id: NET.id, name: NET.name, seat: f }); }
+    const cells = [0, 1, 2, 3].map(p => { const x = m.seats[p] || { kind: 'free' };
+      if (p === 0) return { kind: 'host', name: m.host, sub: L('anfitrión', 'amfitrió') };
+      if (x.kind === 'free') return { kind: 'free', name: '', ctrl: `<button class="btn ${mine > 0 ? '' : 'primary'}" type="button" data-act="net-sit" data-seat="${p}">${mine > 0 ? L('Cambiarme', 'Canviar-me') : L('Sentarme', 'Seure')}</button>` };
+      if (p === mine) return { kind: 'human', name: x.name, sub: L('Tú', 'Tu'), me: true };
+      return { kind: x.kind === 'bot' ? 'bot' : 'human', name: x.name }; });
+    const rows = netTableHTML(cells, netModeName(m.mode));
     const msg = mine > 0 ? L(`Ya estás sentado. Espera a que <b>${esc(m.host)}</b> empiece la partida.`, `Ja estàs assegut. Espera que <b>${esc(m.host)}</b> comence la partida.`) : L(`Elige sitio y espera a que <b>${esc(m.host)}</b> empiece la partida.`, `Tria lloc i espera que <b>${esc(m.host)}</b> comence la partida.`);
-    showPanel(`<h2>${L('Sala', 'Sala')} ${NET.code} · ${netModeName(m.mode)}</h2><p>${L(`Anfitrión: <b>${esc(m.host)}</b>. Se juega: <b>${netModeName(m.mode)}</b>.`, `Amfitrió: <b>${esc(m.host)}</b>. Es juga: <b>${netModeName(m.mode)}</b>.`)}</p><div class="netseats">${rows}</div><p class="desc" style="text-align:center">${msg}</p><div class="acts"><button class="btn" type="button" data-act="net-leave">${L('Salir', 'Eixir')}</button></div>`); cover();
+    showPanel(`<h2>${L('Sala', 'Sala')} ${NET.code} · ${netModeName(m.mode)}</h2><p>${L(`Anfitrión: <b>${esc(m.host)}</b>. Se juega: <b>${netModeName(m.mode)}</b>.`, `Amfitrió: <b>${esc(m.host)}</b>. Es juga: <b>${netModeName(m.mode)}</b>.`)}</p>${rows}<p class="desc" style="text-align:center">${msg}</p><div class="acts"><button class="btn" type="button" data-act="net-leave">${L('Salir', 'Eixir')}</button></div>`); cover();
     return;
   }
   if (m.t === 'start') { NET.started = true; return; }
@@ -2807,6 +2888,16 @@ function netLeave(quiet) {
 document.addEventListener('visibilitychange', () => { if (!document.hidden && NET && NET.role === 'host') { netSend({ t: 'ping' }); netSchedule(); if (NET.started && !busy) loop(); } });
 
 
+/* ---------------- Partidas guiadas: pausas ---------------- */
+// La explicación se queda quieta hasta que se pulsa «Seguir»: mientras tanto no juega nadie.
+function tutPause(html) {
+  if (!TUTG || !html) return Promise.resolve();
+  const gen = GEN;
+  return new Promise(res => { TUTG.pause = { html, res, gen }; render(); });
+}
+const tutPauseHTML = () => `${TUTG.pause.html}<div class="coach-go"><button class="btn primary" type="button" data-tut="go">${L('Seguir', 'Continuar')}</button></div>`;
+function tutGo() { const p = TUTG && TUTG.pause; if (!p) return; TUTG.pause = null; render(); if (p.gen === GEN) p.res(); }
+
 /* ---------------- Partida guiada (Cau) ---------------- */
 // reparte Vicent, sales tú. Primer reparto preparado: escala, bac, rebac, Sant Vicent y limpia; en el segundo tienes pareja (de nit)
 const TUTC_R1 = { table: [4, 15, 26, 39], hands: [[34, 31, 19], [21, 29, 22], [11, 5, 13], [1, 6, 12]], plays: [34, 21, 11, 1, 31, 29, 5, 6, 19, 22, 13, 12] };
@@ -2836,25 +2927,43 @@ function startGuidedCau() {
   narr = '';
   beginHand();
 }
+function tutCauIntro(stage) {
+  const N = NAMES;
+  if (stage === 0) return [
+    L(`<b>Partida guiada de Cau.</b> Juegan cuatro, en dos parejas: tú abajo y tu pareja, <b>${N[2]}</b>, enfrente. Los rivales, <b>${N[1]}</b> a tu derecha y <b>${N[3]}</b> a tu izquierda. Se juega <b>hacia la derecha</b>.`, `<b>Partida guiada de Cau.</b> Juguen quatre, en dues parelles: tu baix i la teua parella, <b>${N[2]}</b>, davant. Els rivals, <b>${N[1]}</b> a la teua dreta i <b>${N[3]}</b> a la teua esquerra. Es juga <b>cap a la dreta</b>.`),
+    L(`Reparte ${N[3]}: pone <b>4 cartas boca arriba en la mesa</b> y da <b>3 a cada uno</b>. En el Cau <b>solo cuenta el número</b>, nunca el palo.`, `Reparteix ${N[3]}: posa <b>4 cartes cap per amunt al tapet</b> i dona <b>3 a cadascú</b>. En el Cau <b>només compta el número</b>, mai el pal.`)
+  ];
+  return [L('Si tu carta tiene el <b>mismo número</b> que una de la mesa, te la llevas, y también las <b>siguientes en escala</b> que haya. Si no capturas nada, tu carta se queda en la mesa.', 'Si la teua carta té el <b>mateix número</b> que una del tapet, te l\'endús, i també les <b>següents en escala</b> que hi haja. Si no arreplegues res, la teua carta es queda al tapet.')];
+}
+// lo que acaba de pasar en la jugada d (1–12) del primer reparto
+function tutCauAfter(d) {
+  const N = NAMES, stay = q => L(`${N[q]} no puede capturar nada: su carta se queda en la mesa.`, `${N[q]} no pot arreplegar res: la seua carta es queda al tapet.`);
+  return [null,
+    L('¡<b>Escala</b>! Con tu 5 has capturado el 5 de la mesa y, como seguían el 6 y el 7, te los has llevado también.', '<b>Escala</b>! Amb el teu 5 has arreplegat el 5 del tapet i, com que continuaven el 6 i el 7, també te\'ls has endut.'),
+    stay(1),
+    L(`¡<b>Bac</b> de ${N[2]}! Ha matado la carta que <b>acababa de dejar</b> ${N[1]}: 2 puntos para vosotros.`, `<b>Bac</b> de ${N[2]}! Ha matat la carta que <b>acabava de deixar</b> ${N[1]}: 2 punts per a vosaltres.`),
+    L(`¡<b>Rebac</b>! ${N[3]} mata el bac con otro 2: 3 puntos para ellos, y el bac de ${N[2]} pierde sus 2.`, `<b>Rebac</b>! ${N[3]} mata el bac amb un altre 2: 3 punts per a ells, i el bac de ${N[2]} perd els seus 2.`),
+    L('¡<b>Sant Vicent</b>! La cuarta carta mata el rebac: 5 puntos para vosotros, el rebac pierde sus 3 y os lleváis los cuatro doses.', '<b>Sant Vicent</b>! La quarta carta mata el rebac: 5 punts per a vosaltres, el rebac perd els seus 3 i us emporteu els quatre dosos.'),
+    L(`${N[1]} se lleva el rey que quedaba y deja la mesa vacía: eso es una <b>limpia</b>, 1 punto.`, `${N[1]} s'emporta el rei que quedava i deixa el tapet buit: això és una <b>limpia</b>, 1 punt.`),
+    stay(2), stay(3),
+    L('Tu rey se queda en la mesa.', 'El teu rei es queda al tapet.'),
+    stay(1), stay(2),
+    L(`${N[3]} captura un 3 y, como hay un 4 en la mesa, se lo lleva también: otra <b>escala</b>. Se acaba el primer reparto.`, `${N[3]} arreplega un 3 i, com que hi ha un 4 al tapet, també se l'emporta: una altra <b>escala</b>. S'acaba el primer repartiment.`)
+  ][d] || null;
+}
 function tutCauCoach() {
-  const N = NAMES, me = S.turn === 0 && S.phase === 'play' && !busy;
-  if (dealView && S.round > 1) return L('Nuevo reparto: 3 cartas más a cada uno. La mesa sigue como estaba.', 'Nou repartiment: 3 cartes més a cadascú. El tapet continua com estava.');
-  if (dealView) return L('<b>Partida guiada de Cau.</b> Reparte Vicent: 4 cartas a la mesa y 3 a cada uno. Aquí solo cuenta el número, no el palo.', '<b>Partida guiada de Cau.</b> Reparteix Vicent: 4 cartes al tapet i 3 a cadascú. Ací només compta el número, no el pal.').replace('Vicent', N[3]);
+  const me = S.turn === 0 && S.phase === 'play' && !busy;
+  if (dealView) return L('Repartiendo…', 'Repartint…');
   if (S.round === 1) {
     const done = 12 - S.hands.reduce((a, h) => a + h.length, 0);
     if (done === 0) return L('En la mesa hay un <b>5</b>, un 6 y un 7. Con tu <b>5 de bastos</b> capturas el 5 y, como siguen el 6 y el 7, te los llevas también: es una <b>escala</b>. ¡Juégalo!', 'Al tapet hi ha un <b>5</b>, un 6 i un 7. Amb el teu <b>5 de bastos</b> arrepleges el 5 i, com que continuen el 6 i el 7, també te\'ls endús: és una <b>escala</b>. Juga\'l!');
-    if (done === 1) return L(`${N[1]} no puede capturar nada: su carta se queda en la mesa.`, `${N[1]} no pot arreplegar res: la seua carta es queda al tapet.`);
-    if (done === 2) return L(`Fíjate: ${N[2]} va a matar la carta que <b>acaba de dejar</b> ${N[1]}. Eso es un <b>bac</b>: 2 puntos.`, `Fixa't: ${N[2]} matarà la carta que <b>acaba de deixar</b> ${N[1]}. Això és un <b>bac</b>: 2 punts.`);
-    if (done === 3) return L(`¡Bac de ${N[2]}! Ahora ${N[3]} mata el bac con otro 2: es un <b>rebac</b>, 3 puntos, y el bac pierde los suyos.`, `Bac de ${N[2]}! Ara ${N[3]} mata el bac amb un altre 2: és un <b>rebac</b>, 3 punts, i el bac perd els seus.`);
-    if (done === 4) return L('Tienes el <b>último 2</b>. Si lo echas haces <b>Sant Vicent</b>: 5 puntos para vosotros, el rebac pierde sus 3 y os lleváis los cuatro doses. ¡Échalo!', 'Tens l\'<b>últim 2</b>. Si el tires fas <b>Sant Vicent</b>: 5 punts per a vosaltres, el rebac perd els seus 3 i us emporteu els quatre dosos. Tira\'l!');
-    if (done === 5) return L(`¡Sant Vicent! Ahora ${N[1]} se lleva el rey que quedaba y deja la mesa vacía: eso es una <b>limpia</b>, 1 punto.`, `Sant Vicent! Ara ${N[1]} s'emporta el rei que quedava i deixa el tapet buit: això és una <b>limpia</b>, 1 punt.`);
-    if (done === 8) return L('No puedes capturar nada: juega el <b>rey de copas</b> y se quedará en la mesa.', 'No pots arreplegar res: juga el <b>rei de copes</b> i es quedarà al tapet.');
-    if (done >= 9) return L(`Mira ${N[3]}: captura un 3 y, como hay un 4 en la mesa, se lo lleva también (escala).`, `Mira ${N[3]}: arreplega un 3 i, com que hi ha un 4 al tapet, també se l'emporta (escala).`);
-    return L('Los demás juegan… Cuando alguien no captura, su carta se queda en la mesa.', 'Els altres juguen… Quan algú no arreplega, la seua carta es queda al tapet.');
+    if (done === 4 && me) return L('Tienes el <b>último 2</b>. Si lo echas haces <b>Sant Vicent</b>: 5 puntos para vosotros, el rebac pierde sus 3 y os lleváis los cuatro doses. ¡Échalo!', 'Tens l\'<b>últim 2</b>. Si el tires fas <b>Sant Vicent</b>: 5 punts per a vosaltres, el rebac perd els seus 3 i us emporteu els quatre dosos. Tira\'l!');
+    if (done === 8 && me) return L('No puedes capturar nada: juega el <b>rey de copas</b> y se quedará en la mesa.', 'No pots arreplegar res: juga el <b>rei de copes</b> i es quedarà al tapet.');
+    return L('Juegan los demás…', 'Juguen els altres…');
   }
-  if (S.round === 2 && canFirst(S, 0)) return L('Segundo reparto. ¡Tienes <b>pareja de caballos</b>! Antes de jugar, pulsa <b>Cantar de nit</b>: si nadie más canta, os apuntáis un punto.', 'Segon repartiment. Tens <b>parella de cavalls</b>! Abans de jugar, prem <b>Cantar de nit</b>: si ningú més canta, us apunteu un punt.');
+  if (S.round === 2 && canFirst(S, 0)) return L('¡Tienes <b>pareja de caballos</b>! Antes de jugar, pulsa <b>Cantar de nit</b>: si nadie más canta, os apuntáis un punto.', 'Tens <b>parella de cavalls</b>! Abans de jugar, prem <b>Cantar de nit</b>: si ningú més canta, us apunteu un punt.');
   if (S.round === 2) return L('Ahora juega tú solo. Busca capturar, y sobre todo fíjate en la carta que deja el rival de tu izquierda: si tienes una igual, ¡bac!', 'Ara juga tu sol. Busca arreplegar, i sobretot fixa\'t en la carta que deixa el rival de la teua esquerra: si en tens una d\'igual, bac!');
-  return L('Último reparto: aquí todos los que tienen pareja cantan al principio. Al acabar, quien capturó el último se lleva lo que queda en la mesa, y cada pareja suma un punto por cada carta por encima de 20.', 'Últim repartiment: ací tots els que tenen parella canten al principi. En acabar, qui va arreplegar l\'últim s\'endú el que queda al tapet, i cada parella suma un punt per cada carta per damunt de 20.');
+  return L('Último reparto: juega tú solo.', 'Últim repartiment: juga tu sol.');
 }
 function showGuidedCauEnd() {
   showPanel(`<h2>${L('¡Ya sabes jugar al Cau!', 'Ja saps jugar al Cau!')}</h2>
@@ -2887,24 +2996,67 @@ function exitGuided() {
   else { APP.mode = 'cau'; APP.M = null; S = newGame(); S.feed = []; G = null; }
   hasSaved = savedActive(); $('coach').hidden = true;
 }
+// Textos de las pausas de la partida guiada de Coto (N = nombres: 1 Toni a la derecha, 2 Maria enfrente, 3 Vicent a la izquierda)
+function tutCotoIntro(stage) {
+  const N = NAMES;
+  if (stage === 0) return [
+    L(`<b>Partida guiada de Coto.</b> Juegan cuatro, en dos parejas. Tú estás abajo y enfrente tienes a tu pareja, <b>${N[2]}</b>. A los lados, los rivales: <b>${N[1]}</b> a tu derecha y <b>${N[3]}</b> a tu izquierda.`,
+      `<b>Partida guiada de Coto.</b> Juguen quatre, en dues parelles. Tu estàs baix i davant tens la teua parella, <b>${N[2]}</b>. Als costats, els rivals: <b>${N[1]}</b> a la teua dreta i <b>${N[3]}</b> a la teua esquerra.`),
+    L(`Se juega <b>hacia la derecha</b>: después de ti echa ${N[1]}, luego ${N[2]} y luego ${N[3]}.<br>Reparte <b>${N[3]}</b>, y empieza la mano el que está a la derecha de quien reparte: <b>tú</b>.`,
+      `Es juga <b>cap a la dreta</b>: després de tu tira ${N[1]}, després ${N[2]} i després ${N[3]}.<br>Reparteix <b>${N[3]}</b>, i comença la mà el que està a la dreta de qui reparteix: <b>tu</b>.`),
+    L('Lo que importa son los <b>puntos</b> de las cartas que gana tu pareja: as 11, tres 10, rey 4, sota 3 y caballo 2. Las demás no valen nada. Gana la pareja que llega a <b>101</b>.',
+      'El que importa són els <b>punts</b> de les cartes que guanya la teua parella: as 11, tres 10, rei 4, sota 3 i cavall 2. Les altres no valen res. Guanya la parella que arriba a <b>101</b>.')
+  ];
+  return [
+    L(`${N[3]} ha repartido <b>6 cartas</b> a cada uno. El resto queda boca abajo en el <b>montón</b>, y la carta de debajo se deja boca arriba: es la <b>pinta</b>. Aquí es el rey de oros, así que <b>pintan oros</b>.`,
+      `${N[3]} ha repartit <b>6 cartes</b> a cadascú. La resta queda cap per avall en el <b>munt</b>, i la carta de davall es deixa cap per amunt: és la <b>pinta</b>. Ací és el rei d'oros, així que <b>pinten oros</b>.`),
+    L('El palo de la pinta es el <b>triunfo</b>, y es como un <b>comodín</b>: cualquier oro, aunque sea el 2, gana a cualquier carta de otro palo, incluso a un as. Entre triunfos gana el más alto.<br>Tus triunfos se colocan a la derecha de tu mano: tienes el <b>2</b> y el <b>7 de oros</b>.',
+      'El pal de la pinta és el <b>triomf</b>, i és com un <b>comodí</b>: qualsevol oro, encara que siga el 2, guanya a qualsevol carta d\'un altre pal, fins i tot a un as. Entre triomfs guanya el més alt.<br>Els teus triomfs es col·loquen a la dreta de la teua mà: tens el <b>2</b> i el <b>7 d\'oros</b>.')
+  ];
+}
+function tutCotoCard(k, p, c) {
+  const N = NAMES;
+  if (k === 0 && p === 1) return L(`${N[1]} echa el <b>6 de copas</b>. Ha salido copas, así que gana la carta más alta de copas… salvo que alguien eche un triunfo (un oro).`, `${N[1]} tira el <b>6 de copes</b>. Ha eixit copes, així que guanya la carta més alta de copes… llevat que algú tire un triomf (un oro).`);
+  if (k === 0 && p === 2) return L(`Tu pareja, ${N[2]}, echa el <b>3 de copas</b>: después del as es la carta más fuerte, y vale 10 puntos. De momento la baza es vuestra.`, `La teua parella, ${N[2]}, tira el <b>3 de copes</b>: després de l'as és la carta més forta, i val 10 punts. De moment la basa és vostra.`);
+  if (k === 1 && p === 2) return L(`${N[2]} sale con el <b>5 de bastos</b>. Ahora el palo de esta baza es bastos.`, `${N[2]} ix amb el <b>5 de bastos</b>. Ara el pal d'esta basa és bastos.`);
+  if (k === 2 && p === 1) return L(`${N[1]} mata con el <b>as de copas</b>, la carta más fuerte de copas (11 puntos).`, `${N[1]} mata amb l'<b>as de copes</b>, la carta més forta de copes (11 punts).`);
+  if (k === 2 && p === 2) return L(`${N[2]} no puede ganar al as y echa una carta que no vale nada, el <b>5 de copas</b>: así no le regala puntos al rival.`, `${N[2]} no pot guanyar l'as i tira una carta que no val res, el <b>5 de copes</b>: així no li regala punts al rival.`);
+  return L(`${N[p]} echa ${cardName(c)}.`, `${N[p]} tira ${cardName(c)}.`);
+}
+function tutCotoTrick(k, p, c, r) {
+  const N = NAMES, w = r.winner, us = w % 2 === 0;
+  const tot = L(`${r.pts} puntos para ${us ? 'vosotros' : 'ellos'}`, `${r.pts} punts per a ${us ? 'vosaltres' : 'ells'}`) + (r.last ? L(' (con las 10 de últimas)', " (amb les 10 d'últimes)") : '');
+  if (k === 0) return L(`${N[3]} echa el 2 de copas. La baza es de <b>${N[2]}</b>: su 3 es la carta más alta del palo que ha salido. Se lleva las cuatro cartas: <b>${tot}</b>.`, `${N[3]} tira el 2 de copes. La basa és de <b>${N[2]}</b>: el seu 3 és la carta més alta del pal que ha eixit. S'endú les quatre cartes: <b>${tot}</b>.`);
+  if (k === 1) return L(`${N[1]} echa el 4 de bastos. ¡La baza es <b>tuya</b>! Tu 2 de oros es triunfo y gana al as de bastos, aunque valga mucho menos: <b>${tot}</b>.`, `${N[1]} tira el 4 de bastos. La basa és <b>teua</b>! El teu 2 d'oros és triomf i guanya l'as de bastos, encara que valga molt menys: <b>${tot}</b>.`);
+  if (k === 2) return L(`${N[3]} echa el <b>rey de copas</b>: como la baza ya era de su pareja, le <b>carga</b> puntos. Gana ${N[1]}: <b>${tot}</b>.`, `${N[3]} tira el <b>rei de copes</b>: com que la basa ja era de la seua parella, li <b>carrega</b> punts. Guanya ${N[1]}: <b>${tot}</b>.`);
+  if (k === 3) return L(`Gana ${N[2]} con el triunfo y se lleva tu 3 de espadas: <b>${tot}</b>. Cargar puntos en la baza de tu pareja es de lo mejor que se puede hacer.`, `Guanya ${N[2]} amb el triomf i s'endú el teu 3 d'espases: <b>${tot}</b>. Carregar punts en la basa de la teua parella és del millor que es pot fer.`);
+  return w === 0 ? L(`Ganas tú la baza: <b>${tot}</b>.`, `Guanyes tu la basa: <b>${tot}</b>.`) : L(`Gana ${N[w]} la baza: <b>${tot}</b>.`, `Guanya ${N[w]} la basa: <b>${tot}</b>.`);
+}
+function tutCotoDrawn(k) {
+  if (k === 0) return L('Después de cada baza todos <b>roban</b> una carta del montón, empezando por quien la ha ganado. Así cada uno sigue con 6 cartas.<br>Mientras quede montón puedes echar <b>la carta que quieras</b>: no hace falta seguir el palo.', 'Després de cada basa tots <b>roben</b> una carta del munt, començant per qui l\'ha guanyada. Així cadascú continua amb 6 cartes.<br>Mentre quede munt pots tirar <b>la carta que vulgues</b>: no cal seguir el pal.');
+  if (k === 3) return L('Se ha acabado el montón (el último en robar se lleva la pinta) y empieza el <b>arrastre</b>. Ahora cambian las normas:<br>• Hay que <b>seguir el palo</b> siempre.<br>• Si gana un rival, hay que <b>superarle</b> si se puede; si no tienes del palo, hay que <b>matar con triunfo</b>.<br>• Si gana tu pareja, basta con echar del palo.<br>Las cartas que no puedes jugar salen apagadas.', 'S\'ha acabat el munt (l\'últim que roba s\'endú la pinta) i comença l\'<b>arrossegament</b>. Ara canvien les normes:<br>• Cal <b>seguir el pal</b> sempre.<br>• Si guanya un rival, cal <b>superar-lo</b> si es pot; si no tens del pal, cal <b>matar amb triomf</b>.<br>• Si guanya la teua parella, n\'hi ha prou amb tirar del pal.<br>Les cartes que no pots jugar ixen apagades.');
+  return null;
+}
 function tutCoach() {
   if (!TUTG) return '';
+  if (TUTG.pause) return tutPauseHTML();
   TUTG.trickNo = G.trickNo;
   const N = NAMES, k = G.trickNo, t = G.trick.length, me = G.turn === 0 && G.phase === 'play' && !busy;
-  if (coDealView) return L('<b>Partida guiada.</b> Reparte Vicent: 6 cartas a cada uno. La carta que queda boca arriba bajo el montón es la <b>pinta</b>: marca el triunfo.', '<b>Partida guiada.</b> Reparteix Vicent: 6 cartes a cadascú. La carta que queda cap per amunt davall del munt és la <b>pinta</b>: marca el triomf.').replace('Vicent', N[3]);
+  if (coDealView) return L(`Reparte ${N[3]}: 6 cartas a cada uno…`, `Reparteix ${N[3]}: 6 cartes a cadascú…`);
   if (G.phase !== 'play') return L('Fin de la mano.', 'Final de la mà.');
-  if (k === 0) return me ? L(`Pintan <b>oros</b> (el rey de oros está bajo el montón). Sales tú: echa una carta baja, el <b>4 de copas</b>, para no arriesgar puntos.`, `Pinten <b>oros</b> (el rei d'oros està davall del munt). Ixes tu: tira una carta baixa, el <b>4 de copes</b>, per a no arriscar punts.`)
-    : L(`Cada uno echa una carta. Gana la más alta del palo que ha salido (copas), salvo que alguien eche triunfo. Fíjate en lo que echa ${N[2]}…`, `Cadascú tira una carta. Guanya la més alta del pal que ha eixit (copes), llevat que algú tire triomf. Fixa't en què tira ${N[2]}…`);
-  if (k === 1 && !t && (coCantesFor(G, 0).length || coCanSwap(G, 0))) return L(`¡${N[2]} ha ganado con el 3 de copas! Como tu pareja ha ganado una baza:<br>• Tienes <b>rey y sota de espadas</b>: pulsa <b>Cantar 20 en espadas</b>.<br>• Tienes el <b>7 de triunfo</b> y la pinta es el rey: pulsa <b>Cambiar el 7</b> y te quedas el rey de oros.`, `${N[2]} ha guanyat amb el 3 de copes! Com que la teua parella ha guanyat una basa:<br>• Tens <b>rei i sota d'espases</b>: prem <b>Cantar 20 en espases</b>.<br>• Tens el <b>7 de triomf</b> i la pinta és el rei: prem <b>Canviar el 7</b> i et quedes el rei d'oros.`);
-  if (k === 1) return me ? L(`${N[3]} ha echado el <b>as de bastos</b> (11 puntos). Tú no tienes bastos, pero puedes <b>fallar</b>: el <b>2 de oros</b> es triunfo y gana a cualquier carta de otro palo. ¡Échalo!`, `${N[3]} ha tirat l'<b>as de bastos</b> (11 punts). Tu no tens bastos, però pots <b>fallar</b>: el <b>2 d'oros</b> és triomf i guanya a qualsevol carta d'un altre pal. Tira'l!`)
-    : L('Después de cada baza todos roban una carta, empezando por quien la ha ganado. Sale quien ganó.', 'Després de cada basa tots roben una carta, començant per qui l\'ha guanyada. Ix qui la va guanyar.');
-  if (k === 2) return me ? L('Has ganado tú la baza anterior, así que sales tú. Echa el <b>7 de copas</b>.', 'Has guanyat tu la basa anterior, així que ixes tu. Tira el <b>7 de copes</b>.')
-    : !t ? L('Juegan los demás…', 'Juguen els altres…') : L(`${N[1]} mata con el <b>as de copas</b>. Mira lo que hace ${N[3]}: como la baza ya es de su compañero, le <b>carga</b> puntos.`, `${N[1]} mata amb l'<b>as de copes</b>. Mira què fa ${N[3]}: com que la basa ja és del seu company, li <b>carrega</b> punts.`);
-  if (k === 3) return me ? L(`Es la <b>última baza con montón</b>. ${N[2]} ha fallado con el 5 de oros y va ganando, y tú eres el último. Cuando la baza es de tu compañero, <b>cárgale</b>: echa el <b>3 de espadas</b> (10 puntos).`, `És l'<b>última basa amb munt</b>. ${N[2]} ha fallat amb el 5 d'oros i va guanyant, i tu eres l'últim. Quan la basa és del teu company, <b>carrega-li</b>: tira el <b>3 d'espases</b> (10 punts).`)
-    : L(`${N[1]} sale con el 3 de bastos (10 puntos). A ver qué hace ${N[2]}…`, `${N[1]} ix amb el 3 de bastos (10 punts). A vore què fa ${N[2]}…`);
-  if (k === 4) return me ? L(`<b>Arrastre:</b> ya no queda montón y hay que <b>seguir el palo</b> y <b>superar al rival</b> si se puede. ${N[3]} gana con el caballo de espadas: solo puedes echar el <b>rey</b> o la <b>sota de espadas</b> (las demás salen apagadas). Elige una.`, `<b>Arrossegament:</b> ja no queda munt i cal <b>seguir el pal</b> i <b>superar el rival</b> si es pot. ${N[3]} guanya amb el cavall d'espases: només pots tirar el <b>rei</b> o la <b>sota d'espases</b> (les altres ixen apagades). Tria'n una.`)
-    : L('Se acabó el montón: empieza el <b>arrastre</b>. A partir de ahora hay que seguir el palo y, si gana un rival, superarle (o fallar con triunfo si no tienes del palo).', 'S\'ha acabat el munt: comença l\'<b>arrossegament</b>. A partir d\'ara cal seguir el pal i, si guanya un rival, superar-lo (o fallar amb triomf si no tens del pal).');
-  return me ? L('Ahora sigue tú solo. Recuerda: seguir el palo, superar al rival si se puede y, si gana tu compañero, cualquier carta del palo. <b>Las 10 de últimas</b> son para quien gane la última baza.', 'Ara continua tu sol. Recorda: seguir el pal, superar el rival si es pot i, si guanya el teu company, qualsevol carta del pal. <b>Les 10 d\'últimes</b> són per a qui guanye l\'última basa.')
+  if (k === 0) return me ? L(`Sales tú. Mientras queda montón puedes echar lo que quieras. Para empezar, echa una carta baja que no vale puntos, el <b>4 de copas</b>: así no arriesgas nada.`, `Ixes tu. Mentre queda munt pots tirar el que vulgues. Per a començar, tira una carta baixa que no val punts, el <b>4 de copes</b>: així no arrisques res.`)
+    : L('Juegan los demás…', 'Juguen els altres…');
+  if (k === 1 && !t && coCantesFor(G, 0).length) return L(`Tu pareja ha ganado la baza, y justo ahora, antes de que salga la siguiente, se puede <b>cantar</b>.<br>Tienes <b>rey y sota de espadas</b>: es un cante de <b>20</b>. Si fueran de triunfo (oros) serían <b>las 40</b>. En una mano puede haber hasta tres cantes de 20 (uno por palo) y uno de 40.<br>Pulsa <b>Cantar 20 en espadas</b>.`, `La teua parella ha guanyat la basa, i just ara, abans que isca la següent, es pot <b>cantar</b>.<br>Tens <b>rei i sota d'espases</b>: és un cant de <b>20</b>. Si foren de triomf (oros) serien <b>les 40</b>. En una mà pot haver-hi fins a tres cants de 20 (un per pal) i un de 40.<br>Prem <b>Cantar 20 en espases</b>.`);
+  if (k === 1 && !t && coCanSwap(G, 0)) return L(`¡20 puntos más! Ahora el <b>7 de triunfo</b>: quien lo tiene puede cambiarlo por la pinta si es buena (figura, tres o as), también justo cuando gana su pareja.<br>Tienes el 7 de oros y la pinta es el rey de oros: pulsa <b>Cambiar el 7</b>.`, `20 punts més! Ara el <b>7 de triomf</b>: qui el té pot canviar-lo per la pinta si és bona (figura, tres o as), també just quan guanya la seua parella.<br>Tens el 7 d'oros i la pinta és el rei d'oros: prem <b>Canviar el 7</b>.`);
+  if (k === 1) return me ? L(`${N[3]} ha echado el <b>as de bastos</b> (11 puntos). Tú no tienes bastos, pero tienes triunfos: puedes <b>matar con triunfo</b>. El <b>2 de oros</b> gana a cualquier carta de otro palo. ¡Échalo!`, `${N[3]} ha tirat l'<b>as de bastos</b> (11 punts). Tu no tens bastos, però tens triomfs: pots <b>matar amb triomf</b>. El <b>2 d'oros</b> guanya a qualsevol carta d'un altre pal. Tira'l!`)
+    : L('Juegan los demás…', 'Juguen els altres…');
+  if (k === 2) return me ? L(`Has ganado la baza, así que sales tú.<br><b>Consejo:</b> al salir, interesa irte de un palo que tu pareja <b>no tenga</b>, porque así podrá matar con triunfo. Todavía no sabes qué le falta a ${N[2]}, así que echa una carta que no vale nada: el <b>7 de copas</b>.`, `Has guanyat la basa, així que ixes tu.<br><b>Consell:</b> en eixir, interessa anar-se'n d'un pal que la teua parella <b>no tinga</b>, perquè així podrà matar amb triomf. Encara no saps què li falta a ${N[2]}, així que tira una carta que no val res: el <b>7 de copes</b>.`)
+    : L('Juegan los demás…', 'Juguen els altres…');
+  if (k === 3) return me ? L(`${N[1]} ha salido con el <b>3 de bastos</b> (10 puntos), ${N[2]} ha echado el <b>5 de oros</b>, que es triunfo, y ${N[3]} el 7 de bastos. La baza va para tu pareja.<br>Es la <b>última baza con montón</b> y eres el último en echar. Cuando la baza es de tu pareja, <b>cárgale</b> puntos: echa el <b>3 de espadas</b> (10 puntos).`, `${N[1]} ha eixit amb el <b>3 de bastos</b> (10 punts), ${N[2]} ha tirat el <b>5 d'oros</b>, que és triomf, i ${N[3]} el 7 de bastos. La basa va per a la teua parella.<br>És l'<b>última basa amb munt</b> i eres l'últim a tirar. Quan la basa és de la teua parella, <b>carrega-li</b> punts: tira el <b>3 d'espases</b> (10 punts).`)
+    : L('Juegan los demás…', 'Juguen els altres…');
+  if (k === 4) return me ? L(`<b>Arrastre:</b> hay que <b>seguir el palo</b> y <b>superar al rival</b> si se puede. ${N[3]} gana con el caballo de espadas: solo puedes echar el <b>rey</b> o la <b>sota de espadas</b> (las demás salen apagadas). Elige una.`, `<b>Arrossegament:</b> cal <b>seguir el pal</b> i <b>superar el rival</b> si es pot. ${N[3]} guanya amb el cavall d'espases: només pots tirar el <b>rei</b> o la <b>sota d'espases</b> (les altres ixen apagades). Tria'n una.`)
+    : L('Juegan los demás…', 'Juguen els altres…');
+  return me ? L('Ahora sigue tú solo. Recuerda: seguir el palo, superar al rival si se puede y, si gana tu pareja, cualquier carta del palo. <b>Las 10 de últimas</b> son para quien gane la última baza.', 'Ara continua tu sol. Recorda: seguir el pal, superar el rival si es pot i, si guanya la teua parella, qualsevol carta del pal. <b>Les 10 d\'últimes</b> són per a qui guanye l\'última basa.')
     : L('Juegan los demás… Fíjate en qué triunfos van saliendo.', 'Juguen els altres… Fixa\'t en quins triomfs van eixint.');
 }
 function showGuidedEnd() {
@@ -2935,8 +3087,8 @@ const TUT = {
       h: ['Si tienes <b>rey y sota del mismo palo</b>, cantas: 20 puntos, o <b>las 40</b> si son de triunfo. Solo se canta justo después de que tu pareja gane una baza; te saldrá un botón para hacerlo.<br><br>Si la pinta es buena (figura, tres o as) y tienes el <b>7 de triunfo</b>, lo puedes cambiar por ella. En la última baza con montón se cambia solo si la gana tu pareja.',
           'Si tens <b>rei i sota del mateix pal</b>, cantes: 20 punts, o <b>les 40</b> si són de triomf. Només es canta just després que la teua parella guanye una basa; t\'eixirà un botó per a fer-ho.<br><br>Si la pinta és bona (figura, tres o as) i tens el <b>7 de triomf</b>, la pots canviar. En l\'última basa amb munt es canvia sola si la guanya la teua parella.'] },
     { t: ['El arrastre', 'L\'arrossegament'], cards: [[3], [5, L('obligado', 'obligat')], [22]],
-      h: ['Cuando se acaba el montón empieza el <b>arrastre</b> y cambian las normas:<br>• Hay que <b>seguir el palo</b> siempre.<br>• Si gana un rival, hay que <b>superarle</b> si se puede; si no tienes del palo, hay que <b>fallar</b> con triunfo.<br>• Si gana tu compañero, basta con echar del palo.<br><br>Las cartas que no puedes jugar salen apagadas.',
-          'Quan s\'acaba el munt comença l\'<b>arrossegament</b> i canvien les normes:<br>• Cal <b>seguir el pal</b> sempre.<br>• Si guanya un rival, cal <b>superar-lo</b> si es pot; si no tens del pal, cal <b>fallar</b> amb triomf.<br>• Si guanya el teu company, n\'hi ha prou amb tirar del pal.<br><br>Les cartes que no pots jugar ixen apagades.'] },
+      h: ['Cuando se acaba el montón empieza el <b>arrastre</b> y cambian las normas:<br>• Hay que <b>seguir el palo</b> siempre.<br>• Si gana un rival, hay que <b>superarle</b> si se puede; si no tienes del palo, hay que <b>matar con triunfo</b>.<br>• Si gana tu compañero, basta con echar del palo.<br><br>Las cartas que no puedes jugar salen apagadas.',
+          'Quan s\'acaba el munt comença l\'<b>arrossegament</b> i canvien les normes:<br>• Cal <b>seguir el pal</b> sempre.<br>• Si guanya un rival, cal <b>superar-lo</b> si es pot; si no tens del pal, cal <b>matar amb triomf</b>.<br>• Si guanya el teu company, n\'hi ha prou amb tirar del pal.<br><br>Les cartes que no pots jugar ixen apagades.'] },
     { t: ['Puntos, vueltas y coto', 'Punts, voltes i coto'], cards: [],
       h: ['La última baza vale <b>10 puntos más</b> («las 10 de últimas»). En total hay 130 por mano.<br><br>Si nadie llega a 101, se juega otra mano <b>de vueltas</b> sumando, y gana quien llega antes a 101, en el momento en que llega. Las primeras 50 son «malas» y las siguientes, «buenas».<br><br>Un <b>coto</b> se gana al mejor de 5 partidas.',
           'L\'última basa val <b>10 punts més</b> («les 10 d\'últimes»). En total n\'hi ha 130 per mà.<br><br>Si ningú no arriba a 101, es juga una altra mà <b>de voltes</b> sumant, i guanya qui arriba abans a 101, en el moment en què hi arriba. Els primers 50 són «males» i els següents, «bones».<br><br>Un <b>coto</b> es guanya al millor de 5 partides.'] },
@@ -3107,6 +3259,9 @@ $('panel').addEventListener('click', e => {
   if (a === 'guided-cau') startGuidedCau();
   if (a === 'online') showOnline();
   if (a === 'net-host') netHost(($('netname') || {}).value, b.dataset.mode);
+  if (a === 'net-quick') netQuick(($('netname') || {}).value);
+  if (a === 'net-open-join') netJoin(String(b.dataset.code || ''), ($('netname') || {}).value, true);
+  if (a === 'net-open' && NET && NET.role === 'host' && !NET.started) { NET.open = b.dataset.on === '1'; netLobby(); }
   if (a === 'net-join') netJoin((($('netcode') || {}).value || '').trim().toUpperCase(), ($('netname') || {}).value);
   if (a === 'net-seat') netHostSeat(+b.dataset.seat, b.dataset.kind);
   if (a === 'net-kick') netHostKick(+b.dataset.seat);
@@ -3135,6 +3290,7 @@ $('panel').addEventListener('change', e => {
   applyLang(SETTINGS.lang, SETTINGS.names); saveSettings(); showSettings(); render();
 });
 $('coach').addEventListener('click', e => {
+  if (e.target.closest('[data-tut="go"]')) return tutGo();
   const b = e.target.closest('[data-net]'); if (!b || !NET) return;
   if (b.dataset.net === 'away' && NET.role === 'host') netSetAway(+b.dataset.seat, true);
   if (b.dataset.net === 'back' && NET.role === 'guest') { netSend({ t: 'act', id: NET.id, a: 'back' }); b.disabled = true; }
@@ -3166,6 +3322,7 @@ function renderCoto() {
   const nb = netBannerHTML();
   if (nb) { $('coach').hidden = false; $('coach').innerHTML = nb; }
   else { $('coach').hidden = !TUTG; if (TUTG) $('coach').innerHTML = tutCoach(); }
+  $('coach').classList.toggle('paused', !!(TUTG && TUTG.pause));
   if (['handEnd', 'partidaEnd', 'cotoEnd'].includes(G.phase) && $('overlay').hidden && !busy) showCotoSummary();
 }
 function renderCotoInfo() {
@@ -3220,7 +3377,7 @@ function coRenderBottom() {
   if (!busy && G.phase === 'play') {
     for (const s of coCantesFor(G, 0)) btns += `<button class="btn sing" type="button" data-co="sing" data-s="${s}">${s === G.trump ? L('Cantar las 40', 'Cantar les 40') : `${L('Cantar', 'Cantar')} 20 en ${SUITN[s]}`}</button>`;
     if (btns && G.turn !== 0) btns += `<button class="btn" type="button" data-co="nosing">${L('No cantar', 'No cantar')}</button>`;
-    if (coCanSwap(G, 0)) btns += `<button class="btn primary" type="button" data-co="swap">${L('Cambiar el 7', 'Canviar el 7')}</button>`;
+    if (coCanSwap(G, 0) && !(TUTG && coCantesFor(G, 0).length)) btns += `<button class="btn primary" type="button" data-co="swap">${L('Cambiar el 7', 'Canviar el 7')}</button>`;
   }
   let txt = '';
   if (G.phase === 'play' && !coFx && !coShowLast) txt = G.turn === 0 && !busy ? (coArrastre(G) && G.trick.length ? L('<b>Te toca.</b> Las cartas que no puedes jugar salen apagadas.', '<b>Et toca.</b> Les cartes que no pots jugar ixen apagades.') : L('<b>Te toca.</b> Elige una carta.', '<b>Et toca.</b> Tria una carta.')) : `${L('Juega', 'Juga')} <b>${NAMES[G.turn]}</b>…`;
@@ -3271,16 +3428,17 @@ async function coAnimSwap(p) {
   coHide.delete(pinta.id); render();
 }
 async function coDoPlay(p, id) {
-  const c = G.hands[p].find(x => x.id === id);
+  const c = G.hands[p].find(x => x.id === id), k = G.trickNo;
   coFx = { p, id };
   const r = coPlay(G, p, id);
   // lo que se roba ya está en las manos del motor: se esconde hasta que llegue volando
   if (r.done && G.lastDraw && G.lastDraw.length) { G.lastDraw.forEach(d => coHide.add(d.id)); coPend = G.lastDraw.length; }
   narr = `<b>${NAMES[p]}</b> ${p === 0 ? L('juegas', 'jugues') : L('juega', 'juga')} ${cardName(c)}.`;
-  if (!r.done) { render(); await sleep(520); coFx = null; return; }
+  if (!r.done) { render(); await sleep(520); if (TUTG && !TUTG.cau && p !== 0 && k < 3 && G.turn !== 0) await tutPause(tutCotoCard(k, p, c)); coFx = null; return; }
   coShowLast = true; render(); await sleep(750);
   narr = `<b>${NAMES[r.winner]}</b> ${r.winner === 0 ? L('ganas la baza', 'guanyes la basa') : L('gana la baza', 'guanya la basa')}: ${r.pts} ${L('puntos', 'punts')}${r.last ? L(' (con las 10 de últimas)', " (amb les 10 d'últimes)") : ''}.`;
   render(); await callout(r.pts >= 10 ? `+${r.pts}` : L('Baza', 'Basa'), NAMES[r.winner]);
+  if (TUTG && !TUTG.cau) await tutPause(tutCotoTrick(k, p, c, r));
   coShowLast = false; coFx = null;
   if (G.phase !== 'play' && G.hands.some(h => h.length)) {   // se han salido a mitad de mano: se destapan las cartas
     coHide = new Set(); coPend = 0; G.lastDraw = []; coReveal = true; render(); await coDrain(); await sleep(2600); coReveal = false; render(); return;
@@ -3288,6 +3446,7 @@ async function coDoPlay(p, id) {
   if (G.autoSwap) { await coDrain(); G.autoSwap = null; }
   await coAnimDraw();
   await coDrain();
+  if (TUTG && !TUTG.cau) await tutPause(tutCotoDrawn(k));
 }
 async function cotoLoop() {
   if (NET && NET.role === 'guest') return;
@@ -3360,7 +3519,13 @@ async function animateCotoDeal() {
 async function beginCoto() {
   coDealView = { n: [0, 0, 0, 0], stock: false };
   busy = true; const gen = GEN;
-  try { G.feed = []; await animateCotoDeal(); } finally { if (gen === GEN) busy = false; }
+  const tut = TUTG && !TUTG.cau && !TUTG.intro;
+  try {
+    G.feed = [];
+    if (tut) { TUTG.intro = true; for (const t of tutCotoIntro(0)) await tutPause(t); if (gen !== GEN) return; }
+    await animateCotoDeal();
+    if (tut && gen === GEN) for (const t of tutCotoIntro(1)) await tutPause(t);
+  } finally { if (gen === GEN) busy = false; }
   if (gen !== GEN) return;
   render(); cotoLoop();
 }
