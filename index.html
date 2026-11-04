@@ -174,6 +174,8 @@ button{font:inherit;color:inherit}
 .lastcap{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;padding:8px 0;--cw:58px}.lastcap .card{--cw:58px}
 .sum td.sumsc{position:relative}.sum td.sumsc .plus{position:absolute;right:6px;bottom:-12px;font:800 15px/1 var(--f-body);color:#5fd27c;animation:plusUp 1.6s ease-out both}
 .prbadge{position:fixed;left:max(6px,env(safe-area-inset-left,0px));bottom:calc(4px + env(safe-area-inset-bottom,0px));z-index:40;background:#2e7d32;color:#fff;font:800 10px/1 var(--f-body);letter-spacing:.12em;padding:4px 7px;border-radius:999px;pointer-events:none;opacity:.9}
+.linkbtn{background:none;border:0;padding:0;color:inherit;font:inherit;text-decoration:underline;cursor:pointer}
+.panel a{color:var(--gold)}
 .lastinfo{text-align:center;font-weight:700}
 .exp{width:100%;min-height:150px;font:12px ui-monospace,monospace;background:rgba(0,0,0,.25);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:8px}
 .log li.hand{color:var(--gold);font-weight:700;padding-top:10px}
@@ -255,6 +257,7 @@ button{font:inherit;color:inherit}
 .rxbar{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:10px}.rxbar.wait{opacity:.45;pointer-events:none}
 .btn.rx{padding:6px 10px;font-size:13px;min-height:0}
 .rxfeed{display:flex;flex-direction:column;align-items:center;gap:4px;min-height:24px;margin-top:8px}
+.panel>*{flex-shrink:0}   /* en paneles largos (resumen + frases) nada se encoge ni se monta encima: el panel se desplaza */
 .rxmsg{background:rgba(227,178,79,.15);border:1px solid rgba(227,178,79,.45);border-radius:14px;padding:3px 12px;font-size:14px;animation:rxin .25s ease-out}
 @keyframes rxin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .av.live{position:relative}.av.live::after{content:"";position:absolute;right:-1px;bottom:-1px;width:10px;height:10px;border-radius:50%;background:#4cc76a;border:2px solid #1b080d}
@@ -1808,12 +1811,14 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-04-4';
+const APP_VER = 'cau-2026-11-04-8';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
 // sus partidas llevan «-pruebas» en la versión y su online usa salas aparte (canales cc-p…), para no mezclarse con la oficial.
 const PRUEBAS = false;
 const APP_VER_FULL = APP_VER + (PRUEBAS ? '-pruebas' : '');
 const NETNS = PRUEBAS ? 'cc-p' : 'cc-';
+// Historial (con «Copiar esta mano para analizar») solo en la versión de pruebas; en la oficial no pinta nada durante la partida
+if (!PRUEBAS) { const bl = document.getElementById('btnLog'); if (bl) bl.hidden = true; }
 if (PRUEBAS) { const b = document.createElement('div'); b.className = 'prbadge'; b.textContent = 'PRUEBAS'; document.body.appendChild(b); }
 const SUPA = { url: 'https://fzctetcrmrtxwzisxsig.supabase.co/rest/v1/partidas', key: 'sb_publishable_dg8jQx8W7KcVCcEg2KPVnA_ExvQR1gb' };
 function deviceId() {
@@ -2259,7 +2264,7 @@ function showRules(tab) {
   <p>El bac queda pendent al tapet fins que juga el següent. Si fa rebac, l'escala és per a ell. Si el bac deixa el tapet buit també és limpia (3 punts), i si li fan rebac la limpia passa al que el fa. L'última jugada de la mà no fa limpia.</p>
   <h3>De nit</h3><ul><li>Amb parella a la mà, cantes «de nit» en el teu torn, abans de jugar. Has de prémer el botó; si jugues sense cantar, el perds.</li><li>Amb rondí (trio), si ningú et discuteix el de nit, tornes a cantar quan et queden dues cartes: un altre punt.</li><li>Quan algú canta, els altres que també en tenen ho diuen en eixe moment. En l'últim repartiment canten tots al principi.</li><li>Si només canta una parella, s'apunta 1 per cada cant (tu i el teu company, 2).</li><li>Si canten les dues parelles, els punts dels cants es perden i només parlen els que han cantat, començant per la dreta del que reparteix: <b>xic</b> (1), <b>xac</b> (l'acceptes), <b>envide</b> (2), <b>torne a envidar</b> (2 més) o <b>la partida</b>. Es cobra només el que s'aposta.</li><li>Si el primer que parla passa, l'altra parella guanya 1. Si no es vol una aposta (o es passa a un xic), el que ha apostat cobra el que ja estava acceptat, com a mínim 1. Mai poden passar els dos.</li><li>Qui guanya el de nit parlat no se sap fins que acaba eixe repartiment.</li><li>Guanya la jugada més alta: rondí a parella, i entre iguals la més alta (rei > cavall > sota > 7 … > as). Si empaten, guanya qui és mà.</li></ul>
   <h3>Punts</h3><ul><li>Es juga a 40: els primers 20 són «males» i els 20 següents, «bones». Guanya qui arriba a 40, en el moment en què hi arriba.</li><li>Al final de cada mà, qui arreplega l'últim s'endú el que queda al tapet (no és limpia), i cada parella suma un punt per cada carta que passe de 20.</li><li>Sóc socarrat (opcional): cada vegada que s'ha pixat, la parella que no reparteix s'apunta un punt.</li></ul>
-  <h3>Dubtes pendents</h3><ul><li>Si dos de nit són iguals (per exemple, parella de cincs contra parella de cincs), ara guanya qui és mà.</li><li>Si us jugueu la partida en el de nit i una parella arriba a 40 abans d'acabar la mà, ara guanya eixa parella i el de nit no es mira.</li></ul>
+  ${PRUEBAS ? `<h3>Dubtes pendents</h3><ul><li>Si dos de nit són iguals (per exemple, parella de cincs contra parella de cincs), ara guanya qui és mà.</li><li>Si us jugueu la partida en el de nit i una parella arriba a 40 abans d'acabar la mà, ara guanya eixa parella i el de nit no es mira.</li></ul>` : ''}
   ` : `<h2>Reglas del Cau</h2>
   <p>Cuatro jugadores en dos parejas, baraja española de 40 cartas. Se juega hacia la derecha. Solo cuenta el número, nunca el palo.</p>
   <h3>Reparto</h3><ul><li>Una carta al centro, una a cada jugador, otra al centro… hasta tener 4 en el tapete y 3 cada uno.</li><li>Si en el tapete se repite un número, «s'ha pixat»: la repetida se aparta, sale otra y, al acabar de repartir, la repetida entra en el mazo en una posición al azar.</li><li>Cuando nadie tiene cartas se reparten otras 3. Hay 3 repartos por mano y cada reparto empieza jugada nueva.</li></ul>
@@ -2269,7 +2274,7 @@ function showRules(tab) {
   <p>El bac queda pendiente en la mesa hasta que juega el siguiente. Si hace rebac, la escala es para él. Si el bac deja la mesa vacía también es limpia (3 puntos), y si le hacen rebac la limpia pasa al que lo hace. La última jugada de la mano no hace limpia.</p>
   <h3>De nit</h3><ul><li>Con pareja en la mano, cantas «de nit» en tu turno, antes de jugar. Tienes que pulsar el botón; si juegas sin cantar, lo pierdes.</li><li>Con rondín (trío), si nadie te discute el de nit, vuelves a cantar cuando te quedan dos cartas: otro punto.</li><li>Cuando alguien canta, los demás que también tienen lo dicen en ese momento. En el último reparto cantan todos al principio.</li><li>Si solo canta una pareja, se apunta 1 por cada canto (tú y tu compañero, 2).</li><li>Si cantan las dos parejas, los puntos de los cantos se pierden y solo hablan los que han cantado, empezando por la derecha de quien reparte: <b>xic</b> (1), <b>xac</b> (lo aceptas), <b>envide</b> (2), <b>torne a envidar</b> (2 más) o <b>la partida</b>. Se cobra solo lo apostado.</li><li>Si el primero que habla pasa, la otra pareja gana 1. Si no se quiere una apuesta (o se pasa a un xic), el que apostó cobra lo que ya estaba aceptado, como mínimo 1. Nunca pueden pasar los dos.</li><li>Quién gana el de nit hablado no se sabe hasta que acaba ese reparto.</li><li>Gana la jugada más alta: rondín a pareja, y entre iguales la más alta (rey > caballo > sota > 7 … > as). Si empatan, gana quien es mano.</li></ul>
   <h3>Puntos</h3><ul><li>Se juega a 40: los primeros 20 son «malas» y los siguientes 20, «buenas». Gana quien llega a 40, en el momento en que llega.</li><li>Al final de cada mano, quien captura el último se lleva lo que queda en la mesa (no es limpia), y cada pareja suma un punto por cada carta que pase de 20.</li><li>Sóc socarrat (opcional): cada vez que s'ha pixat, la pareja que no reparte se apunta un punto.</li></ul>
-  <h3>Dudas pendientes</h3><ul><li>Si dos de nit son iguales (por ejemplo, pareja de cincos contra pareja de cincos), ahora gana quien es mano.</li><li>Si os jugáis la partida en el de nit y una pareja llega a 40 antes de acabar la mano, ahora gana esa pareja y el de nit no se mira.</li></ul>
+  ${PRUEBAS ? `<h3>Dudas pendientes</h3><ul><li>Si dos de nit son iguales (por ejemplo, pareja de cincos contra pareja de cincos), ahora gana quien es mano.</li><li>Si os jugáis la partida en el de nit y una pareja llega a 40 antes de acabar la mano, ahora gana esa pareja y el de nit no se mira.</li></ul>` : ''}
   `) + close);
 }
 
@@ -2345,7 +2350,7 @@ function showMenu() {
   if (!NET && firstMenu) { const r = netRoomGet(); if (r) return netJoin(r.code, r.name, false, true); }   // al abrir la app: vuelve sola a su partida online
   const cont = hasSaved && savedActive() ? `<button class="btn primary" type="button" data-act="continue">${L('Continuar', 'Continuar')}<small class="contlbl">${esc(continueLabel())}</small></button>` : '';
   const fan = [[0, -24], [10, -8], [20, 8], [30, 24]].map(([id, a]) => `<div class="fc" style="transform:translateX(-50%) rotate(${a}deg)">${cardHTML(coCard(id))}</div>`).join('');
-  showPanel(`<div class="menu" style="display:flex;flex-direction:column;gap:14px"><div class="fan" aria-hidden="true">${fan}</div><div class="logo">CotoCau</div><p class="tag">Els jocs de cartes de les filaes d'Alcoi</p><p class="desc" style="text-align:center;opacity:.6;margin:0">v. ${APP_VER.replace('cau-', '')}${PRUEBAS ? ' · PRUEBAS' : ''}</p><div class="stack">${!NET && netRoomGet() ? `<button class="btn primary" type="button" data-act="net-rejoin">${L('Volver a la partida online', 'Tornar a la partida online')}<small class="contlbl">${L('Sala', 'Sala')} ${netRoomGet().code}</small></button>` : ''}${cont}<button class="btn ${cont ? '' : 'primary'}" type="button" data-act="play">${L('Jugar', 'Jugar')}</button><button class="btn" type="button" data-act="settings">${L('Ajustes', 'Ajustos')}</button><button class="btn" type="button" data-act="tutorial">Tutorial</button><button class="btn" type="button" data-act="rules">${L('Reglas', 'Regles')}</button></div></div>`);
+  showPanel(`<div class="menu" style="display:flex;flex-direction:column;gap:14px"><div class="fan" aria-hidden="true">${fan}</div><div class="logo">CotoCau</div><p class="tag">Els jocs de cartes de les filaes d'Alcoi</p><p class="desc" style="text-align:center;opacity:.6;margin:0">v. ${APP_VER.replace('cau-', '')}${PRUEBAS ? ' · PRUEBAS' : ''} · <button class="linkbtn" type="button" data-act="credits">${L('Créditos', 'Crèdits')}</button></p><div class="stack">${!NET && netRoomGet() ? `<button class="btn primary" type="button" data-act="net-rejoin">${L('Volver a la partida online', 'Tornar a la partida online')}<small class="contlbl">${L('Sala', 'Sala')} ${netRoomGet().code}</small></button>` : ''}${cont}<button class="btn ${cont ? '' : 'primary'}" type="button" data-act="play">${L('Jugar', 'Jugar')}</button><button class="btn" type="button" data-act="settings">${L('Ajustes', 'Ajustos')}</button><button class="btn" type="button" data-act="tutorial">Tutorial</button><button class="btn" type="button" data-act="rules">${L('Reglas', 'Regles')}</button></div></div>`);
   $('panel').classList.add('menu'); cover();
 }
 
@@ -2373,6 +2378,7 @@ async function netClient() {
     let ses = data && data.session;
     if (!ses) { const r = await c.auth.signInAnonymously(); if (r.error) throw new Error(r.error.message); ses = r.data.session; }
     c.realtime.setAuth(ses.access_token);
+    netOpen.token = ses.access_token; c.auth.onAuthStateChange((_, s) => { if (s && s.access_token) netOpen.token = s.access_token; });
     netOpen.authed = true;
   }
   return c;
@@ -2647,6 +2653,7 @@ async function netQuick(name) {
 }
 function showInvite(code) {
   netLinkOk = true;
+  if (!/net=local/.test(location.search + location.hash)) netClient().catch(() => {});   // se prepara la conexión mientras escribe su nombre
   showPanel(`<h2>${L('Te han invitado a jugar', 'T\'han convidat a jugar')}</h2><p style="text-align:center;margin:0">${L('Sala', 'Sala')}</p><div class="netcode">${code}</div>
   <div class="opt"><label>${L('Tu nombre', 'El teu nom')}</label><input id="netname" class="netin" maxlength="14" value="${esc(SETTINGS.alias || '')}" placeholder="${L('Por ejemplo, Pepe', 'Per exemple, Pepe')}"></div>
   <input type="hidden" id="netcode" value="${code}">
@@ -2773,8 +2780,13 @@ async function netHostPub(m) {
   if (!NET.priv[id]) {
     if (NET.opening.has(id) || Object.keys(NET.priv).length >= 8) return;
     NET.opening.add(id);
-    try { const sec = await netSecret(NET.keys.priv, m.pk, NET.code); if (!NET) return; NET.priv[id] = await netOpen(NETNS + NET.code + '-' + sec, x => netHostMsg(Object.assign({}, x, { id }))); }
+    try {
+      const sec = await netSecret(NET.keys.priv, m.pk, NET.code); if (!NET) return;
+      try { NET.pub.send({ t: 'welcome', to: id, hpk: NET.keys.raw }); } catch (e) {}   // contesta ya: invitado y anfitrión abren el canal privado a la vez
+      NET.priv[id] = await netOpen(NETNS + NET.code + '-' + sec, x => netHostMsg(Object.assign({}, x, { id })));
+    }
     catch (e) { return; } finally { NET && NET.opening.delete(id); }
+    return;
   }
   try { NET.pub.send({ t: 'welcome', to: id, hpk: NET.keys.raw }); } catch (e) {}
 }
@@ -2969,6 +2981,11 @@ async function netJoin(code, name, autoSit, rejoin) {
   try { NET.keys = await netKeys(true); NET.id = await netIdOf(NET.keys.raw); NET.pub = await netOpen(NETNS + code, netGuestPub); }
   catch (e) { NET = null; return showOnline(L('No se ha podido conectar. Comprueba la conexión a internet.', 'No s\'ha pogut connectar. Comprova la connexió a internet.') + ' (' + esc(e.message) + ')'); }
   NET.timer = setInterval(netGuestTick, 3000);
+  // al entrar, cada segundo: saludo hasta que conteste el anfitrión y «hi» hasta recibir la sala (un mensaje perdido ya no cuesta 3 s)
+  NET.fast = setInterval(() => {
+    if (!NET || NET.role !== 'guest' || Date.now() - NET.joinT > 20000 || NET.seats || NET.started) { if (NET && NET.fast) { clearInterval(NET.fast); NET.fast = null; } return; }
+    if (!NET.priv) netHello(); else try { NET.priv.send({ t: 'hi' }); } catch (e) {}
+  }, 1000);
   netPresenceClose();
   netHello();
   showPanel(`<h2>${L('Sala', 'Sala')} ${code}</h2><p>${rejoin ? L('Volviendo a tu partida…', 'Tornant a la teua partida…') : L('Esperando al anfitrión… Si no aparece la sala, comprueba el código.', 'Esperant l\'amfitrió… Si no apareix la sala, comprova el codi.')}</p><div class="acts"><button class="btn" type="button" data-act="net-leave">${L('Salir', 'Eixir')}</button></div>`); cover();
@@ -2979,7 +2996,7 @@ async function netGuestPub(m) {
   if (!NET || NET.role !== 'guest' || !m || m.to !== NET.id || NET.priv) return;
   if (m.t === 'welcome' && typeof m.hpk === 'string' && !NET.joining) {
     NET.joining = true;
-    try { const sec = await netSecret(NET.keys.priv, m.hpk, NET.code); if (!NET || NET.priv) return; NET.priv = await netOpen(NETNS + NET.code + '-' + sec, netGuestMsg); NET.priv.send({ t: 'hi' }); }
+    try { const sec = await netSecret(NET.keys.priv, m.hpk, NET.code); if (!NET || NET.priv) return; NET.privName = NETNS + NET.code + '-' + sec; NET.priv = await netOpen(NET.privName, netGuestMsg); NET.priv.send({ t: 'hi' }); }
     catch (e) {} finally { if (NET) NET.joining = false; }
     return;
   }
@@ -2997,6 +3014,7 @@ function netGuestMsg(m) {
     NET.seats = m.seats; NET.host = m.host;
     const mine = typeof m.me === 'number' ? m.me : -1;
     if (mine > 0) { NET.roomSaved = 0; netRoomSave(); } else netRoomClear();
+    if (mine > 0) NET.autoSit = false;
     if (NET.autoSit && mine < 0) { const f = [1, 2, 3].find(p => m.seats[p] && m.seats[p].kind === 'free'); NET.autoSit = false; if (f) netSend({ t: 'sit', id: NET.id, name: NET.name, seat: f }); }
     const cells = [0, 1, 2, 3].map(p => { const x = m.seats[p] || { kind: 'free' };
       if (p === 0) return { kind: 'host', name: m.host, sub: L('anfitrión', 'amfitrió') };
@@ -3074,7 +3092,7 @@ function netLeave(quiet) {
   if (!NET) return;
   if (NET.role === 'host') { netSend({ t: 'bye' }); netPresenceTrack(false).then(netPresenceClose, netPresenceClose); }
   else { if (!NET.started && !quiet) netRoomClear(); netSend({ t: 'leave' }); }   // salir de la sala antes de empezar: ya no hay partida que recuperar
-  clearInterval(NET.timer); clearTimeout(NET.sched);
+  clearInterval(NET.timer); clearTimeout(NET.sched); if (NET.fast) clearInterval(NET.fast);
   const chans = [NET.pub, ...(NET.role === 'host' ? Object.values(NET.priv || {}) : [NET.priv])];
   setTimeout(() => chans.forEach(c => { try { c && c.close(); } catch (e) {} }), 300);
   NET = null; GEN++; busy = false; coDealView = null; coFx = null; coShowLast = false; coHide = new Set(); coPend = 0; coReveal = false;
@@ -3084,6 +3102,17 @@ function netLeave(quiet) {
   else { APP.mode = 'cau'; APP.M = null; S = newGame(); S.feed = []; G = null; }
   hasSaved = savedActive(); $('coach').hidden = true;
 }
+// El invitado cierra la página o la app: avisa al anfitrión para que su sitio quede libre al momento (en la sala) o salga
+// «sin conexión» (en partida). Por si el canal no llega a enviarlo, también por el servidor con una petición que sobrevive al cierre.
+window.addEventListener('pagehide', () => {
+  if (!NET || NET.role !== 'guest' || !NET.priv) return;
+  const m = { t: 'leave' }; NET.autoSit = true;
+  try { NET.priv.send(m); } catch (e) {}
+  if (/net=local/.test(location.search + location.hash) || !netOpen.token || !NET.privName) return;
+  try { fetch(SUPA_BASE + '/realtime/v1/api/broadcast', { method: 'POST', keepalive: true, headers: { apikey: SUPA.key, Authorization: 'Bearer ' + netOpen.token, 'Content-Type': 'application/json' }, body: JSON.stringify({ messages: [{ topic: NET.privName, event: 'm', payload: m, private: true }] }) }).catch(() => {}); } catch (e) {}
+});
+// si la página no se había cerrado de verdad (vuelve de la caché del navegador), saluda otra vez y recupera un sitio
+window.addEventListener('pageshow', e => { if (e.persisted && NET && NET.role === 'guest' && NET.priv) { NET.autoSit = true; try { NET.priv.send({ t: 'hi' }); } catch (x) {} } });
 document.addEventListener('visibilitychange', () => { if (!document.hidden && NET && NET.role === 'host') { netSend({ t: 'ping' }); netSchedule(); if (NET.started && !busy) loop(); } });
 
 
@@ -3316,6 +3345,21 @@ const TUT = {
           'En acabar la mà, cada parella suma un punt per cada carta que tinga per damunt de 20. Es juga a 40: els primers 20 són «males» i els següents, «bones».<br><br><b>Consell:</b> fixa\'t en quina carta deixa el rival de la teua esquerra; si en tens una d\'igual, bac! I en Ajustos pots posar les <b>ajudes</b>, que et diuen què passa si jugues cada carta.'] }
   ]
 };
+// Créditos: la baraja clásica pide nombrar a sus autores y su licencia (CC BY-SA); también la librería del online (MIT)
+const COMMONS_DECK = 'https://commons.wikimedia.org/wiki/File:Baraja_espa%C3%B1ola_completa.png';
+function showCredits() {
+  const back = panelBack;
+  showPanel(`<h2>${L('Créditos', 'Crèdits')}</h2>
+  <p>${L('CotoCau es una app gratuita, sin anuncios, hecha para las filaes de Alcoy.', 'CotoCau és una app gratuïta, sense anuncis, feta per a les filaes d\'Alcoi.')}</p>
+  <h3>${L('Baraja clásica', 'Baralla clàssica')}</h3>
+  <p>${L('«Baraja española completa», de <b>Basquetteur</b>, a partir de trabajos de Germarquezm, GnuBond (Aisleriot) y del Wikipedia Graphic Lab, entre otros. Publicada en Wikimedia Commons con licencia <b>Creative Commons Reconocimiento-CompartirIgual</b> (CC BY-SA). En CotoCau se ha recortado y ordenado para el juego; esa adaptación se comparte con la misma licencia.', '«Baraja española completa», de <b>Basquetteur</b>, a partir de treballs de Germarquezm, GnuBond (Aisleriot) i del Wikipedia Graphic Lab, entre altres. Publicada en Wikimedia Commons amb llicència <b>Creative Commons Reconeixement-CompartirIgual</b> (CC BY-SA). En CotoCau s\'ha retallat i ordenat per al joc; eixa adaptació es comparteix amb la mateixa llicència.')}</p>
+  <p><a href="${COMMONS_DECK}" target="_blank" rel="noopener">${L('Ver el original en Wikimedia Commons', 'Vore l\'original en Wikimedia Commons')}</a> · <a href="https://creativecommons.org/licenses/by-sa/3.0/deed.es" target="_blank" rel="noopener">${L('Licencia', 'Llicència')}</a></p>
+  <h3>${L('Otros', 'Altres')}</h3>
+  <p>${L('Baraja moderna: dibujada para CotoCau. Tipografías Alegreya SC y Alegreya Sans (Juan Pablo del Peral, SIL Open Font License). Online con la librería supabase-js (Supabase, licencia MIT).', 'Baralla moderna: dibuixada per a CotoCau. Tipografies Alegreya SC i Alegreya Sans (Juan Pablo del Peral, SIL Open Font License). Online amb la llibreria supabase-js (Supabase, llicència MIT).')}</p>
+  <p><a href="https://cotocau.github.io/privacidad.html" target="_blank" rel="noopener">${L('Política de privacidad', 'Política de privacitat')}</a> · ${L('Contacto', 'Contacte')}: cotocau.app@gmail.com</p>
+  <div class="acts"><button class="btn primary" type="button" data-act="back">${L('Volver', 'Tornar')}</button></div>`);
+  panelBack = back || 'menu'; cover();
+}
 function showTutMenu() {
   if (TUTG) exitGuided();
   panelBack = 'menu';
@@ -3353,7 +3397,7 @@ function showSettings() {
   <div class="opt"><label>${L('Ayudas en tus cartas (Cau)', 'Ajudes en les teues cartes (Cau)')}</label>${seg('hints', off, SETTINGS.hints, true)}<span class="desc">${L('Muestran debajo de cada carta qué pasa si la juegas (Captura 3, Bac +2…).', 'Mostren davall de cada carta què passa si la jugues (Arreplega 3, Bac +2…).')}</span></div>
   <div class="opt"><label>${L('Etiquetas bajo el nombre', 'Etiquetes davall del nom')}</label>${seg('labels', off, SETTINGS.labels, true)}<span class="desc">${L('Recuerdan la última jugada de cada uno (Bac, Limpia, Captura 2…). El «De nit» se ve siempre.', "Recorden l'última jugada de cadascú (Bac, Limpia, Arreplega 2…). El «De nit» es veu sempre.")}</span></div>
   <div class="opt"><label>Sóc socarrat</label>${seg('socarrat', [[false,'No'],[true,'Sí']], SETTINGS.socarrat, true)}<span class="desc">${L("A la manera de Cocentaina: cada vez que s'ha pixat al repartir, la pareja que no reparte se apunta un punto.", "A la manera de Cocentaina: cada vegada que s'ha pixat en repartir, la parella que no reparteix s'apunta un punt.")}</span></div>
-  <div class="opt"><label>${L('Baraja', 'Baralla')}</label>${seg('deck', [['moderna','Moderna'],['clasica', L('Clásica', 'Clàssica')]], SETTINGS.deck, true)}<span class="desc">${L('La clásica es la baraja libre «Naipes Libres».', 'La clàssica és la baralla lliure «Naipes Libres».')}</span></div>
+  <div class="opt"><label>${L('Baraja', 'Baralla')}</label>${seg('deck', [['moderna','Moderna'],['clasica', L('Clásica', 'Clàssica')]], SETTINGS.deck, true)}<span class="desc">${L('La clásica es la «Baraja española» de Basquetteur (Wikimedia Commons, licencia CC BY-SA). Más en Créditos.', 'La clàssica és la «Baraja española» de Basquetteur (Wikimedia Commons, llicència CC BY-SA). Més en Crèdits.')}</span></div>
   <div class="opt"><label>${L('Compartir mis partidas', 'Compartir les meues partides')}</label>${seg('share', off.map(([v]) => [v, v ? L('Sí', 'Sí') : 'No']), !!SETTINGS.share, true)}<span class="desc">${L('Envía tus manos (cartas, jugadas y marcador, sin datos personales) para mejorar los bots.', 'Envia les teues mans (cartes, jugades i marcador, sense dades personals) per a millorar els bots.')}</span>
     <span class="names"><span><small>${L('Alias', 'Àlies')}</small><input id="aliasset" type="text" maxlength="20" value="${esc(SETTINGS.alias || '')}"></span></span></div>
   ${PRUEBAS ? `<div class="opt"><label>🧪 ${L('Ver todas las cartas (pruebas)', 'Vore totes les cartes (proves)')}</label>${seg('showAll', off, !!SETTINGS.showAll, true)}<span class="desc">${L('Para estudiar a los bots: enseña las cartas de tu compañero y de los rivales. Solo contra bots.', 'Per a estudiar els bots: mostra les cartes del teu company i dels rivals. Només contra bots.')}</span></div>` : ''}
@@ -3447,6 +3491,7 @@ $('panel').addEventListener('click', e => {
   if (a === 'settings') showSettings();
   if (a === 'rules') { showRules(); panelBack = 'menu'; cover(); }
   if (a === 'tutorial') showTutMenu();
+  if (a === 'credits') { panelBack = 'menu'; showCredits(); }
   if (a === 'learn') showTutorial('coto', 0);
   if (a === 'tut') showTutorial(b.dataset.g, +b.dataset.i);
   if (a === 'tut-play') startGame(b.dataset.g);
