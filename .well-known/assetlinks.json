@@ -1,8 +1,15 @@
-[{
-  "relation": ["delegate_permission/common.handle_all_urls"],
-  "target": {
-    "namespace": "android_app",
-    "package_name": "io.github.cotocau.app",
-    "sha256_cert_fingerprints": ["F9:3F:FD:13:B8:F2:75:E0:E6:45:34:D9:60:01:5D:05:05:2E:3B:B1:BB:4E:F6:16:84:CA:18:0B:0E:6A:F9:5E"]
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "io.github.cotocau.app",
+      "sha256_cert_fingerprints": [
+        "F9:3F:FD:13:B8:F2:75:E0:E6:45:34:D9:60:01:5D:05:05:2E:3B:B1:BB:4E:F6:16:84:CA:18:0B:0E:6A:F9:5E",
+        "FB:90:6D:5A:FE:11:98:B4:DC:3B:87:C4:E9:D0:4D:50:47:3E:BA:07:D6:BE:AE:77:06:1E:1D:93:57:2E:6D:D5"
+      ]
+    }
   }
-}]
+]
