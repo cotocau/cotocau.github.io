@@ -258,6 +258,7 @@ button{font:inherit;color:inherit}
 .rxbar{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:10px}.rxbar.wait{opacity:.45;pointer-events:none}
 .btn.rx{padding:6px 10px;font-size:13px;min-height:0}
 .rxfeed{display:flex;flex-direction:column;align-items:center;gap:4px;min-height:24px;margin-top:8px}
+.panel>*{flex-shrink:0}   /* en paneles largos (resumen + frases) nada se encoge ni se monta encima: el panel se desplaza */
 .rxmsg{background:rgba(227,178,79,.15);border:1px solid rgba(227,178,79,.45);border-radius:14px;padding:3px 12px;font-size:14px;animation:rxin .25s ease-out}
 @keyframes rxin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .av.live{position:relative}.av.live::after{content:"";position:absolute;right:-1px;bottom:-1px;width:10px;height:10px;border-radius:50%;background:#4cc76a;border:2px solid #1b080d}
@@ -1811,7 +1812,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-04-5';
+const APP_VER = 'cau-2026-11-04-6';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
 // sus partidas llevan «-pruebas» en la versión y su online usa salas aparte (canales cc-p…), para no mezclarse con la oficial.
 const PRUEBAS = true;
