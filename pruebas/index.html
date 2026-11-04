@@ -175,6 +175,8 @@ button{font:inherit;color:inherit}
 .lastcap{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;padding:8px 0;--cw:58px}.lastcap .card{--cw:58px}
 .sum td.sumsc{position:relative}.sum td.sumsc .plus{position:absolute;right:6px;bottom:-12px;font:800 15px/1 var(--f-body);color:#5fd27c;animation:plusUp 1.6s ease-out both}
 .prbadge{position:fixed;left:max(6px,env(safe-area-inset-left,0px));bottom:calc(4px + env(safe-area-inset-bottom,0px));z-index:40;background:#2e7d32;color:#fff;font:800 10px/1 var(--f-body);letter-spacing:.12em;padding:4px 7px;border-radius:999px;pointer-events:none;opacity:.9}
+.linkbtn{background:none;border:0;padding:0;color:inherit;font:inherit;text-decoration:underline;cursor:pointer}
+.panel a{color:var(--gold)}
 .lastinfo{text-align:center;font-weight:700}
 .exp{width:100%;min-height:150px;font:12px ui-monospace,monospace;background:rgba(0,0,0,.25);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:8px}
 .log li.hand{color:var(--gold);font-weight:700;padding-top:10px}
@@ -1809,7 +1811,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-04-4';
+const APP_VER = 'cau-2026-11-04-5';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
 // sus partidas llevan «-pruebas» en la versión y su online usa salas aparte (canales cc-p…), para no mezclarse con la oficial.
 const PRUEBAS = true;
@@ -2346,7 +2348,7 @@ function showMenu() {
   if (!NET && firstMenu) { const r = netRoomGet(); if (r) return netJoin(r.code, r.name, false, true); }   // al abrir la app: vuelve sola a su partida online
   const cont = hasSaved && savedActive() ? `<button class="btn primary" type="button" data-act="continue">${L('Continuar', 'Continuar')}<small class="contlbl">${esc(continueLabel())}</small></button>` : '';
   const fan = [[0, -24], [10, -8], [20, 8], [30, 24]].map(([id, a]) => `<div class="fc" style="transform:translateX(-50%) rotate(${a}deg)">${cardHTML(coCard(id))}</div>`).join('');
-  showPanel(`<div class="menu" style="display:flex;flex-direction:column;gap:14px"><div class="fan" aria-hidden="true">${fan}</div><div class="logo">CotoCau</div><p class="tag">Els jocs de cartes de les filaes d'Alcoi</p><p class="desc" style="text-align:center;opacity:.6;margin:0">v. ${APP_VER.replace('cau-', '')}${PRUEBAS ? ' · PRUEBAS' : ''}</p><div class="stack">${!NET && netRoomGet() ? `<button class="btn primary" type="button" data-act="net-rejoin">${L('Volver a la partida online', 'Tornar a la partida online')}<small class="contlbl">${L('Sala', 'Sala')} ${netRoomGet().code}</small></button>` : ''}${cont}<button class="btn ${cont ? '' : 'primary'}" type="button" data-act="play">${L('Jugar', 'Jugar')}</button><button class="btn" type="button" data-act="settings">${L('Ajustes', 'Ajustos')}</button><button class="btn" type="button" data-act="tutorial">Tutorial</button><button class="btn" type="button" data-act="rules">${L('Reglas', 'Regles')}</button></div></div>`);
+  showPanel(`<div class="menu" style="display:flex;flex-direction:column;gap:14px"><div class="fan" aria-hidden="true">${fan}</div><div class="logo">CotoCau</div><p class="tag">Els jocs de cartes de les filaes d'Alcoi</p><p class="desc" style="text-align:center;opacity:.6;margin:0">v. ${APP_VER.replace('cau-', '')}${PRUEBAS ? ' · PRUEBAS' : ''} · <button class="linkbtn" type="button" data-act="credits">${L('Créditos', 'Crèdits')}</button></p><div class="stack">${!NET && netRoomGet() ? `<button class="btn primary" type="button" data-act="net-rejoin">${L('Volver a la partida online', 'Tornar a la partida online')}<small class="contlbl">${L('Sala', 'Sala')} ${netRoomGet().code}</small></button>` : ''}${cont}<button class="btn ${cont ? '' : 'primary'}" type="button" data-act="play">${L('Jugar', 'Jugar')}</button><button class="btn" type="button" data-act="settings">${L('Ajustes', 'Ajustos')}</button><button class="btn" type="button" data-act="tutorial">Tutorial</button><button class="btn" type="button" data-act="rules">${L('Reglas', 'Regles')}</button></div></div>`);
   $('panel').classList.add('menu'); cover();
 }
 
@@ -3317,6 +3319,21 @@ const TUT = {
           'En acabar la mà, cada parella suma un punt per cada carta que tinga per damunt de 20. Es juga a 40: els primers 20 són «males» i els següents, «bones».<br><br><b>Consell:</b> fixa\'t en quina carta deixa el rival de la teua esquerra; si en tens una d\'igual, bac! I en Ajustos pots posar les <b>ajudes</b>, que et diuen què passa si jugues cada carta.'] }
   ]
 };
+// Créditos: la baraja clásica pide nombrar a sus autores y su licencia (CC BY-SA); también la librería del online (MIT)
+const COMMONS_DECK = 'https://commons.wikimedia.org/wiki/File:Baraja_espa%C3%B1ola_completa.png';
+function showCredits() {
+  const back = panelBack;
+  showPanel(`<h2>${L('Créditos', 'Crèdits')}</h2>
+  <p>${L('CotoCau es una app gratuita, sin anuncios, hecha para las filaes de Alcoy.', 'CotoCau és una app gratuïta, sense anuncis, feta per a les filaes d\'Alcoi.')}</p>
+  <h3>${L('Baraja clásica', 'Baralla clàssica')}</h3>
+  <p>${L('«Baraja española completa», de <b>Basquetteur</b>, a partir de trabajos de Germarquezm, GnuBond (Aisleriot) y del Wikipedia Graphic Lab, entre otros. Publicada en Wikimedia Commons con licencia <b>Creative Commons Reconocimiento-CompartirIgual</b> (CC BY-SA). En CotoCau se ha recortado y ordenado para el juego; esa adaptación se comparte con la misma licencia.', '«Baraja española completa», de <b>Basquetteur</b>, a partir de treballs de Germarquezm, GnuBond (Aisleriot) i del Wikipedia Graphic Lab, entre altres. Publicada en Wikimedia Commons amb llicència <b>Creative Commons Reconeixement-CompartirIgual</b> (CC BY-SA). En CotoCau s\'ha retallat i ordenat per al joc; eixa adaptació es comparteix amb la mateixa llicència.')}</p>
+  <p><a href="${COMMONS_DECK}" target="_blank" rel="noopener">${L('Ver el original en Wikimedia Commons', 'Vore l\'original en Wikimedia Commons')}</a> · <a href="https://creativecommons.org/licenses/by-sa/3.0/deed.es" target="_blank" rel="noopener">${L('Licencia', 'Llicència')}</a></p>
+  <h3>${L('Otros', 'Altres')}</h3>
+  <p>${L('Baraja moderna: dibujada para CotoCau. Tipografías Alegreya SC y Alegreya Sans (Juan Pablo del Peral, SIL Open Font License). Online con la librería supabase-js (Supabase, licencia MIT).', 'Baralla moderna: dibuixada per a CotoCau. Tipografies Alegreya SC i Alegreya Sans (Juan Pablo del Peral, SIL Open Font License). Online amb la llibreria supabase-js (Supabase, llicència MIT).')}</p>
+  <p><a href="https://cotocau.github.io/privacidad.html" target="_blank" rel="noopener">${L('Política de privacidad', 'Política de privacitat')}</a> · ${L('Contacto', 'Contacte')}: cotocau.app@gmail.com</p>
+  <div class="acts"><button class="btn primary" type="button" data-act="back">${L('Volver', 'Tornar')}</button></div>`);
+  panelBack = back || 'menu'; cover();
+}
 function showTutMenu() {
   if (TUTG) exitGuided();
   panelBack = 'menu';
@@ -3354,7 +3371,7 @@ function showSettings() {
   <div class="opt"><label>${L('Ayudas en tus cartas (Cau)', 'Ajudes en les teues cartes (Cau)')}</label>${seg('hints', off, SETTINGS.hints, true)}<span class="desc">${L('Muestran debajo de cada carta qué pasa si la juegas (Captura 3, Bac +2…).', 'Mostren davall de cada carta què passa si la jugues (Arreplega 3, Bac +2…).')}</span></div>
   <div class="opt"><label>${L('Etiquetas bajo el nombre', 'Etiquetes davall del nom')}</label>${seg('labels', off, SETTINGS.labels, true)}<span class="desc">${L('Recuerdan la última jugada de cada uno (Bac, Limpia, Captura 2…). El «De nit» se ve siempre.', "Recorden l'última jugada de cadascú (Bac, Limpia, Arreplega 2…). El «De nit» es veu sempre.")}</span></div>
   <div class="opt"><label>Sóc socarrat</label>${seg('socarrat', [[false,'No'],[true,'Sí']], SETTINGS.socarrat, true)}<span class="desc">${L("A la manera de Cocentaina: cada vez que s'ha pixat al repartir, la pareja que no reparte se apunta un punto.", "A la manera de Cocentaina: cada vegada que s'ha pixat en repartir, la parella que no reparteix s'apunta un punt.")}</span></div>
-  <div class="opt"><label>${L('Baraja', 'Baralla')}</label>${seg('deck', [['moderna','Moderna'],['clasica', L('Clásica', 'Clàssica')]], SETTINGS.deck, true)}<span class="desc">${L('La clásica es la baraja libre «Naipes Libres».', 'La clàssica és la baralla lliure «Naipes Libres».')}</span></div>
+  <div class="opt"><label>${L('Baraja', 'Baralla')}</label>${seg('deck', [['moderna','Moderna'],['clasica', L('Clásica', 'Clàssica')]], SETTINGS.deck, true)}<span class="desc">${L('La clásica es la «Baraja española» de Basquetteur (Wikimedia Commons, licencia CC BY-SA). Más en Créditos.', 'La clàssica és la «Baraja española» de Basquetteur (Wikimedia Commons, llicència CC BY-SA). Més en Crèdits.')}</span></div>
   <div class="opt"><label>${L('Compartir mis partidas', 'Compartir les meues partides')}</label>${seg('share', off.map(([v]) => [v, v ? L('Sí', 'Sí') : 'No']), !!SETTINGS.share, true)}<span class="desc">${L('Envía tus manos (cartas, jugadas y marcador, sin datos personales) para mejorar los bots.', 'Envia les teues mans (cartes, jugades i marcador, sense dades personals) per a millorar els bots.')}</span>
     <span class="names"><span><small>${L('Alias', 'Àlies')}</small><input id="aliasset" type="text" maxlength="20" value="${esc(SETTINGS.alias || '')}"></span></span></div>
   ${PRUEBAS ? `<div class="opt"><label>🧪 ${L('Ver todas las cartas (pruebas)', 'Vore totes les cartes (proves)')}</label>${seg('showAll', off, !!SETTINGS.showAll, true)}<span class="desc">${L('Para estudiar a los bots: enseña las cartas de tu compañero y de los rivales. Solo contra bots.', 'Per a estudiar els bots: mostra les cartes del teu company i dels rivals. Només contra bots.')}</span></div>` : ''}
@@ -3448,6 +3465,7 @@ $('panel').addEventListener('click', e => {
   if (a === 'settings') showSettings();
   if (a === 'rules') { showRules(); panelBack = 'menu'; cover(); }
   if (a === 'tutorial') showTutMenu();
+  if (a === 'credits') { panelBack = 'menu'; showCredits(); }
   if (a === 'learn') showTutorial('coto', 0);
   if (a === 'tut') showTutorial(b.dataset.g, +b.dataset.i);
   if (a === 'tut-play') startGame(b.dataset.g);
