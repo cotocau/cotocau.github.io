@@ -1812,7 +1812,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-04-6';
+const APP_VER = 'cau-2026-11-04-7';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
 // sus partidas llevan «-pruebas» en la versión y su online usa salas aparte (canales cc-p…), para no mezclarse con la oficial.
 const PRUEBAS = true;
@@ -2377,6 +2377,7 @@ async function netClient() {
     let ses = data && data.session;
     if (!ses) { const r = await c.auth.signInAnonymously(); if (r.error) throw new Error(r.error.message); ses = r.data.session; }
     c.realtime.setAuth(ses.access_token);
+    netOpen.token = ses.access_token; c.auth.onAuthStateChange((_, s) => { if (s && s.access_token) netOpen.token = s.access_token; });
     netOpen.authed = true;
   }
   return c;
@@ -2651,6 +2652,7 @@ async function netQuick(name) {
 }
 function showInvite(code) {
   netLinkOk = true;
+  if (!/net=local/.test(location.search + location.hash)) netClient().catch(() => {});   // se prepara la conexión mientras escribe su nombre
   showPanel(`<h2>${L('Te han invitado a jugar', 'T\'han convidat a jugar')}</h2><p style="text-align:center;margin:0">${L('Sala', 'Sala')}</p><div class="netcode">${code}</div>
   <div class="opt"><label>${L('Tu nombre', 'El teu nom')}</label><input id="netname" class="netin" maxlength="14" value="${esc(SETTINGS.alias || '')}" placeholder="${L('Por ejemplo, Pepe', 'Per exemple, Pepe')}"></div>
   <input type="hidden" id="netcode" value="${code}">
@@ -2777,8 +2779,13 @@ async function netHostPub(m) {
   if (!NET.priv[id]) {
     if (NET.opening.has(id) || Object.keys(NET.priv).length >= 8) return;
     NET.opening.add(id);
-    try { const sec = await netSecret(NET.keys.priv, m.pk, NET.code); if (!NET) return; NET.priv[id] = await netOpen(NETNS + NET.code + '-' + sec, x => netHostMsg(Object.assign({}, x, { id }))); }
+    try {
+      const sec = await netSecret(NET.keys.priv, m.pk, NET.code); if (!NET) return;
+      try { NET.pub.send({ t: 'welcome', to: id, hpk: NET.keys.raw }); } catch (e) {}   // contesta ya: invitado y anfitrión abren el canal privado a la vez
+      NET.priv[id] = await netOpen(NETNS + NET.code + '-' + sec, x => netHostMsg(Object.assign({}, x, { id })));
+    }
     catch (e) { return; } finally { NET && NET.opening.delete(id); }
+    return;
   }
   try { NET.pub.send({ t: 'welcome', to: id, hpk: NET.keys.raw }); } catch (e) {}
 }
@@ -2973,6 +2980,11 @@ async function netJoin(code, name, autoSit, rejoin) {
   try { NET.keys = await netKeys(true); NET.id = await netIdOf(NET.keys.raw); NET.pub = await netOpen(NETNS + code, netGuestPub); }
   catch (e) { NET = null; return showOnline(L('No se ha podido conectar. Comprueba la conexión a internet.', 'No s\'ha pogut connectar. Comprova la connexió a internet.') + ' (' + esc(e.message) + ')'); }
   NET.timer = setInterval(netGuestTick, 3000);
+  // al entrar, cada segundo: saludo hasta que conteste el anfitrión y «hi» hasta recibir la sala (un mensaje perdido ya no cuesta 3 s)
+  NET.fast = setInterval(() => {
+    if (!NET || NET.role !== 'guest' || Date.now() - NET.joinT > 20000 || NET.seats || NET.started) { if (NET && NET.fast) { clearInterval(NET.fast); NET.fast = null; } return; }
+    if (!NET.priv) netHello(); else try { NET.priv.send({ t: 'hi' }); } catch (e) {}
+  }, 1000);
   netPresenceClose();
   netHello();
   showPanel(`<h2>${L('Sala', 'Sala')} ${code}</h2><p>${rejoin ? L('Volviendo a tu partida…', 'Tornant a la teua partida…') : L('Esperando al anfitrión… Si no aparece la sala, comprueba el código.', 'Esperant l\'amfitrió… Si no apareix la sala, comprova el codi.')}</p><div class="acts"><button class="btn" type="button" data-act="net-leave">${L('Salir', 'Eixir')}</button></div>`); cover();
@@ -2983,7 +2995,7 @@ async function netGuestPub(m) {
   if (!NET || NET.role !== 'guest' || !m || m.to !== NET.id || NET.priv) return;
   if (m.t === 'welcome' && typeof m.hpk === 'string' && !NET.joining) {
     NET.joining = true;
-    try { const sec = await netSecret(NET.keys.priv, m.hpk, NET.code); if (!NET || NET.priv) return; NET.priv = await netOpen(NETNS + NET.code + '-' + sec, netGuestMsg); NET.priv.send({ t: 'hi' }); }
+    try { const sec = await netSecret(NET.keys.priv, m.hpk, NET.code); if (!NET || NET.priv) return; NET.privName = NETNS + NET.code + '-' + sec; NET.priv = await netOpen(NET.privName, netGuestMsg); NET.priv.send({ t: 'hi' }); }
     catch (e) {} finally { if (NET) NET.joining = false; }
     return;
   }
@@ -3001,6 +3013,7 @@ function netGuestMsg(m) {
     NET.seats = m.seats; NET.host = m.host;
     const mine = typeof m.me === 'number' ? m.me : -1;
     if (mine > 0) { NET.roomSaved = 0; netRoomSave(); } else netRoomClear();
+    if (mine > 0) NET.autoSit = false;
     if (NET.autoSit && mine < 0) { const f = [1, 2, 3].find(p => m.seats[p] && m.seats[p].kind === 'free'); NET.autoSit = false; if (f) netSend({ t: 'sit', id: NET.id, name: NET.name, seat: f }); }
     const cells = [0, 1, 2, 3].map(p => { const x = m.seats[p] || { kind: 'free' };
       if (p === 0) return { kind: 'host', name: m.host, sub: L('anfitrión', 'amfitrió') };
@@ -3078,7 +3091,7 @@ function netLeave(quiet) {
   if (!NET) return;
   if (NET.role === 'host') { netSend({ t: 'bye' }); netPresenceTrack(false).then(netPresenceClose, netPresenceClose); }
   else { if (!NET.started && !quiet) netRoomClear(); netSend({ t: 'leave' }); }   // salir de la sala antes de empezar: ya no hay partida que recuperar
-  clearInterval(NET.timer); clearTimeout(NET.sched);
+  clearInterval(NET.timer); clearTimeout(NET.sched); if (NET.fast) clearInterval(NET.fast);
   const chans = [NET.pub, ...(NET.role === 'host' ? Object.values(NET.priv || {}) : [NET.priv])];
   setTimeout(() => chans.forEach(c => { try { c && c.close(); } catch (e) {} }), 300);
   NET = null; GEN++; busy = false; coDealView = null; coFx = null; coShowLast = false; coHide = new Set(); coPend = 0; coReveal = false;
@@ -3088,6 +3101,17 @@ function netLeave(quiet) {
   else { APP.mode = 'cau'; APP.M = null; S = newGame(); S.feed = []; G = null; }
   hasSaved = savedActive(); $('coach').hidden = true;
 }
+// El invitado cierra la página o la app: avisa al anfitrión para que su sitio quede libre al momento (en la sala) o salga
+// «sin conexión» (en partida). Por si el canal no llega a enviarlo, también por el servidor con una petición que sobrevive al cierre.
+window.addEventListener('pagehide', () => {
+  if (!NET || NET.role !== 'guest' || !NET.priv) return;
+  const m = { t: 'leave' }; NET.autoSit = true;
+  try { NET.priv.send(m); } catch (e) {}
+  if (/net=local/.test(location.search + location.hash) || !netOpen.token || !NET.privName) return;
+  try { fetch(SUPA_BASE + '/realtime/v1/api/broadcast', { method: 'POST', keepalive: true, headers: { apikey: SUPA.key, Authorization: 'Bearer ' + netOpen.token, 'Content-Type': 'application/json' }, body: JSON.stringify({ messages: [{ topic: NET.privName, event: 'm', payload: m, private: true }] }) }).catch(() => {}); } catch (e) {}
+});
+// si la página no se había cerrado de verdad (vuelve de la caché del navegador), saluda otra vez y recupera un sitio
+window.addEventListener('pageshow', e => { if (e.persisted && NET && NET.role === 'guest' && NET.priv) { NET.autoSit = true; try { NET.priv.send({ t: 'hi' }); } catch (x) {} } });
 document.addEventListener('visibilitychange', () => { if (!document.hidden && NET && NET.role === 'host') { netSend({ t: 'ping' }); netSchedule(); if (NET.started && !busy) loop(); } });
 
 

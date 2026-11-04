@@ -1,5 +1,5 @@
 // Funcionamiento sin conexión. Cambia VERSION en cada actualización de la app.
-const VERSION='pruebas-cau-2026-11-04-6', MINE=k=>k.startsWith('pruebas-');
+const VERSION='pruebas-cau-2026-11-04-7', MINE=k=>k.startsWith('pruebas-');
 const SHELL=['./','./index.html','./classic.webp','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png','./icons/maskable-512.png','./icons/apple-touch-icon.png'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(VERSION).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting()));});
 // cada versión (oficial y pruebas) borra solo sus copias viejas, nunca las de la otra
