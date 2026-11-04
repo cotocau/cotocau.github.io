@@ -702,6 +702,7 @@ function resolveDuels(S) {
   for (const d of (S.duels || [])) {
     const txt = L(`De nit del reparto ${d.round}: Nosotros ${d.a}, Ellos ${d.b}. Ganan ${TEAMN[d.w]}${d.falta ? ' la partida' : ` (+${d.pts})`}.`, `De nit del repartiment ${d.round}: Nosaltres ${d.a}, Ells ${d.b}. Guanyen ${TEAMN[d.w]}${d.falta ? ' la partida' : ` (+${d.pts})`}.`);
     S.duelNotes.push(txt); say(S, txt, 'duel');
+    if (S.feed.length) S.feed[S.feed.length - 1].duel = { w: d.w, pts: d.falta ? 0 : d.pts, falta: !!d.falta };
     if (d.falta) { if (!S.over) { S.over = true; S.winner = d.w; S.endFalta = true; S.endMid = true; S.phase = 'gameEnd'; } }
     else addPts(S, d.w, 'nit', d.pts);
   }
@@ -1806,7 +1807,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-04-2';
+const APP_VER = 'cau-2026-11-04-3';
 const SUPA = { url: 'https://fzctetcrmrtxwzisxsig.supabase.co/rest/v1/partidas', key: 'sb_publishable_dg8jQx8W7KcVCcEg2KPVnA_ExvQR1gb' };
 function deviceId() {
   try { let id = localStorage.getItem('cau.uid'); if (!id) { id = Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4); localStorage.setItem('cau.uid', id); } return id; } catch (e) { return 'anon'; }
@@ -1965,7 +1966,15 @@ function renderBottom() {
 // Al acabar los tres repartos, los puntos por cartas no se suman en el marcador hasta que aparece el resumen
 let cauSumKey = '';
 const cauHeld = () => S.phase === 'handEnd' && S.summary && cauSumKey !== S.handNo + ':' + S.score.join(',');
-function renderScore(i) { setScore(i, S.score[i] - (cauHeld() ? S.summary[i].cardPts : 0), scoreTxt, 'cau'); }
+// De nit hablado: sus puntos no suben al marcador hasta que sale su aviso (DUELH = los que se están anunciando)
+const DUELH = { pts: [0, 0], n: 0 };
+function duelHold() {
+  if (NET && NET.role === 'guest') { const h = S.netHold; return h && Array.isArray(h.pts) ? { pts: [+h.pts[0] || 0, +h.pts[1] || 0], n: +h.n || 0 } : { pts: [0, 0], n: 0 }; }
+  const h = { pts: DUELH.pts.slice(), n: DUELH.n };
+  for (const it of S.feed || []) if (it.duel) { h.pts[it.duel.w] += it.duel.pts; h.n++; }
+  return h;
+}
+function renderScore(i) { setScore(i, S.score[i] - (cauHeld() ? S.summary[i].cardPts : 0) - chainPend(S, i) - duelHold().pts[i], scoreTxt, 'cau'); }
 // Número de una celda que cuenta hasta el total con el «+N» verde al lado
 function countCell(el, from, to, fmt) {
   if (!el || to <= from) return;
@@ -2012,7 +2021,7 @@ function render() {
   [1,2,3].forEach(renderSeat);
   renderTable(); renderHand(); renderBottom();
   $('narr').innerHTML = narr;
-  if ((S.phase === 'handEnd' || S.phase === 'gameEnd') && $('overlay').hidden) showSummary();
+  if ((S.phase === 'handEnd' || S.phase === 'gameEnd') && $('overlay').hidden && !duelHold().n) showSummary();
 }
 
 let calloutTimer = null;
@@ -2029,11 +2038,18 @@ async function drainFeed(untilDeal) {
   let n = S.feed.length;
   if (untilDeal) { const k = S.feed.findIndex(i => i.k === 'hand'); if (k >= 0) n = k + 1; }
   const items = S.feed.splice(0, n);
+  for (const i of items) if (i.duel) { DUELH.pts[i.duel.w] += i.duel.pts; DUELH.n++; }   // se guardan hasta su aviso
   for (const i of items) {
     if (i.k === 'sing') { narr = i.txt; render(); await callout('De nit', /^(Cantas|Vuelves|Cantes|Tornes)/.test(i.txt) ? NAMES[0] : i.txt.split(' ')[0]); }
     else if (i.k === 'nit' || i.k === 'pts') { narr = i.txt; render(); await sleep(1100); }
-    else if (i.k === 'duel') { narr = i.txt; render(); await callout('De nit', i.txt.split('. ').slice(-1)[0].replace('.', '')); await sleep(1200); }
+    else if (i.k === 'duel') {
+      const d = i.duel || { w: 0, pts: 0 };
+      narr = i.txt; render();
+      await callout(L('De nit', 'De nit'), d.falta ? L(`Ganan ${TEAMN[d.w]} la partida`, `Guanyen ${TEAMN[d.w]} la partida`) : `${L('Ganan', 'Guanyen')} ${TEAMN[d.w]} · +${d.pts}`);
+      DUELH.pts[d.w] -= d.pts; DUELH.n--; render(); await sleep(900);   // ahora sube el marcador
+    }
   }
+  DUELH.pts = [0, 0]; DUELH.n = 0;
 }
 
 async function doPlay(p, cid) {
@@ -2525,6 +2541,7 @@ function netCauView(g) {
     table: S.table.map(cc), slots: S.slots, chain: S.chain ? { ...S.chain, cards: S.chain.cards.map(cc), owner: rot(S.chain.owner) } : null,
     lastPlay: S.lastPlay ? { ...S.lastPlay, p: rot(S.lastPlay.p) } : null, lastCapturer: rot(S.lastCapturer),
     lastCap: S.lastCap ? { p: rot(S.lastCap.p), cards: S.lastCap.cards.map(cc) } : null,
+    netHold: (h => ({ pts: tm(h.pts), n: h.n }))(duelHold()),
     deck: S.deck.map((c, k) => ({ id: -200 - k, r: 0, s: 0 })), hands, names,
     bubbles: seatArr(S.bubbles || ['', '', '', '']).map(x => netNarr(x || '', g)),
     sung: seatArr(S.sung || [null, null, null, null]).map((x, v) => v === 0 ? x : x ? { t: 1, r: -1 } : null),
