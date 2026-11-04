@@ -172,6 +172,7 @@ button{font:inherit;color:inherit}
 .lastfelt .ls.win .card{box-shadow:0 0 0 3px var(--gold),0 6px 14px rgba(0,0,0,.45)}
 @keyframes lsIn{from{opacity:0;left:50%;top:50%;transform:translate(-50%,-50%) scale(.4) rotate(-20deg)}}
 .lastcap{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;padding:8px 0;--cw:58px}.lastcap .card{--cw:58px}
+.sum td.sumsc{position:relative}.sum td.sumsc .plus{position:absolute;right:6px;bottom:-12px;font:800 15px/1 var(--f-body);color:#5fd27c;animation:plusUp 1.6s ease-out both}
 .lastinfo{text-align:center;font-weight:700}
 .exp{width:100%;min-height:150px;font:12px ui-monospace,monospace;background:rgba(0,0,0,.25);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:8px}
 .log li.hand{color:var(--gold);font-weight:700;padding-top:10px}
@@ -390,12 +391,25 @@ const cn = c => `${RV[c.r]}${'oceb'[c.s]}`;
 const SEATC = ['Tú', 'D', 'C', 'I'];
 function say(S, txt, k) { if (S.rec) S.rec.lines.push(txt); S.log.push({ txt, k: k || '' }); if (S.log.length > 500) S.log.splice(0, S.log.length - 500); S.feed.push({ txt, k: k || '' }); }
 
+// Puntos aún en el aire: un bac o un rebac (y su limpia) se pueden perder si el siguiente lo mata,
+// así que no cuentan para llegar a 40 hasta que se cierra la cadena (regla confirmada el 4 nov)
+function chainPend(S, t) {
+  const ch = S.chain; if (!ch || team(ch.owner) !== t) return 0;
+  const n = ch.cards.length; return (n === 2 ? 2 : n === 3 ? 3 : 0) + (n < 4 && ch.limpia ? 1 : 0);
+}
+function winNow(S, t) {
+  S.over = true; S.winner = t; S.phase = 'gameEnd'; S.endMid = true;
+  say(S, L(`${TEAMN[t]} llegan a 40: ¡fin de la partida!`, `${TEAMN[t]} arriben a 40: final de la partida!`), 'pts');
+}
 function addPts(S, t, k, n) {
   S.bon[t][k] += n; S.score[t] += n;
-  if (!S.over && n > 0 && S.score[t] >= TARGET) {
-    S.over = true; S.winner = t; S.phase = 'gameEnd'; S.endMid = true;
-    say(S, L(`${TEAMN[t]} llegan a 40: ¡fin de la partida!`, `${TEAMN[t]} arriben a 40: final de la partida!`), 'pts');
-  }
+  if (!S.over && n > 0 && S.score[t] - chainPend(S, t) >= TARGET) winNow(S, t);
+}
+// al cerrarse una cadena (nadie la mata), sus puntos ya son seguros: puede que ahora alguien llegue a 40
+function checkWin(S) {
+  if (S.over) return;
+  const ok = [0, 1].filter(t => S.score[t] - chainPend(S, t) >= TARGET);
+  if (ok.length) winNow(S, ok.length === 2 ? (S.score[0] >= S.score[1] ? 0 : 1) : ok[0]);
 }
 
 function newGame() {
@@ -599,6 +613,7 @@ function resolveChain(S, ev, noLimpia) {
   S.lastCap = { p: ch.owner, cards: got.map(c => ({ id: c.id, r: c.r, s: c.s })) };   // «Última recogida»
   ev.push({ k:'cobra', p: ch.owner, txt: ch.owner === 0 ? L(`Te llevas ${got.length} cartas`, `T'endús ${got.length} cartes`) : L(`${NAMES[ch.owner]} se lleva ${got.length} cartas`, `${NAMES[ch.owner]} s'endú ${got.length} cartes`) });
   if (!ch.limpia && !noLimpia && S.table.length === 0) { ev.push({ k:'limpia', p: ch.owner, txt: L('¡Limpia!', 'Limpia!'), pts:1 }); addPts(S, t, 'limpia', 1); }
+  checkWin(S);
   return got.map(c => c.id);
 }
 
@@ -1791,7 +1806,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-03-10';
+const APP_VER = 'cau-2026-11-04-2';
 const SUPA = { url: 'https://fzctetcrmrtxwzisxsig.supabase.co/rest/v1/partidas', key: 'sb_publishable_dg8jQx8W7KcVCcEg2KPVnA_ExvQR1gb' };
 function deviceId() {
   try { let id = localStorage.getItem('cau.uid'); if (!id) { id = Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4); localStorage.setItem('cau.uid', id); } return id; } catch (e) { return 'anon'; }
@@ -1947,7 +1962,20 @@ function renderBottom() {
   el.innerHTML = `<div class="status ${S.turn === 0 && S.phase === 'play' ? 'mine' : ''}"><span>${txt}</span>${btn}</div>`;
 }
 
-function renderScore(i) { setScore(i, S.score[i], scoreTxt, 'cau'); }
+// Al acabar los tres repartos, los puntos por cartas no se suman en el marcador hasta que aparece el resumen
+let cauSumKey = '';
+const cauHeld = () => S.phase === 'handEnd' && S.summary && cauSumKey !== S.handNo + ':' + S.score.join(',');
+function renderScore(i) { setScore(i, S.score[i] - (cauHeld() ? S.summary[i].cardPts : 0), scoreTxt, 'cau'); }
+// Número de una celda que cuenta hasta el total con el «+N» verde al lado
+function countCell(el, from, to, fmt) {
+  if (!el || to <= from) return;
+  const paint = v => { const [n, w] = fmt(v); el.firstChild.textContent = `${n} ${w}`; };
+  const chip = document.createElement('span'); chip.className = 'plus'; chip.textContent = '+' + (to - from); el.appendChild(chip);
+  if (reduce) { paint(to); return; }
+  const t0 = performance.now(), ms = 900 * SPEEDS[speedIx][1];
+  const step = now => { const k = Math.min(1, (now - t0) / ms); paint(Math.round(from + (to - from) * k)); if (k < 1) requestAnimationFrame(step); };
+  requestAnimationFrame(step);
+}
 // Marcador animado: cuando una pareja suma, sale un «+N» verde junto a su marcador y el número va contando hasta el total.
 // Si baja (rebac que quita un bac) o empieza otra partida, se pone directamente.
 const SCF = [{ shown: null, target: null, key: '', raf: 0 }, { shown: null, target: null, key: '', raf: 0 }];
@@ -2153,14 +2181,24 @@ function showSummary() {
   }
   const R = S.summary; if (!R) return;
   const row = (l, k) => `<tr><td>${l}</td><td>${R[0][k]}</td><td>${R[1][k]}</td></tr>`;
+  const held = cauHeld(), before = i => S.score[i] - (held ? R[i].cardPts : 0);
+  const scoreLine0 = i => { const [n, w] = scoreTxt(before(i)); return `${n} ${w}`; };
   const title = S.over ? winTitle() : L(`Fin de la mano ${S.handNo}`, `Final de la mà ${S.handNo}`);
   showPanel(`<h2>${title}</h2>
   <table class="sum"><thead><tr><th></th><th class="us">${TEAMN[0]}</th><th class="them">${TEAMN[1]}</th></tr></thead><tbody>
   ${row(L('Cartas', 'Cartes'), 'cards')}${row(L('Puntos por cartas (más de 20)', 'Punts per cartes (més de 20)'), 'cardPts')}${row('Bac', 'bac')}${row('Rebac', 'rebac')}${row('Sant Vicent', 'sv')}${row('Limpia', 'limpia')}${row('De nit', 'nit')}${(R[0].pixat || R[1].pixat) ? row("S'ha pixat", 'pixat') : ''}
   <tr class="tot"><td>${L('Total de la mano', 'Total de la mà')}</td><td>${R[0].total}</td><td>${R[1].total}</td></tr>
-  <tr class="tot"><td>Marcador</td><td>${scoreLine(0)}</td><td>${scoreLine(1)}</td></tr></tbody></table>
+  <tr class="tot"><td>Marcador</td><td class="sumsc" id="sumsc0"><span>${scoreLine0(0)}</span></td><td class="sumsc" id="sumsc1"><span>${scoreLine0(1)}</span></td></tr></tbody></table>
   ${(S.duelNotes || []).map(t => `<p>${t}</p>`).join('')}
   ${guest ? (S.over && !NET.match ? netEndWait() : gwait) : ''}${netRxBar()}<div class="acts">${guest ? gacts : S.over ? (APP.mode === 'cotocau' ? `<button class="btn primary" type="button" data-act="match">${L('Continuar', 'Continuar')}</button>` : NET ? netEndActs() : `<button class="btn" type="button" data-act="menu">${L('Salir al menú', 'Eixir al menú')}</button><button class="btn primary" type="button" data-act="newgame">${L('Nueva partida', 'Partida nova')}</button>`) : `<button class="btn primary" type="button" data-act="nexthand">${L('Siguiente mano', 'Mà següent')}</button>`}</div>`);
+  if (held) {
+    const key = S.handNo + ':' + S.score.join(','), sc = S.score.slice(), from = [before(0), before(1)];
+    setTimeout(() => {
+      if (!S || S.handNo + ':' + S.score.join(',') !== key) return;
+      cauSumKey = key; renderScore(0); renderScore(1);
+      for (const t of [0, 1]) countCell($('sumsc' + t), from[t], sc[t], scoreTxt);
+    }, 700);
+  }
 }
 
 function rulesCoto() {
