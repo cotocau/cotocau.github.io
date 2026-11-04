@@ -1816,7 +1816,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-04-10';
+const APP_VER = 'cau-2026-11-04-11';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
 // sus partidas llevan «-pruebas» en la versión y su online usa salas aparte (canales cc-p…), para no mezclarse con la oficial.
 const PRUEBAS = true;
@@ -2041,21 +2041,19 @@ function render() {
   if ((S.phase === 'handEnd' || S.phase === 'gameEnd') && $('overlay').hidden && !duelHold().n) showSummary();
 }
 
-// Voces del Cau (4 nov): grabaciones en voz/<va|es>/<clave>.mp3. Las que estén apuntadas en VOZ_REC suenan grabadas
-// (si falta la del idioma elegido, la del otro). Mientras falten, en la versión de pruebas lee el texto la voz del móvil.
-const VOZ_REC = { va: [], es: [] };
-const VOZ_TXT = { bac: 'Bac!', rebac: 'Rebac!', sv: 'Sant Vicent!', denit: 'De nit!', xic: 'Xic!', xac: 'Xac!', envit: 'Envide!', torne: 'Torne a envidar!', falta: 'La partida!', acabat: ["S'han acabat!", '¡Se han acabado!'] };
+// Voces del Cau (4 nov): solo en valenciano, también jugando en castellano (en castellano suenan raro).
+// Grabaciones en voz/va/<clave>.mp3: las apuntadas en VOZ_REC suenan grabadas; las demás, solo en pruebas, las lee la voz del móvil.
+const VOZ_REC = [];
+const VOZ_TXT = { bac: 'Bac!', rebac: 'Rebac!', sv: 'Sant Vicent!', denit: 'De nit!', xic: 'Xic!', xac: 'Xac!', envit: 'Envide!', torne: 'Torne a envidar!', falta: 'La partida!', acabat: "S'han acabat!" };
 const vozCache = {};
 function voz(k) {
   if (!Object.prototype.hasOwnProperty.call(VOZ_TXT, k)) return;
   if (NET && NET.role === 'host' && NET.started) netEv({ k: 'voz', v: k });
   if (SETTINGS.voces === false) return;
-  const lg = LANG === 'va' ? 'va' : 'es', f = [lg, lg === 'va' ? 'es' : 'va'].find(x => VOZ_REC[x].includes(k));
   try {
-    if (f) { const a = vozCache[f + k] || (vozCache[f + k] = new Audio(`voz/${f}/${k}.mp3`)); a.currentTime = 0; a.play().catch(() => {}); return; }
+    if (VOZ_REC.includes(k)) { const a = vozCache[k] || (vozCache[k] = new Audio(`voz/va/${k}.mp3`)); a.currentTime = 0; a.play().catch(() => {}); return; }
     if (!PRUEBAS || !window.speechSynthesis) return;
-    const t = VOZ_TXT[k], u = new SpeechSynthesisUtterance(Array.isArray(t) ? t[lg === 'va' ? 0 : 1] : t);
-    u.lang = lg === 'va' ? 'ca-ES' : 'es-ES'; speechSynthesis.cancel(); speechSynthesis.speak(u);
+    const u = new SpeechSynthesisUtterance(VOZ_TXT[k]); u.lang = 'ca-ES'; speechSynthesis.cancel(); speechSynthesis.speak(u);
   } catch (e) {}
 }
 
@@ -3427,7 +3425,7 @@ function showSettings() {
   <div class="opt"><label>${L('Compartir mis partidas', 'Compartir les meues partides')}</label>${seg('share', off.map(([v]) => [v, v ? L('Sí', 'Sí') : 'No']), !!SETTINGS.share, true)}<span class="desc">${L('Envía tus manos (cartas, jugadas y marcador, sin datos personales) para mejorar los bots.', 'Envia les teues mans (cartes, jugades i marcador, sense dades personals) per a millorar els bots.')}</span>
     <span class="names"><span><small>${L('Alias', 'Àlies')}</small><input id="aliasset" type="text" maxlength="20" value="${esc(SETTINGS.alias || '')}"></span></span></div>
   ${PRUEBAS ? `<div class="opt"><label>🧪 ${L('Ver todas las cartas (pruebas)', 'Vore totes les cartes (proves)')}</label>${seg('showAll', off, !!SETTINGS.showAll, true)}<span class="desc">${L('Para estudiar a los bots: enseña las cartas de tu compañero y de los rivales. Solo contra bots.', 'Per a estudiar els bots: mostra les cartes del teu company i dels rivals. Només contra bots.')}</span></div>` : ''}
-  ${PRUEBAS || VOZ_REC.va.length || VOZ_REC.es.length ? `<div class="opt"><label>${L('Voces (Cau)', 'Veus (Cau)')}</label>${seg('voces', off, SETTINGS.voces !== false, true)}<span class="desc">${L('Se oye «Bac!», «De nit!», «Envide!»… cuando pasa en la mesa.', 'Se sent «Bac!», «De nit!», «Envide!»… quan passa al tapet.')}</span></div>` : ''}
+  ${PRUEBAS || VOZ_REC.length ? `<div class="opt"><label>${L('Voces (Cau)', 'Veus (Cau)')}</label>${seg('voces', off, SETTINGS.voces !== false, true)}<span class="desc">${L('Se oye «Bac!», «De nit!», «Envide!»… cuando pasa en la mesa.', 'Se sent «Bac!», «De nit!», «Envide!»… quan passa al tapet.')}</span></div>` : ''}
   <div class="opt"><label>${L('Ritmo', 'Ritme')}</label>${seg('speed', [[0, L('Lento', 'Lent')], [1, 'Normal'], [2, L('Rápido', 'Ràpid')]], speedIx)}</div>
   <div class="acts"><button class="btn primary" type="button" data-act="back">${L('Volver', 'Tornar')}</button></div>`); cover();
 }
