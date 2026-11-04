@@ -1753,21 +1753,24 @@ function coBotSwap(G, p) {
   if (G.stock.length <= 4) {
     // última baza con montón jugando el último: si mi pareja pierde la baza, la pinta cae igual en mi pareja
     // (la roba el que juega antes del ganador): no cambio y no enseño el 7
-    if (CO_EXP.keep7 && G.stock.length === 4 && G.trick.length === 3) {
-      const lvl = typeof levelOf === 'function' ? levelOf(p) : 'experto';
-      // ¿gana mi pareja la baza? (sin cambiar, y cambiando, que con la carta de la pinta quizá pueda ganarla yo)
-      const wins = sw => {
+    // última baza con montón, juegue donde juegue: esperar nunca es peor. Si la gana mi pareja el 7 se cambia solo, y si la gana
+    // un rival la pinta cae en mi pareja (la roba el que juega antes del ganador). Solo cambio ya si con la pinta canto,
+    // o si la quiero jugar en esta baza y con ella la gana mi pareja (mano de Jordi del 4 nov: Maria se quedaba el rey y le quitaba las 40)
+    if (CO_EXP.keep7 && G.stock.length === 4) {
+      const pr0 = G.pinta.r, oth = pr0 === C_REY ? C_SOTA : pr0 === C_SOTA ? C_REY : null;
+      if (oth != null && !G.sung.includes(G.trump) && G.hands[p].some(c => c.s === G.trump && c.r === oth)) return true;
+      const lvl = typeof levelOf === 'function' ? levelOf(p) : 'experto', pinId = G.pinta.id;
+      const pick = sw => {
         const orig = G.hands[p], pin = G.pinta, st = G.stock[G.stock.length - 1], rv = G.revealed ? G.revealed[p] : null;
         if (sw) { const seven = orig.find(c => c.s === G.trump && c.r === C_SIETE); G.hands[p] = orig.filter(c => c !== seven).concat([pin]); G.pinta = seven; G.stock[G.stock.length - 1] = seven; G.swapped = true; if (rv) G.revealed[p] = rv.concat([pin.id]); }
         let r = true, id = null;
-        try { id = coBotChoose(G, p, lvl); const c = G.hands[p].find(x => x.id === id); if (c) r = team(coTrickWinner(G, G.trick.concat([{ p, c }])).p) === team(p); }
+        try { id = coBotChoose(G, p, lvl); const c = G.hands[p].find(x => x.id === id); if (c && G.trick.length === 3) r = team(coTrickWinner(G, G.trick.concat([{ p, c }])).p) === team(p); }
         finally { G.hands[p] = orig; G.pinta = pin; G.stock[G.stock.length - 1] = st; G.swapped = false; if (rv) G.revealed[p] = rv; }
         return { r, id };
       };
-      // la carta ya pensada se guarda para jugarla justo después (coBotChoose) y no decidir dos veces distinto
-      const a = wins(false);
-      if (!a.r) { const b = wins(true); G.preChoice = { p, n: G.played.length, id: b.r ? b.id : a.id }; if (!b.r) return false; }
-      else G.preChoice = { p, n: G.played.length, id: a.id };
+      const b = pick(true);
+      if (b.id === pinId && b.r) { G.preChoice = { p, n: G.played.length, id: b.id }; return true; }
+      const a = pick(false); G.preChoice = { p, n: G.played.length, id: a.id }; return false;
     }
     return true;
   }
@@ -1812,7 +1815,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-04-8';
+const APP_VER = 'cau-2026-11-04-9';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
 // sus partidas llevan «-pruebas» en la versión y su online usa salas aparte (canales cc-p…), para no mezclarse con la oficial.
 const PRUEBAS = true;
