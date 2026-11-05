@@ -1129,7 +1129,8 @@ function coSing(G, p, s) {
 }
 // Cambiar el 7: la pinta es figura, 3 o As, queda montón, y su pareja ya ha ganado alguna baza
 function coCanSwap(G, p) {
-  return G.phase === 'play' && !coArrastre(G) && !G.swapped && C_CAMBIABLE.includes(G.pinta.r) && G.won[team(p)] > 0 &&
+  // como los cantes: solo justo después de que su pareja gane una baza, antes de salir a la siguiente, le toque o no (5 nov)
+  return G.phase === 'play' && !coArrastre(G) && !G.swapped && C_CAMBIABLE.includes(G.pinta.r) && G.canSing === team(p) && !G.trick.length &&
     G.hands[p].some(c => c.s === G.trump && c.r === C_SIETE);
 }
 function coSwap(G, p) {
@@ -1361,7 +1362,7 @@ function coDeterminize0(G, p) {
   return null;
 }
 function coRolloutValue(d, t) { return (d.pts[t] + d.cantes[t]) - (d.pts[1 - t] + d.cantes[1 - t]); }
-const CO_EXP = { trumpPen: 5, briscaPen: 0, leadPen: 12, noLead: true, minTrumpPts: 10, solve: 7, protect: true, deepLast: 8, discW: 1, signals: false, markW: 6, noGift: true, N: 80, refine: 12, refineN: 400, refineMs: 250, safe3: true, safe3T: true, secoW: 4, keep7: true, loadTol: 1, winW: 60, vueltasScale: 0 };
+const CO_EXP = { trumpPen: 5, briscaPen: 0, leadPen: 12, noLead: true, minTrumpPts: 10, solve: 7, protect: true, deepLast: 8, discW: 1, signals: false, markW: 6, noGift: true, N: 80, refine: 12, refineN: 400, refineMs: 250, safe3: true, safe3T: true, secoW: 4, swapV: true, swapTop: true, swapLast: false, swapNow: false, loadTol: 1, winW: 60, vueltasScale: 0 };
 // Muy difícil. El metajuego cambia según el momento:
 // · mano normal, con montón: se guardan los triunfos para el arrastre y nunca se sale de triunfo;
 // · arrastre: se puede salir de triunfo para quitar los de los rivales;
@@ -1740,7 +1741,6 @@ function coEquivPoints(G, p, id) {
   return best.id;
 }
 function coBotChoose(G, p, lvl) {
-  if (G.preChoice) { const x = G.preChoice; G.preChoice = null; if (x.p === p && x.n === G.played.length && x.id != null && coLegal(G, p).some(c => c.id === x.id)) return x.id; }
   if (lvl === 'experto' || lvl === 'dificil') { const x = coSureExit(G, p); if (x != null) return x; }   // salirse ya si es seguro
   if (lvl === 'facil') return coBotEasy(G, p);
   if (lvl === 'dificil') return coBotBest(G, p);
@@ -1753,35 +1753,21 @@ function coBotCantes(G, p) {
   const ss = coCantesFor(G, p); if (!ss.length) return [];
   return ss;
 }
-// cambiar el 7: como en la mesa, se espera al final (última baza con montón) salvo que el cambio dé las 40
+// cambiar el 7: solo se puede justo después de que gane la baza su pareja (le toque o no). Los bots cambian
+// si el cambio da las 40; en vueltas, en cuanto pueden (la partida suele acabar antes del arrastre: 5 nov);
+// en la mano, esperan al final: en la última ocasión (queda la última baza con montón) solo si la pinta es el triunfo
+// más alto que queda (con ella ganan esa baza seguro). Si no, si su pareja gana la última baza con montón se cambia solo,
+// y si la gana un rival la pinta cae en su pareja (la roba el que juega antes del ganador).
 function coBotSwap(G, p) {
   if (!coCanSwap(G, p)) return false;
-  if (G.stock.length <= 4) {
-    // última baza con montón jugando el último: si mi pareja pierde la baza, la pinta cae igual en mi pareja
-    // (la roba el que juega antes del ganador): no cambio y no enseño el 7
-    // última baza con montón, juegue donde juegue: esperar nunca es peor. Si la gana mi pareja el 7 se cambia solo, y si la gana
-    // un rival la pinta cae en mi pareja (la roba el que juega antes del ganador). Solo cambio ya si con la pinta canto,
-    // o si la quiero jugar en esta baza y con ella la gana mi pareja (4 nov: Maria se quedaba el rey y le quitaba las 40 a su compañero)
-    if (CO_EXP.keep7 && G.stock.length === 4) {
-      const pr0 = G.pinta.r, oth = pr0 === C_REY ? C_SOTA : pr0 === C_SOTA ? C_REY : null;
-      if (oth != null && !G.sung.includes(G.trump) && G.hands[p].some(c => c.s === G.trump && c.r === oth)) return true;
-      const lvl = typeof levelOf === 'function' ? levelOf(p) : 'experto', pinId = G.pinta.id;
-      const pick = sw => {
-        const orig = G.hands[p], pin = G.pinta, st = G.stock[G.stock.length - 1], rv = G.revealed ? G.revealed[p] : null;
-        if (sw) { const seven = orig.find(c => c.s === G.trump && c.r === C_SIETE); G.hands[p] = orig.filter(c => c !== seven).concat([pin]); G.pinta = seven; G.stock[G.stock.length - 1] = seven; G.swapped = true; if (rv) G.revealed[p] = rv.concat([pin.id]); }
-        let r = true, id = null;
-        try { id = coBotChoose(G, p, lvl); const c = G.hands[p].find(x => x.id === id); if (c && G.trick.length === 3) r = team(coTrickWinner(G, G.trick.concat([{ p, c }])).p) === team(p); }
-        finally { G.hands[p] = orig; G.pinta = pin; G.stock[G.stock.length - 1] = st; G.swapped = false; if (rv) G.revealed[p] = rv; }
-        return { r, id };
-      };
-      const b = pick(true);
-      if (b.id === pinId && b.r) { G.preChoice = { p, n: G.played.length, id: b.id }; return true; }
-      const a = pick(false); G.preChoice = { p, n: G.played.length, id: a.id }; return false;
-    }
-    return true;
+  const pr = G.pinta.r, oth = pr === C_REY ? C_SOTA : pr === C_SOTA ? C_REY : null;
+  if (oth != null && !G.sung.includes(G.trump) && G.hands[p].some(c => c.s === G.trump && c.r === oth)) return true;
+  if (CO_EXP.swapNow || (G.vueltas && CO_EXP.swapV)) return true;
+  if (G.stock.length === 4) {
+    if (CO_EXP.swapLast) return true;
+    if (CO_EXP.swapTop) { const sp = CSTR[pr]; return [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].every(r => CSTR[r] <= sp || G.played.includes(G.trump * 10 + r) || G.hands[p].some(c => c.s === G.trump && c.r === r)); }
   }
-  const pr = G.pinta.r, other = pr === C_REY ? C_SOTA : pr === C_SOTA ? C_REY : null;
-  return other != null && !G.sung.includes(G.trump) && G.hands[p].some(c => c.s === G.trump && c.r === other);
+  return false;
 }
 
 /* ---------------- Cartas españolas ---------------- */
@@ -1821,7 +1807,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-05-2';
+const APP_VER = 'cau-2026-11-05-3';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
 // sus partidas llevan «-pruebas» en la versión y su online usa salas aparte (canales cc-p…), para no mezclarse con la oficial.
 const PRUEBAS = true;
@@ -2273,14 +2259,14 @@ function rulesCoto() {
   <p>El guiñote de Alcoy: cuatro jugadores en dos parejas, baraja española de 40 cartas. Se juega hacia la derecha.</p>
   <h3>Cartas</h3><ul><li>Orden de fuerza: as, tres, rey, sota, caballo, 7, 6, 5, 4, 2.</li><li>Puntos: as 11, tres 10, rey 4, sota 3, caballo 2; el resto, 0. Con las 10 de últimas hay 130 puntos por mano.</li><li>Cualquier triunfo gana a cualquier carta de otro palo. Si no hay triunfo, gana la más alta del palo de salida.</li></ul>
   <h3>Reparto</h3><ul><li>6 cartas a cada uno, de una en una. La siguiente se deja boca arriba bajo el montón: es la pinta y marca el triunfo.</li><li>Reparte quien hizo las 10 de últimas en la mano anterior. Sale el de su derecha.</li></ul>
-  <h3>Mientras queda montón</h3><ul><li>Tirada libre: no hay que asistir ni matar.</li><li>Después de cada baza roban todos, empezando por quien la ha ganado, que sale en la siguiente.</li><li><b>Cantes:</b> rey y sota del mismo palo. Las 40 si es de triunfo, las 20 si no. Se canta cuando tu pareja acaba de ganar una baza, antes de salir a la siguiente; se pueden cantar varios a la vez y también es opcional.</li><li><b>Cambiar el 7:</b> si la pinta es figura, tres o as, quien tenga el 7 de triunfo la puede cambiar mientras quede montón, si su pareja ya ha ganado alguna baza.</li></ul>
+  <h3>Mientras queda montón</h3><ul><li>Tirada libre: no hay que asistir ni matar.</li><li>Después de cada baza roban todos, empezando por quien la ha ganado, que sale en la siguiente.</li><li><b>Cantes:</b> rey y sota del mismo palo. Las 40 si es de triunfo, las 20 si no. Se canta cuando tu pareja acaba de ganar una baza, antes de salir a la siguiente; se pueden cantar varios a la vez y también es opcional.</li><li><b>Cambiar el 7:</b> si la pinta es figura, tres o as, quien tenga el 7 de triunfo la puede cambiar mientras quede montón. Como los cantes, solo justo después de que su pareja gane una baza, antes de salir a la siguiente, le toque o no. En la última baza con montón, si la gana su pareja, se cambia solo.</li></ul>
   <h3>Arrastre (sin montón)</h3><ul><li>Siempre hay que seguir el palo.</li><li>Si va ganando un rival: hay que superarle si se puede. Sin el palo, hay que matar con triunfo, y si ya hay un triunfo, echar uno más alto si se tiene.</li><li>Si va ganando tu compañero: cualquier carta del palo; sin el palo, carta libre.</li></ul>
   <h3>Partida y coto</h3><ul><li>Se gana con 101 puntos: las 50 primeras son malas y a partir de ahí, buenas (51 buenas).</li><li>Si al acabar la mano las dos parejas pasan de 50 buenas, gana la que hizo las 10 de últimas.</li><li>Si nadie llega, se juega otra mano de vueltas sumando, y la partida acaba en el momento en que una pareja llega a 101 (con bazas o cantes): «se sale».</li><li>El coto se juega al mejor de 5 partidas (o de 3, en Ajustes).</li></ul>`,
   `<h2>Regles del Coto</h2>
   <p>El guinyot d'Alcoi: quatre jugadors en dues parelles, baralla espanyola de 40 cartes. Es juga cap a la dreta.</p>
   <h3>Cartes</h3><ul><li>Ordre de força: as, tres, rei, sota, cavall, 7, 6, 5, 4, 2.</li><li>Punts: as 11, tres 10, rei 4, sota 3, cavall 2; la resta, 0. Amb les 10 d'últimes hi ha 130 punts per mà.</li><li>Qualsevol triomf guanya a qualsevol carta d'un altre pal. Si no hi ha triomf, guanya la més alta del pal d'eixida.</li></ul>
   <h3>Repartiment</h3><ul><li>6 cartes a cadascú, d'una en una. La següent es deixa cap per amunt davall del munt: és la pinta i marca el triomf.</li><li>Reparteix qui va fer les 10 d'últimes en la mà anterior. Ix el de la seua dreta.</li></ul>
-  <h3>Mentre queda munt</h3><ul><li>Tirada lliure: no cal assistir ni matar.</li><li>Després de cada basa roben tots, començant per qui l'ha guanyada, que ix en la següent.</li><li><b>Cants:</b> rei i sota del mateix pal. Les 40 si és de triomf, les 20 si no. Es canta quan la teua parella acaba de guanyar una basa, abans d'eixir a la següent; se'n poden cantar diversos alhora i també és opcional.</li><li><b>Canviar el 7:</b> si la pinta és figura, tres o as, qui tinga el 7 de triomf la pot canviar mentre quede munt, si la seua parella ja ha guanyat alguna basa.</li></ul>
+  <h3>Mentre queda munt</h3><ul><li>Tirada lliure: no cal assistir ni matar.</li><li>Després de cada basa roben tots, començant per qui l'ha guanyada, que ix en la següent.</li><li><b>Cants:</b> rei i sota del mateix pal. Les 40 si és de triomf, les 20 si no. Es canta quan la teua parella acaba de guanyar una basa, abans d'eixir a la següent; se'n poden cantar diversos alhora i també és opcional.</li><li><b>Canviar el 7:</b> si la pinta és figura, tres o as, qui tinga el 7 de triomf la pot canviar mentre quede munt. Com els cants, només just després que la seua parella guanye una basa, abans d'eixir a la següent, li toque o no. En l'última basa amb munt, si la guanya la seua parella, es canvia sola.</li></ul>
   <h3>Arrossegament (sense munt)</h3><ul><li>Sempre cal seguir el pal.</li><li>Si guanya un rival: cal superar-lo si es pot. Sense el pal, cal matar amb triomf, i si ja hi ha un triomf, tirar-ne un de més alt si se'n té.</li><li>Si guanya el teu company: qualsevol carta del pal; sense el pal, carta lliure.</li></ul>
   <h3>Partida i coto</h3><ul><li>Es guanya amb 101 punts: els 50 primers són males i a partir d'ací, bones (51 bones).</li><li>Si en acabar la mà les dues parelles passen de 50 bones, guanya la que va fer les 10 d'últimes.</li><li>Si ningú no hi arriba, es juga una altra mà de voltes sumant, i la partida acaba en el moment en què una parella arriba a 101 (amb bases o cants): «s'ix».</li><li>El coto es juga al millor de 5 partides (o de 3, en Ajustos).</li></ul>`);
 }
@@ -2638,7 +2624,7 @@ function netBannerHTML() {
 const humanSeat = p => p === 0 || !!(NET && NET.role === 'host' && NET.started && NET.seats[p].kind === 'human' && NET.seats[p].online && !NET.seats[p].away);
 function netCanteWait() {
   if (NET.role !== 'host' || G.trick.length) return false;
-  for (const q of [1, 2, 3]) if (humanSeat(q) && G.turn !== q && coCantesFor(G, q).length && (G.remotePass || {})[q] !== G.trickNo) return true;
+  for (const q of [1, 2, 3]) if (humanSeat(q) && G.turn !== q && (coCantesFor(G, q).length || coCanSwap(G, q)) && (G.remotePass || {})[q] !== G.trickNo) return true;
   return false;
 }
 const seatName = p => [L('Tú (anfitrión)', 'Tu (amfitrió)'), L('Rival de la derecha', 'Rival de la dreta'), L('Compañero', 'Company'), L('Rival de la izquierda', "Rival de l'esquerra")][p];
@@ -2789,7 +2775,7 @@ function netWaitCheck() {
   let W = [], key = '';
   if (NET.started && !busy && isCoto() && G && G.phase === 'play') {
     if (G.turn !== 0 && humanSeat(G.turn)) W = [G.turn];
-    else if (netCanteWait()) W = [1, 2, 3].filter(q => humanSeat(q) && G.turn !== q && coCantesFor(G, q).length && (G.remotePass || {})[q] !== G.trickNo);
+    else if (netCanteWait()) W = [1, 2, 3].filter(q => humanSeat(q) && G.turn !== q && (coCantesFor(G, q).length || coCanSwap(G, q)) && (G.remotePass || {})[q] !== G.trickNo);
     if (W.length) key = `${G.partidaNo}.${G.handNo}.${G.trickNo}.${G.trick.length}.${W.join()}`;
   } else if (NET.started && !busy && !isCoto() && S && $('overlay').hidden) {
     if (S.phase === 'play' && S.turn !== 0 && humanSeat(S.turn)) W = [S.turn];
@@ -3315,7 +3301,7 @@ function tutCoach() {
   if (k === 0) return me ? L(`Sales tú. Mientras queda montón puedes echar lo que quieras. Para empezar, echa una carta baja que no vale puntos, el <b>4 de copas</b>: así no arriesgas nada.`, `Ixes tu. Mentre queda munt pots tirar el que vulgues. Per a començar, tira una carta baixa que no val punts, el <b>4 de copes</b>: així no arrisques res.`)
     : L('Juegan los demás…', 'Juguen els altres…');
   if (k === 1 && !t && coCantesFor(G, 0).length) return L(`Tu pareja ha ganado la baza, y justo ahora, antes de que salga la siguiente, se puede <b>cantar</b>.<br>Tienes <b>rey y sota de espadas</b>: es un cante de <b>20</b>. Si fueran de triunfo (oros) serían <b>las 40</b>. En una mano puede haber hasta tres cantes de 20 (uno por palo) y uno de 40.<br>Pulsa <b>Cantar 20 en espadas</b>.`, `La teua parella ha guanyat la basa, i just ara, abans que isca la següent, es pot <b>cantar</b>.<br>Tens <b>rei i sota d'espases</b>: és un cant de <b>20</b>. Si foren de triomf (oros) serien <b>les 40</b>. En una mà pot haver-hi fins a tres cants de 20 (un per pal) i un de 40.<br>Prem <b>Cantar 20 en espases</b>.`);
-  if (k === 1 && !t && coCanSwap(G, 0)) return L(`¡20 puntos más! Ahora el <b>7 de triunfo</b>: quien lo tiene puede cambiarlo por la pinta si es buena (figura, tres o as), también justo cuando gana su pareja.<br>Tienes el 7 de oros y la pinta es el rey de oros: pulsa <b>Cambiar el 7</b>.`, `20 punts més! Ara el <b>7 de triomf</b>: qui el té pot canviar-lo per la pinta si és bona (figura, tres o as), també just quan guanya la seua parella.<br>Tens el 7 d'oros i la pinta és el rei d'oros: prem <b>Canviar el 7</b>.`);
+  if (k === 1 && !t && coCanSwap(G, 0)) return L(`¡20 puntos más! Ahora el <b>7 de triunfo</b>: quien lo tiene puede cambiarlo por la pinta si es buena (figura, tres o as), como los cantes: justo después de que gane una baza su pareja.<br>Tienes el 7 de oros y la pinta es el rey de oros: pulsa <b>Cambiar el 7</b>.`, `20 punts més! Ara el <b>7 de triomf</b>: qui el té pot canviar-lo per la pinta si és bona (figura, tres o as), com els cants: just després que guanye una basa la seua parella.<br>Tens el 7 d'oros i la pinta és el rei d'oros: prem <b>Canviar el 7</b>.`);
   if (k === 1) return me ? L(`${N[3]} ha echado el <b>as de bastos</b> (11 puntos). Tú no tienes bastos, pero tienes triunfos: puedes <b>matar con triunfo</b>. El <b>2 de oros</b> gana a cualquier carta de otro palo. ¡Échalo!`, `${N[3]} ha tirat l'<b>as de bastos</b> (11 punts). Tu no tens bastos, però tens triomfs: pots <b>matar amb triomf</b>. El <b>2 d'oros</b> guanya a qualsevol carta d'un altre pal. Tira'l!`)
     : L('Juegan los demás…', 'Juguen els altres…');
   if (k === 2) return me ? L(`Has ganado la baza, así que sales tú.<br><b>Consejo:</b> al salir, interesa irte de un palo que tu pareja <b>no tenga</b>, porque así podrá matar con triunfo. Todavía no sabes qué le falta a ${N[2]}, así que echa una carta que no vale nada: el <b>7 de copas</b>.`, `Has guanyat la basa, així que ixes tu.<br><b>Consell:</b> en eixir, interessa anar-se'n d'un pal que la teua parella <b>no tinga</b>, perquè així podrà matar amb triomf. Encara no saps què li falta a ${N[2]}, així que tira una carta que no val res: el <b>7 de copes</b>.`)
@@ -3352,8 +3338,8 @@ const TUT = {
       h: ['Sale el de la derecha de quien reparte y cada uno echa una carta. Gana la más alta del palo que ha salido, salvo que alguien eche triunfo. Quien gana se lleva las cuatro cartas y sale en la siguiente.<br><br>Mientras queda montón puedes echar <b>lo que quieras</b>, y al acabar cada baza todos roban una carta, empezando por el que la ha ganado.',
           'Ix el de la dreta del que reparteix i cadascú tira una carta. Guanya la més alta del pal que ha eixit, llevat que algú tire triomf. Qui guanya s\'endú les quatre cartes i ix en la següent.<br><br>Mentre queda munt pots tirar <b>el que vulgues</b>, i en acabar cada basa tots roben una carta, començant pel que l\'ha guanyada.'] },
     { t: ['Cantes y el 7', 'Cants i el 7'], cards: [[19], [17], [26, L('cambia', 'canvia')]],
-      h: ['Si tienes <b>rey y sota del mismo palo</b>, cantas: 20 puntos, o <b>las 40</b> si son de triunfo. Solo se canta justo después de que tu pareja gane una baza; te saldrá un botón para hacerlo.<br><br>Si la pinta es buena (figura, tres o as) y tienes el <b>7 de triunfo</b>, lo puedes cambiar por ella. En la última baza con montón se cambia solo si la gana tu pareja.',
-          'Si tens <b>rei i sota del mateix pal</b>, cantes: 20 punts, o <b>les 40</b> si són de triomf. Només es canta just després que la teua parella guanye una basa; t\'eixirà un botó per a fer-ho.<br><br>Si la pinta és bona (figura, tres o as) i tens el <b>7 de triomf</b>, la pots canviar. En l\'última basa amb munt es canvia sola si la guanya la teua parella.'] },
+      h: ['Si tienes <b>rey y sota del mismo palo</b>, cantas: 20 puntos, o <b>las 40</b> si son de triunfo. Solo se canta justo después de que tu pareja gane una baza; te saldrá un botón para hacerlo.<br><br>Si la pinta es buena (figura, tres o as) y tienes el <b>7 de triunfo</b>, lo puedes cambiar por ella, también justo después de que tu pareja gane una baza. En la última baza con montón se cambia solo si la gana tu pareja.',
+          'Si tens <b>rei i sota del mateix pal</b>, cantes: 20 punts, o <b>les 40</b> si són de triomf. Només es canta just després que la teua parella guanye una basa; t\'eixirà un botó per a fer-ho.<br><br>Si la pinta és bona (figura, tres o as) i tens el <b>7 de triomf</b>, la pots canviar, també just després que la teua parella guanye una basa. En l\'última basa amb munt es canvia sola si la guanya la teua parella.'] },
     { t: ['El arrastre', 'L\'arrossegament'], cards: [[3], [5, L('obligado', 'obligat')], [22]],
       h: ['Cuando se acaba el montón empieza el <b>arrastre</b> y cambian las normas:<br>• Hay que <b>seguir el palo</b> siempre.<br>• Si gana un rival, hay que <b>superarle</b> si se puede; si no tienes del palo, hay que <b>matar con triunfo</b>.<br>• Si gana tu compañero, basta con echar del palo.<br><br>Las cartas que no puedes jugar salen apagadas.',
           'Quan s\'acaba el munt comença l\'<b>arrossegament</b> i canvien les normes:<br>• Cal <b>seguir el pal</b> sempre.<br>• Si guanya un rival, cal <b>superar-lo</b> si es pot; si no tens del pal, cal <b>matar amb triomf</b>.<br>• Si guanya el teu company, n\'hi ha prou amb tirar del pal.<br><br>Les cartes que no pots jugar ixen apagades.'] },
@@ -3661,15 +3647,18 @@ function coRenderHand() {
 function coRenderBottom() {
   const el = $('bottom');
   if (coDealView) { el.innerHTML = `<div class="status"><span>${L('Reparte', 'Reparteix')} <b>${NAMES[G.dealer]}</b>…</span></div>`; return; }
-  let btns = '';
+  let btns = '', sing = false, swap = false;
   if (!busy && G.phase === 'play') {
     for (const s of coCantesFor(G, 0)) btns += `<button class="btn sing" type="button" data-co="sing" data-s="${s}">${s === G.trump ? L('Cantar las 40', 'Cantar les 40') : `${L('Cantar', 'Cantar')} 20 en ${SUITN[s]}`}</button>`;
-    if (btns && G.turn !== 0) btns += `<button class="btn" type="button" data-co="nosing">${L('No cantar', 'No cantar')}</button>`;
-    if (coCanSwap(G, 0) && !(TUTG && coCantesFor(G, 0).length)) btns += `<button class="btn primary" type="button" data-co="swap">${L('Cambiar el 7', 'Canviar el 7')}</button>`;
+    sing = !!btns; swap = coCanSwap(G, 0) && !(TUTG && coCantesFor(G, 0).length);
+    if (swap) btns += `<button class="btn primary" type="button" data-co="swap">${L('Cambiar el 7', 'Canviar el 7')}</button>`;
+    if (btns && G.turn !== 0) btns += `<button class="btn" type="button" data-co="nosing">${sing && swap ? L('Seguir', 'Seguir') : sing ? L('No cantar', 'No cantar') : L('No cambiar', 'No canviar')}</button>`;
   }
   let txt = '';
   if (G.phase === 'play' && !coFx && !coShowLast) txt = G.turn === 0 && !busy ? (coArrastre(G) && G.trick.length ? L('<b>Te toca.</b> Las cartas que no puedes jugar salen apagadas.', '<b>Et toca.</b> Les cartes que no pots jugar ixen apagades.') : L('<b>Te toca.</b> Elige una carta.', '<b>Et toca.</b> Tria una carta.')) : `${L('Juega', 'Juga')} <b>${NAMES[G.turn]}</b>…`;
-  if (btns && G.turn !== 0) txt = L('Podéis cantar: ¿cantas antes de que salga la baza?', 'Podeu cantar: cantes abans que isca la basa?');
+  if (btns && G.turn !== 0) txt = sing && swap ? L('Podéis cantar y puedes cambiar el 7: ¿lo haces antes de que salga la baza?', 'Podeu cantar i pots canviar el 7: ho fas abans que isca la basa?')
+    : sing ? L('Podéis cantar: ¿cantas antes de que salga la baza?', 'Podeu cantar: cantes abans que isca la basa?')
+    : L('Puedes cambiar el 7 por la pinta: ¿lo cambias antes de que salga la baza?', 'Pots canviar el 7 per la pinta: el canvies abans que isca la basa?');
   el.innerHTML = `<div class="status ${G.turn === 0 ? 'mine' : ''}"><span>${txt}</span>${btns}</div>`;
 }
 async function coDrain() {
@@ -3744,16 +3733,17 @@ async function cotoLoop() {
       while (!$('overlay').hidden && G.phase === 'play') await new Promise(r => setTimeout(r, 200));
       save();
       if (G.phase !== 'play') break;
+      // el 7 se cambia justo después de que gane la baza la pareja, le toque o no (5 nov)
+      if (!G.trick.length) { let sw = false; for (const q of [G.turn, (G.turn + 2) % 4]) if (!humanSeat(q) && coBotSwap(G, q)) { await coAnimSwap(q); await coDrain(); sw = true; } if (sw) { render(); continue; } }
       let sang = false;
       for (let i = 0; i < 4; i++) { const q = (G.turn + i) % 4; if (humanSeat(q)) continue; const ss = coCantesFor(G, q); if (ss.length) { for (const s of ss) coSing(G, q, s); sang = true; } }
       if (sang) { render(); await coDrain(); continue; }
-      if (coCantesFor(G, 0).length && G.cantePass !== G.trickNo && G.turn !== 0) break;
+      if ((coCantesFor(G, 0).length || coCanSwap(G, 0)) && G.cantePass !== G.trickNo && G.turn !== 0) break;
       if (TUTG && G.trickNo === 1 && !G.trick.length && coCanSwap(G, 0)) break;
       if (NET && netCanteWait()) break;
       if (humanSeat(G.turn)) break;
       render(); await sleep(650);
       const p = G.turn;
-      if (coBotSwap(G, p)) { await coAnimSwap(p); await coDrain(); }
       await sleep(350);
       const forced = TUTG && TUT_BOTS[G.trickNo] ? TUT_BOTS[G.trickNo][p] : null;
       await coDoPlay(p, forced != null ? forced : coBotChoose(G, p, levelOf(p)));
