@@ -507,6 +507,7 @@ function sing(S, p) {
   S.sung[p] = S.dealCombos[p];
   S.bubbles[p] = 'De nit';
   say(S, p === 0 ? L('Cantas «de nit».', 'Cantes «de nit».') : `${NAMES[p]} canta «de nit».`, 'sing');
+  S.feed[S.feed.length - 1].p = p;   // para la voz
 }
 function canFirst(S, p) {
   return S.phase === 'play' && S.turn === p && S.round < 3 && S.nitState === 'open' && !S.first[p] && !S.sung[p] && !!S.dealCombos[p] && S.hands[p].length === 3;
@@ -517,6 +518,7 @@ function canSecond(S, p) {
 function singSecond(S, p) {
   S.second[p] = true; S.bubbles[p] = 'De nit ×2';
   say(S, p === 0 ? L('Vuelves a cantar «de nit»: tienes rondín.', 'Tornes a cantar «de nit»: tens rondí.') : L(`${NAMES[p]} vuelve a cantar «de nit»: tenía rondín.`, `${NAMES[p]} torna a cantar «de nit»: tenia rondí.`), 'sing');
+  S.feed[S.feed.length - 1].p = p;
   addPts(S, team(p), 'nit', 1);
 }
 // Alguien canta en su turno: los que también tienen de nit (y aún no han jugado en este reparto) lo dicen en ese momento
@@ -568,7 +570,10 @@ const BETSAY = o => (LANG === 'va' ? { pass:'passen', xic:'diuen «xic»', envit
 function betAct(S, t, a) {
   const b = S.bet;
   say(S, `${TEAMN[t]} ${BETSAY(a)}.`, 'nit');
-  if (['xic', 'xac', 'envit', 'torne', 'falta'].includes(a)) S.feed[S.feed.length - 1].v = a;   // su voz suena al contarlo
+  if (['xic', 'xac', 'envit', 'torne', 'falta'].includes(a)) {   // su voz suena al contarlo, con la voz de quien habla por la pareja
+    const fi = S.feed[S.feed.length - 1], spk = [t, t + 2].filter(q => S.sung[q]);
+    fi.v = a; fi.p = t === 0 && S.sung[0] ? 0 : spk.length ? spk[0] : t;
+  }
   S.lastBet = { t, a };
   if (a === 'pass') {   // pasar el primero es rendirse: la otra pareja gana 1
     const w = 1 - t; say(S, apunt(w, 1), 'pts');
@@ -776,7 +781,7 @@ function evalPlay(S, p, cid) {
    difícil (imagina repartos posibles de las cartas ocultas y simula la vuelta entera) */
 let TUTG = null;   // partida guiada en curso
 let NET = null;    // partida online (anfitrión o invitado)
-let SETTINGS = { partner: 'experto', rivals: 'experto', hints: false, labels: false, socarrat: false, speed: 1, deck: 'clasica', lang: 'es', names: ['Toni','Maria','Vicent'], cotoBest: 5, unlocked: false, showAll: false, share: null, alias: '', voces: true };
+let SETTINGS = { partner: 'experto', rivals: 'experto', hints: false, labels: false, socarrat: false, speed: 1, deck: 'clasica', lang: 'es', names: ['Toni','Maria','Vicent'], cotoBest: 5, unlocked: false, showAll: false, share: null, alias: '', voces: true, voz: 1 };
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('cau.settings') || '{}')); } catch (e) {}
 applyLang(SETTINGS.lang, SETTINGS.names);
 const levelOf = p => p === 2 ? SETTINGS.partner : SETTINGS.rivals;
@@ -1816,7 +1821,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-05-1';
+const APP_VER = 'cau-2026-11-05-2';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
 // sus partidas llevan «-pruebas» en la versión y su online usa salas aparte (canales cc-p…), para no mezclarse con la oficial.
 const PRUEBAS = true;
@@ -2042,21 +2047,30 @@ function render() {
 }
 
 // Voces del Cau (4 nov): solo en valenciano, también jugando en castellano (en castellano suenan raro).
-// Grabaciones en voz/<voz>/<clave>.mp3 (5 nov: voz «Arnau» de Projecte AINA, para todos los jugadores de momento): las apuntadas
-// en VOZ_REC suenan grabadas; las demás, solo en pruebas, las lee la voz del móvil.
-const VOZ_DIR = 'arnau';
-const VOZ_REC = ['bac', 'rebac', 'sv', 'denit', 'xic', 'xac', 'envit', 'torne', 'falta', 'acabat'];
-const VOZ_TXT = { bac: 'Bac!', rebac: 'Rebac!', sv: 'Sant Vicent!', denit: 'De nit!', xic: 'Xic!', xac: 'Xac!', envit: 'Envide!', torne: 'Torne a envidar!', falta: 'La partida!', acabat: "S'han acabat!" };
+// 5 nov: cuatro voces numeradas en voz/<n>/<clave>.mp3 (Matxa TTS de Projecte AINA). Cada uno elige la suya en Ajustes;
+// contra bots, los demás asientos hablan con las otras; en el online cada persona con la suya y los bots con las que sobran.
+const VOZ_N = 4;
+const VOZ_KEYS = ['bac', 'rebac', 'sv', 'denit', 'xic', 'xac', 'envit', 'torne', 'falta', 'acabat'];
+const vozNum = x => { x = Math.floor(+x); return x >= 1 && x <= VOZ_N ? x : 1; };
+function seatVoices() {
+  const mine = vozNum(SETTINGS.voz), v = [mine, 0, 0, 0];
+  if (NET && NET.role === 'host') for (const q of [1, 2, 3]) { const st = NET.seats[q]; if (st && st.kind === 'human') v[q] = vozNum(st.voz); }
+  const all = Array.from({ length: VOZ_N }, (_, i) => i + 1), used = new Set(v.filter(Boolean));
+  let pool = all.filter(x => !used.has(x)); if (!pool.length) pool = all.filter(x => x !== mine); if (!pool.length) pool = [mine];
+  let i = 0; for (const q of [1, 2, 3]) if (!v[q]) v[q] = pool[i++ % pool.length];
+  return v;
+}
 const vozCache = {};
-function voz(k) {
-  if (!Object.prototype.hasOwnProperty.call(VOZ_TXT, k)) return;
-  if (NET && NET.role === 'host' && NET.started) netEv({ k: 'voz', v: k });
-  if (SETTINGS.voces === false) return;
-  try {
-    if (VOZ_REC.includes(k)) { const a = vozCache[k] || (vozCache[k] = new Audio(`voz/${VOZ_DIR}/${k}.mp3`)); a.currentTime = 0; a.play().catch(() => {}); return; }
-    if (!PRUEBAS || !window.speechSynthesis) return;
-    const u = new SpeechSynthesisUtterance(VOZ_TXT[k]); u.lang = 'ca-ES'; speechSynthesis.cancel(); speechSynthesis.speak(u);
-  } catch (e) {}
+function vozPlay(k, n) {
+  if (SETTINGS.voces === false || !VOZ_KEYS.includes(k)) return;
+  try { const f = `voz/${vozNum(n)}/${k}.mp3`, a = vozCache[f] || (vozCache[f] = new Audio(f)); a.currentTime = 0; a.play().catch(() => {}); } catch (e) {}
+}
+// k = frase, p = asiento de quien la dice (0 = tú)
+function voz(k, p) {
+  if (!VOZ_KEYS.includes(k)) return;
+  p = [0, 1, 2, 3].includes(p) ? p : 0; const n = seatVoices()[p];
+  if (NET && NET.role === 'host' && NET.started) netEv({ k: 'voz', v: k, p, n });
+  vozPlay(k, n);
 }
 
 let calloutTimer = null;
@@ -2075,8 +2089,8 @@ async function drainFeed(untilDeal) {
   const items = S.feed.splice(0, n);
   for (const i of items) if (i.duel) { DUELH.pts[i.duel.w] += i.duel.pts; DUELH.n++; }   // se guardan hasta su aviso
   for (const i of items) {
-    if (i.k === 'sing') { narr = i.txt; render(); voz('denit'); await callout('De nit', /^(Cantas|Vuelves|Cantes|Tornes)/.test(i.txt) ? NAMES[0] : i.txt.split(' ')[0]); }
-    else if (i.k === 'nit' || i.k === 'pts') { narr = i.txt; render(); if (i.v) voz(i.v); await sleep(1100); }
+    if (i.k === 'sing') { narr = i.txt; render(); voz('denit', i.p); await callout('De nit', /^(Cantas|Vuelves|Cantes|Tornes)/.test(i.txt) ? NAMES[0] : i.txt.split(' ')[0]); }
+    else if (i.k === 'nit' || i.k === 'pts') { narr = i.txt; render(); if (i.v) voz(i.v, i.p); await sleep(1100); }
     else if (i.k === 'duel') {
       const d = i.duel || { w: 0, pts: 0 };
       narr = i.txt; render();
@@ -2107,7 +2121,7 @@ async function doPlay(p, cid) {
     const who = special ? special.p : p;
     narr = `${cobra ? cobra.txt + '. ' : ''}${special ? `<b>${NAMES[who]}</b>: <b>${special.txt}</b> +${special.pts}` : cap ? `<b>${NAMES[p]}</b> ${L(`captura ${cap.n} cartas.`, `arreplega ${cap.n} cartes.`)}` : ''}`;
     render();
-    if (special && special.k !== 'limpia') voz(special.k);
+    if (special && special.k !== 'limpia') voz(special.k, special.p);
     if (special) await callout(special.txt,`${NAMES[who]} · +${special.pts}`);
     else await sleep(1100);
   } else await sleep(300);
@@ -2126,7 +2140,7 @@ async function doPlay(p, cid) {
     render(); await drainFeed(true);
     narr = L(`Reparto ${S.round} de 3.`, `Repartiment ${S.round} de 3.`);
     await animateDeal(false);
-    if (S.round === 3) voz('acabat');   // ya se ha repartido todo el mazo
+    if (S.round === 3) voz('acabat', S.dealer);   // ya se ha repartido todo el mazo: lo dice quien reparte
     if (TUTG && TUTG.cau) await tutPause(S.round === 2 ? L('<b>Segundo reparto:</b> 3 cartas más a cada uno. La mesa sigue como estaba, y en cada mano hay 3 repartos.', '<b>Segon repartiment:</b> 3 cartes més a cadascú. El tapet continua com estava, i en cada mà hi ha 3 repartiments.') : L('<b>Último reparto.</b> Aquí todos los que tienen pareja cantan de nit al principio. Al acabar, quien capturó el último se lleva lo que queda en la mesa, y cada pareja suma un punto por cada carta por encima de 20.', '<b>Últim repartiment.</b> Ací tots els que tenen parella canten de nit al principi. En acabar, qui va arreplegar l\'últim s\'endú el que queda al tapet, i cada parella suma un punt per cada carta per damunt de 20.'));
   }
   render();
@@ -2547,7 +2561,7 @@ function netGuestEv(e) {
       await coFly(coCenter(src), e.p === 'T' ? [tb.left + tb.width / 2, tb.top + tb.height / 2] : seatC(e.p), '<span class="back"></span>'.repeat(e.n || 1), 150); }
     else if (e.k === 'swap') { const pc = $('copinta') ? coCenter($('copinta')) : coCenter($('table')); await coFly(seatC(e.p), pc, card(e.seven, 50), 420); await coFly(pc, seatC(e.p), card(e.pinta, 50), 420); }
     else if (e.k === 'callout') callout(e.txt, e.sub, false);
-    else if (e.k === 'voz') voz(e.v);
+    else if (e.k === 'voz') vozPlay(e.v, e.n);
   }).catch(() => {});
 }
 // Los textos del anfitrión hablan de «tú» (el anfitrión) y de «Nosotros» (su pareja): para cada invitado se pasan a su punto de vista
@@ -2835,7 +2849,7 @@ async function netHostMsg(m) {
     const p = m.seat; if (!(p >= 1 && p <= 3) || NET.seats[p].kind !== 'free') return netLobby();
     const was = seatOf(m.id);
     if (was > 0) { NET.seats[p] = NET.seats[was]; NET.seats[was] = { kind: 'free' }; return netLobby(); }   // se cambia de sitio
-    NET.seats[p] = { kind: 'human', id: m.id, name: cleanName(m.name) || L('Jugador', 'Jugador'), online: true, last: Date.now() };
+    NET.seats[p] = { kind: 'human', id: m.id, name: cleanName(m.name) || L('Jugador', 'Jugador'), online: true, last: Date.now(), voz: vozNum(m.voz) };
     return netLobby();
   }
   if (m.t === 'act' && NET.started && (G || S)) {
@@ -3041,7 +3055,7 @@ function netGuestMsg(m) {
     const mine = typeof m.me === 'number' ? m.me : -1;
     if (mine > 0) { NET.roomSaved = 0; netRoomSave(); } else netRoomClear();
     if (mine > 0) NET.autoSit = false;
-    if (NET.autoSit && mine < 0) { const f = [1, 2, 3].find(p => m.seats[p] && m.seats[p].kind === 'free'); NET.autoSit = false; if (f) netSend({ t: 'sit', id: NET.id, name: NET.name, seat: f }); }
+    if (NET.autoSit && mine < 0) { const f = [1, 2, 3].find(p => m.seats[p] && m.seats[p].kind === 'free'); NET.autoSit = false; if (f) netSend({ t: 'sit', id: NET.id, name: NET.name, seat: f, voz: vozNum(SETTINGS.voz) }); }
     const cells = [0, 1, 2, 3].map(p => { const x = m.seats[p] || { kind: 'free' };
       if (p === 0) return { kind: 'host', name: m.host, sub: L('anfitrión', 'amfitrió') };
       if (x.kind === 'free') return { kind: 'free', name: '', ctrl: `<button class="btn ${mine > 0 ? '' : 'primary'}" type="button" data-act="net-sit" data-seat="${p}">${mine > 0 ? L('Cambiarme', 'Canviar-me') : L('Sentarme', 'Seure')}</button>` };
@@ -3381,7 +3395,7 @@ function showCredits() {
   <p>${L('«Baraja española completa», de <b>Basquetteur</b>, a partir de trabajos de Germarquezm, GnuBond (Aisleriot) y del Wikipedia Graphic Lab, entre otros. Publicada en Wikimedia Commons con licencia <b>Creative Commons Reconocimiento-CompartirIgual</b> (CC BY-SA). En CotoCau se ha recortado y ordenado para el juego; esa adaptación se comparte con la misma licencia.', '«Baraja española completa», de <b>Basquetteur</b>, a partir de treballs de Germarquezm, GnuBond (Aisleriot) i del Wikipedia Graphic Lab, entre altres. Publicada en Wikimedia Commons amb llicència <b>Creative Commons Reconeixement-CompartirIgual</b> (CC BY-SA). En CotoCau s\'ha retallat i ordenat per al joc; eixa adaptació es comparteix amb la mateixa llicència.')}</p>
   <p><a href="${COMMONS_DECK}" target="_blank" rel="noopener">${L('Ver el original en Wikimedia Commons', 'Vore l\'original en Wikimedia Commons')}</a> · <a href="https://creativecommons.org/licenses/by-sa/3.0/deed.es" target="_blank" rel="noopener">${L('Licencia', 'Llicència')}</a></p>
   <h3>${L('Voces', 'Veus')}</h3>
-  <p>${L('Voces del Cau creadas con <b>Matxa TTS</b> de Projecte AINA (Barcelona Supercomputing Center), entrenada con los datos LaFrescat y ReFresCat. Uso no comercial.', 'Veus del Cau creades amb <b>Matxa TTS</b> de Projecte AINA (Barcelona Supercomputing Center), entrenada amb les dades LaFrescat i ReFresCat. Ús no comercial.')}</p>
+  <p>${L('Las cuatro voces del Cau están creadas con <b>Matxa TTS</b> de Projecte AINA (Barcelona Supercomputing Center), entrenada con los datos LaFrescat y ReFresCat. Uso no comercial.', 'Les quatre veus del Cau estan creades amb <b>Matxa TTS</b> de Projecte AINA (Barcelona Supercomputing Center), entrenada amb les dades LaFrescat i ReFresCat. Ús no comercial.')}</p>
   <p><a href="https://huggingface.co/BSC-LT/matxa-tts-v2-ca-multiaccent-graphemes" target="_blank" rel="noopener">${L('Ver la voz original', 'Vore la veu original')}</a></p>
   <h3>${L('Otros', 'Altres')}</h3>
   <p>${L('Baraja moderna: dibujada para CotoCau. Tipografías Alegreya SC y Alegreya Sans (Juan Pablo del Peral, SIL Open Font License). Online con la librería supabase-js (Supabase, licencia MIT).', 'Baralla moderna: dibuixada per a CotoCau. Tipografies Alegreya SC i Alegreya Sans (Juan Pablo del Peral, SIL Open Font License). Online amb la llibreria supabase-js (Supabase, llicència MIT).')}</p>
@@ -3430,7 +3444,8 @@ function showSettings() {
   <div class="opt"><label>${L('Compartir mis partidas', 'Compartir les meues partides')}</label>${seg('share', off.map(([v]) => [v, v ? L('Sí', 'Sí') : 'No']), !!SETTINGS.share, true)}<span class="desc">${L('Envía tus manos (cartas, jugadas y marcador, sin datos personales) para mejorar los bots.', 'Envia les teues mans (cartes, jugades i marcador, sense dades personals) per a millorar els bots.')}</span>
     <span class="names"><span><small>${L('Alias', 'Àlies')}</small><input id="aliasset" type="text" maxlength="20" value="${esc(SETTINGS.alias || '')}"></span></span></div>
   ${PRUEBAS ? `<div class="opt"><label>🧪 ${L('Ver todas las cartas (pruebas)', 'Vore totes les cartes (proves)')}</label>${seg('showAll', off, !!SETTINGS.showAll, true)}<span class="desc">${L('Para estudiar a los bots: enseña las cartas de tu compañero y de los rivales. Solo contra bots.', 'Per a estudiar els bots: mostra les cartes del teu company i dels rivals. Només contra bots.')}</span></div>` : ''}
-  ${PRUEBAS || VOZ_REC.length ? `<div class="opt"><label>${L('Voces (Cau)', 'Veus (Cau)')}</label>${seg('voces', off, SETTINGS.voces !== false, true)}<span class="desc">${L('Se oye «Bac!», «De nit!», «Envide!»… cuando pasa en la mesa.', 'Se sent «Bac!», «De nit!», «Envide!»… quan passa al tapet.')}</span></div>` : ''}
+  <div class="opt"><label>${L('Voces (Cau)', 'Veus (Cau)')}</label>${seg('voces', off, SETTINGS.voces !== false, true)}<span class="desc">${L('Se oye «Bac!», «De nit!», «Envide!»… cuando pasa en la mesa.', 'Se sent «Bac!», «De nit!», «Envide!»… quan passa al tapet.')}</span></div>
+  <div class="opt"><label>${L('Tu voz', 'La teua veu')}</label>${seg('voz', Array.from({ length: VOZ_N }, (_, i) => [i + 1, L('Voz ', 'Veu ') + (i + 1)]), vozNum(SETTINGS.voz), VOZ_N === 2)}<span class="desc">${L('Al tocar una, la oyes. Los demás jugadores hablan con las otras; en el online, cada uno con la que haya elegido.', "En tocar-ne una, la sents. La resta de jugadors parlen amb les altres; en l'online, cadascú amb la que haja triat.")}</span></div>
   <div class="opt"><label>${L('Ritmo', 'Ritme')}</label>${seg('speed', [[0, L('Lento', 'Lent')], [1, 'Normal'], [2, L('Rápido', 'Ràpid')]], speedIx)}</div>
   <div class="acts"><button class="btn primary" type="button" data-act="back">${L('Volver', 'Tornar')}</button></div>`); cover();
 }
@@ -3497,6 +3512,7 @@ $('panel').addEventListener('click', e => {
     if (k === 'hints' || k === 'labels' || k === 'socarrat' || k === 'showAll' || k === 'share' || k === 'voces') SETTINGS[k] = v === 'true';
     else if (k === 'speed') speedIx = +v;
     else if (k === 'cotoBest') SETTINGS.cotoBest = +v;
+    else if (k === 'voz') { SETTINGS.voz = vozNum(v); const sv = SETTINGS.voces; SETTINGS.voces = true; vozPlay('denit', SETTINGS.voz); SETTINGS.voces = sv; }
     else SETTINGS[k] = v;
     if (k === 'lang') applyLang(SETTINGS.lang, SETTINGS.names);
     saveSettings(); showSettings(); render(); return;
@@ -3536,7 +3552,7 @@ $('panel').addEventListener('click', e => {
   if (a === 'net-seat') netHostSeat(+b.dataset.seat, b.dataset.kind);
   if (a === 'net-kick') netHostKick(+b.dataset.seat);
   if (a === 'net-start') netStart();
-  if (a === 'net-sit') netSend({ t: 'sit', id: NET.id, name: NET.name, seat: +b.dataset.seat });
+  if (a === 'net-sit') netSend({ t: 'sit', id: NET.id, name: NET.name, seat: +b.dataset.seat, voz: vozNum(SETTINGS.voz) });
   if (a === 'net-leave') { netLeave(); showMenu(); }
   if (a === 'net-stay') closePanel();
   if (a === 'net-invite') netInvite();
@@ -3911,7 +3927,7 @@ function showPlay() {
   $('panel').classList.add('menu'); cover();
 }
 
-window.CAU = { APP, cotoNewMatch, coNext, exportText, coSwap, coCanSwap, coBotChoose, coPlay, coLegal, get G() { return G; }, set G(v) { G = v; }, set S(v) { S = v; }, render, matchNext, newGame, newHand, applyPlay, afterPlay, INFER, SMART, holdProb, determinize, botChoose, botChooseHard, botChooseNormal, botChooseEasy, botChooseDificil, botChooseExperto, botBet, botSing, SETTINGS, betAct, betOptions, sing, startSing, resolveNit, canFirst, canSecond, cardSVG, get S() { return S; } };
+window.CAU = { APP, seatVoices, cotoNewMatch, coNext, exportText, coSwap, coCanSwap, coBotChoose, coPlay, coLegal, get G() { return G; }, set G(v) { G = v; }, set S(v) { S = v; }, render, matchNext, newGame, newHand, applyPlay, afterPlay, INFER, SMART, holdProb, determinize, botChoose, botChooseHard, botChooseNormal, botChooseEasy, botChooseDificil, botChooseExperto, botBet, botSing, SETTINGS, betAct, betOptions, sing, startSing, resolveNit, canFirst, canSecond, cardSVG, get S() { return S; } };
 
 function start(data) {
   if (data && data.app) { Object.assign(APP, data.app); S = data.S; G = data.G; if (S) S.feed = []; if (G) G.feed = []; hasSaved = true; render(); loop(); return; }
