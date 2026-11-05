@@ -1816,7 +1816,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-04-11';
+const APP_VER = 'cau-2026-11-05-1';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
 // sus partidas llevan «-pruebas» en la versión y su online usa salas aparte (canales cc-p…), para no mezclarse con la oficial.
 const PRUEBAS = true;
@@ -2042,8 +2042,10 @@ function render() {
 }
 
 // Voces del Cau (4 nov): solo en valenciano, también jugando en castellano (en castellano suenan raro).
-// Grabaciones en voz/va/<clave>.mp3: las apuntadas en VOZ_REC suenan grabadas; las demás, solo en pruebas, las lee la voz del móvil.
-const VOZ_REC = [];
+// Grabaciones en voz/<voz>/<clave>.mp3 (5 nov: voz «Arnau» de Projecte AINA, para todos los jugadores de momento): las apuntadas
+// en VOZ_REC suenan grabadas; las demás, solo en pruebas, las lee la voz del móvil.
+const VOZ_DIR = 'arnau';
+const VOZ_REC = ['bac', 'rebac', 'sv', 'denit', 'xic', 'xac', 'envit', 'torne', 'falta', 'acabat'];
 const VOZ_TXT = { bac: 'Bac!', rebac: 'Rebac!', sv: 'Sant Vicent!', denit: 'De nit!', xic: 'Xic!', xac: 'Xac!', envit: 'Envide!', torne: 'Torne a envidar!', falta: 'La partida!', acabat: "S'han acabat!" };
 const vozCache = {};
 function voz(k) {
@@ -2051,7 +2053,7 @@ function voz(k) {
   if (NET && NET.role === 'host' && NET.started) netEv({ k: 'voz', v: k });
   if (SETTINGS.voces === false) return;
   try {
-    if (VOZ_REC.includes(k)) { const a = vozCache[k] || (vozCache[k] = new Audio(`voz/va/${k}.mp3`)); a.currentTime = 0; a.play().catch(() => {}); return; }
+    if (VOZ_REC.includes(k)) { const a = vozCache[k] || (vozCache[k] = new Audio(`voz/${VOZ_DIR}/${k}.mp3`)); a.currentTime = 0; a.play().catch(() => {}); return; }
     if (!PRUEBAS || !window.speechSynthesis) return;
     const u = new SpeechSynthesisUtterance(VOZ_TXT[k]); u.lang = 'ca-ES'; speechSynthesis.cancel(); speechSynthesis.speak(u);
   } catch (e) {}
@@ -3378,6 +3380,9 @@ function showCredits() {
   <h3>${L('Baraja clásica', 'Baralla clàssica')}</h3>
   <p>${L('«Baraja española completa», de <b>Basquetteur</b>, a partir de trabajos de Germarquezm, GnuBond (Aisleriot) y del Wikipedia Graphic Lab, entre otros. Publicada en Wikimedia Commons con licencia <b>Creative Commons Reconocimiento-CompartirIgual</b> (CC BY-SA). En CotoCau se ha recortado y ordenado para el juego; esa adaptación se comparte con la misma licencia.', '«Baraja española completa», de <b>Basquetteur</b>, a partir de treballs de Germarquezm, GnuBond (Aisleriot) i del Wikipedia Graphic Lab, entre altres. Publicada en Wikimedia Commons amb llicència <b>Creative Commons Reconeixement-CompartirIgual</b> (CC BY-SA). En CotoCau s\'ha retallat i ordenat per al joc; eixa adaptació es comparteix amb la mateixa llicència.')}</p>
   <p><a href="${COMMONS_DECK}" target="_blank" rel="noopener">${L('Ver el original en Wikimedia Commons', 'Vore l\'original en Wikimedia Commons')}</a> · <a href="https://creativecommons.org/licenses/by-sa/3.0/deed.es" target="_blank" rel="noopener">${L('Licencia', 'Llicència')}</a></p>
+  <h3>${L('Voces', 'Veus')}</h3>
+  <p>${L('Voces del Cau creadas con <b>Matxa TTS</b> de Projecte AINA (Barcelona Supercomputing Center), entrenada con los datos LaFrescat y ReFresCat. Uso no comercial.', 'Veus del Cau creades amb <b>Matxa TTS</b> de Projecte AINA (Barcelona Supercomputing Center), entrenada amb les dades LaFrescat i ReFresCat. Ús no comercial.')}</p>
+  <p><a href="https://huggingface.co/BSC-LT/matxa-tts-v2-ca-multiaccent-graphemes" target="_blank" rel="noopener">${L('Ver la voz original', 'Vore la veu original')}</a></p>
   <h3>${L('Otros', 'Altres')}</h3>
   <p>${L('Baraja moderna: dibujada para CotoCau. Tipografías Alegreya SC y Alegreya Sans (Juan Pablo del Peral, SIL Open Font License). Online con la librería supabase-js (Supabase, licencia MIT).', 'Baralla moderna: dibuixada per a CotoCau. Tipografies Alegreya SC i Alegreya Sans (Juan Pablo del Peral, SIL Open Font License). Online amb la llibreria supabase-js (Supabase, llicència MIT).')}</p>
   <p><a href="https://cotocau.github.io/privacidad.html" target="_blank" rel="noopener">${L('Política de privacidad', 'Política de privacitat')}</a> · ${L('Contacto', 'Contacte')}: cotocau.app@gmail.com</p>

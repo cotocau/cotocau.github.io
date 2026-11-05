@@ -1,6 +1,6 @@
 // Funcionamiento sin conexión. Cambia VERSION en cada actualización de la app.
-const VERSION='pruebas-cau-2026-11-04-11', MINE=k=>k.startsWith('pruebas-');
-const SHELL=['./','./index.html','./classic.webp','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png','./icons/maskable-512.png','./icons/apple-touch-icon.png'];
+const VERSION='pruebas-cau-2026-11-05-1', MINE=k=>k.startsWith('pruebas-');
+const SHELL=['./','./index.html','./classic.webp','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png','./icons/maskable-512.png','./icons/apple-touch-icon.png','./voz/arnau/acabat.mp3','./voz/arnau/bac.mp3','./voz/arnau/denit.mp3','./voz/arnau/envit.mp3','./voz/arnau/falta.mp3','./voz/arnau/rebac.mp3','./voz/arnau/sv.mp3','./voz/arnau/torne.mp3','./voz/arnau/xac.mp3','./voz/arnau/xic.mp3'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(VERSION).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting()));});
 // cada versión (oficial y pruebas) borra solo sus copias viejas, nunca las de la otra
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==VERSION&&MINE(k)).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
