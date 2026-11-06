@@ -284,6 +284,10 @@ button{font:inherit;color:inherit}
 .opt{display:flex;flex-direction:column;gap:6px}
 .opt label{font-weight:700;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft)}
 .opt .desc{font-size:13px;color:var(--ink-soft)}
+.opt .desc.tip{display:none}.opt.showinfo .desc.tip{display:block}
+.opt .info{border:0;background:none;color:var(--gold);font-size:16px;line-height:1;padding:0 4px;margin-left:2px;cursor:pointer;vertical-align:-1px}
+.settabs{grid-template-columns:repeat(4,1fr)}.settabs button{font-size:13px;padding:8px 2px;white-space:nowrap}
+.setbody{display:flex;flex-direction:column;gap:16px;min-height:min(430px,62vh)}
 .seg{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1px solid var(--line);border-radius:999px;padding:3px;background:rgba(0,0,0,.2)}
 .seg.two{grid-template-columns:repeat(2,1fr)}
 .seg.four{grid-template-columns:repeat(4,1fr)}
@@ -503,9 +507,12 @@ function postDeal(S) {
 const dealOrder = S => [0,1,2,3].map(i => (S.dealStart + i) % 4);
 
 function sing(S, p) {
+  const also = [0, 1, 2, 3].some(q => q !== p && S.sung[q]);
   S.sung[p] = S.dealCombos[p];
   S.bubbles[p] = 'De nit';
   say(S, p === 0 ? L('Cantas «de nit».', 'Cantes «de nit».') : `${NAMES[p]} canta «de nit».`, 'sing');
+  S.feed[S.feed.length - 1].p = p;   // para la voz
+  if (also) S.feed[S.feed.length - 1].v2 = vozAlt('jotambe', 'jotambe2');   // ya había cantado otro
 }
 function canFirst(S, p) {
   return S.phase === 'play' && S.turn === p && S.round < 3 && S.nitState === 'open' && !S.first[p] && !S.sung[p] && !!S.dealCombos[p] && S.hands[p].length === 3;
@@ -516,6 +523,7 @@ function canSecond(S, p) {
 function singSecond(S, p) {
   S.second[p] = true; S.bubbles[p] = 'De nit ×2';
   say(S, p === 0 ? L('Vuelves a cantar «de nit»: tienes rondín.', 'Tornes a cantar «de nit»: tens rondí.') : L(`${NAMES[p]} vuelve a cantar «de nit»: tenía rondín.`, `${NAMES[p]} torna a cantar «de nit»: tenia rondí.`), 'sing');
+  S.feed[S.feed.length - 1].p = p;
   addPts(S, team(p), 'nit', 1);
 }
 // Alguien canta en su turno: los que también tienen de nit (y aún no han jugado en este reparto) lo dicen en ese momento
@@ -567,6 +575,10 @@ const BETSAY = o => (LANG === 'va' ? { pass:'passen', xic:'diuen «xic»', envit
 function betAct(S, t, a) {
   const b = S.bet;
   say(S, `${TEAMN[t]} ${BETSAY(a)}.`, 'nit');
+  if (['xic', 'xac', 'envit', 'torne', 'falta', 'vull', 'novull', 'pass'].includes(a)) {   // su voz suena al contarlo, con la voz de quien habla por la pareja
+    const fi = S.feed[S.feed.length - 1], spk = [t, t + 2].filter(q => S.sung[q]);
+    fi.v = a === 'vull' ? (b.pending && b.pending.falta ? vozAlt('lavull', 'juguem') : vozAlt('vinga', 'accepte')) : a === 'novull' ? vozAlt('novull', 'pertu') : a === 'pass' ? 'passe' : a; fi.p = t === 0 && S.sung[0] ? 0 : spk.length ? spk[0] : t;
+  }
   S.lastBet = { t, a };
   if (a === 'pass') {   // pasar el primero es rendirse: la otra pareja gana 1
     const w = 1 - t; say(S, apunt(w, 1), 'pts');
@@ -774,7 +786,7 @@ function evalPlay(S, p, cid) {
    difícil (imagina repartos posibles de las cartas ocultas y simula la vuelta entera) */
 let TUTG = null;   // partida guiada en curso
 let NET = null;    // partida online (anfitrión o invitado)
-let SETTINGS = { partner: 'experto', rivals: 'experto', hints: false, labels: false, socarrat: false, speed: 1, deck: 'clasica', lang: 'es', names: ['Toni','Maria','Vicent'], cotoBest: 5, unlocked: false, showAll: false, share: null, alias: '' };
+let SETTINGS = { partner: 'experto', rivals: 'experto', hints: false, labels: false, socarrat: false, speed: 1, deck: 'clasica', lang: 'es', names: ['Toni','Maria','Vicent'], cotoBest: 5, unlocked: false, showAll: false, share: null, alias: '', voces: true, voz: 1, sonidos: true };
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('cau.settings') || '{}')); } catch (e) {}
 applyLang(SETTINGS.lang, SETTINGS.names);
 const levelOf = p => p === 2 ? SETTINGS.partner : SETTINGS.rivals;
@@ -1122,7 +1134,8 @@ function coSing(G, p, s) {
 }
 // Cambiar el 7: la pinta es figura, 3 o As, queda montón, y su pareja ya ha ganado alguna baza
 function coCanSwap(G, p) {
-  return G.phase === 'play' && !coArrastre(G) && !G.swapped && C_CAMBIABLE.includes(G.pinta.r) && G.won[team(p)] > 0 &&
+  // como los cantes: solo justo después de que su pareja gane una baza, antes de salir a la siguiente, le toque o no (5 nov)
+  return G.phase === 'play' && !coArrastre(G) && !G.swapped && C_CAMBIABLE.includes(G.pinta.r) && G.canSing === team(p) && !G.trick.length &&
     G.hands[p].some(c => c.s === G.trump && c.r === C_SIETE);
 }
 function coSwap(G, p) {
@@ -1354,7 +1367,7 @@ function coDeterminize0(G, p) {
   return null;
 }
 function coRolloutValue(d, t) { return (d.pts[t] + d.cantes[t]) - (d.pts[1 - t] + d.cantes[1 - t]); }
-const CO_EXP = { trumpPen: 5, briscaPen: 0, leadPen: 12, noLead: true, minTrumpPts: 10, solve: 7, protect: true, deepLast: 8, discW: 1, signals: false, markW: 6, noGift: true, N: 80, refine: 12, refineN: 400, refineMs: 250, safe3: true, safe3T: true, secoW: 4, keep7: true, loadTol: 1, winW: 60, vueltasScale: 0 };
+const CO_EXP = { trumpPen: 5, briscaPen: 0, leadPen: 12, noLead: true, minTrumpPts: 10, solve: 7, protect: true, deepLast: 8, discW: 1, signals: false, markW: 6, noGift: true, N: 80, refine: 12, refineN: 400, refineMs: 250, safe3: true, safe3T: true, secoW: 4, swapV: true, swapTop: true, swapLast: false, swapNow: false, loadTol: 1, winW: 60, vueltasScale: 0 };
 // Muy difícil. El metajuego cambia según el momento:
 // · mano normal, con montón: se guardan los triunfos para el arrastre y nunca se sale de triunfo;
 // · arrastre: se puede salir de triunfo para quitar los de los rivales;
@@ -1733,7 +1746,6 @@ function coEquivPoints(G, p, id) {
   return best.id;
 }
 function coBotChoose(G, p, lvl) {
-  if (G.preChoice) { const x = G.preChoice; G.preChoice = null; if (x.p === p && x.n === G.played.length && x.id != null && coLegal(G, p).some(c => c.id === x.id)) return x.id; }
   if (lvl === 'experto' || lvl === 'dificil') { const x = coSureExit(G, p); if (x != null) return x; }   // salirse ya si es seguro
   if (lvl === 'facil') return coBotEasy(G, p);
   if (lvl === 'dificil') return coBotBest(G, p);
@@ -1746,32 +1758,21 @@ function coBotCantes(G, p) {
   const ss = coCantesFor(G, p); if (!ss.length) return [];
   return ss;
 }
-// cambiar el 7: como en la mesa, se espera al final (última baza con montón) salvo que el cambio dé las 40
+// cambiar el 7: solo se puede justo después de que gane la baza su pareja (le toque o no). Los bots cambian
+// si el cambio da las 40; en vueltas, en cuanto pueden (la partida suele acabar antes del arrastre: 5 nov);
+// en la mano, esperan al final: en la última ocasión (queda la última baza con montón) solo si la pinta es el triunfo
+// más alto que queda (con ella ganan esa baza seguro). Si no, si su pareja gana la última baza con montón se cambia solo,
+// y si la gana un rival la pinta cae en su pareja (la roba el que juega antes del ganador).
 function coBotSwap(G, p) {
   if (!coCanSwap(G, p)) return false;
-  if (G.stock.length <= 4) {
-    // última baza con montón jugando el último: si mi pareja pierde la baza, la pinta cae igual en mi pareja
-    // (la roba el que juega antes del ganador): no cambio y no enseño el 7
-    if (CO_EXP.keep7 && G.stock.length === 4 && G.trick.length === 3) {
-      const lvl = typeof levelOf === 'function' ? levelOf(p) : 'experto';
-      // ¿gana mi pareja la baza? (sin cambiar, y cambiando, que con la carta de la pinta quizá pueda ganarla yo)
-      const wins = sw => {
-        const orig = G.hands[p], pin = G.pinta, st = G.stock[G.stock.length - 1], rv = G.revealed ? G.revealed[p] : null;
-        if (sw) { const seven = orig.find(c => c.s === G.trump && c.r === C_SIETE); G.hands[p] = orig.filter(c => c !== seven).concat([pin]); G.pinta = seven; G.stock[G.stock.length - 1] = seven; G.swapped = true; if (rv) G.revealed[p] = rv.concat([pin.id]); }
-        let r = true, id = null;
-        try { id = coBotChoose(G, p, lvl); const c = G.hands[p].find(x => x.id === id); if (c) r = team(coTrickWinner(G, G.trick.concat([{ p, c }])).p) === team(p); }
-        finally { G.hands[p] = orig; G.pinta = pin; G.stock[G.stock.length - 1] = st; G.swapped = false; if (rv) G.revealed[p] = rv; }
-        return { r, id };
-      };
-      // la carta ya pensada se guarda para jugarla justo después (coBotChoose) y no decidir dos veces distinto
-      const a = wins(false);
-      if (!a.r) { const b = wins(true); G.preChoice = { p, n: G.played.length, id: b.r ? b.id : a.id }; if (!b.r) return false; }
-      else G.preChoice = { p, n: G.played.length, id: a.id };
-    }
-    return true;
+  const pr = G.pinta.r, oth = pr === C_REY ? C_SOTA : pr === C_SOTA ? C_REY : null;
+  if (oth != null && !G.sung.includes(G.trump) && G.hands[p].some(c => c.s === G.trump && c.r === oth)) return true;
+  if (CO_EXP.swapNow || (G.vueltas && CO_EXP.swapV)) return true;
+  if (G.stock.length === 4) {
+    if (CO_EXP.swapLast) return true;
+    if (CO_EXP.swapTop) { const sp = CSTR[pr]; return [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].every(r => CSTR[r] <= sp || G.played.includes(G.trump * 10 + r) || G.hands[p].some(c => c.s === G.trump && c.r === r)); }
   }
-  const pr = G.pinta.r, other = pr === C_REY ? C_SOTA : pr === C_SOTA ? C_REY : null;
-  return other != null && !G.sung.includes(G.trump) && G.hands[p].some(c => c.s === G.trump && c.r === other);
+  return false;
 }
 
 /* ---------------- Cartas españolas ---------------- */
@@ -1811,7 +1812,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-04-8';
+const APP_VER = 'cau-2026-11-06-4';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
 // sus partidas llevan «-pruebas» en la versión y su online usa salas aparte (canales cc-p…), para no mezclarse con la oficial.
 const PRUEBAS = false;
@@ -1986,7 +1987,15 @@ function duelHold() {
   for (const it of S.feed || []) if (it.duel) { h.pts[it.duel.w] += it.duel.pts; h.n++; }
   return h;
 }
-function renderScore(i) { setScore(i, S.score[i] - (cauHeld() ? S.summary[i].cardPts : 0) - chainPend(S, i) - duelHold().pts[i], scoreTxt, 'cau'); }
+function renderScore(i) {
+  const val = S.score[i] - (cauHeld() ? S.summary[i].cardPts : 0) - chainPend(S, i) - duelHold().pts[i], was = SCF[i].target;
+  if (val >= 20 && !(NET && NET.role === 'guest') && !S.over) {
+    S.bonesSaid = S.bonesSaid || [false, false];
+    if (!S.bonesSaid[i] && was != null && was < 20 && SCF[i].key === 'cau:c') setTimeout(() => voz('bones', i === 0 ? 0 : 1), 1300);   // «Anem ja de bones!», cuando acaba de sonar lo anterior
+    S.bonesSaid[i] = true;
+  }
+  setScore(i, val, scoreTxt, 'cau');
+}
 // Número de una celda que cuenta hasta el total con el «+N» verde al lado
 function countCell(el, from, to, fmt) {
   if (!el || to <= from) return;
@@ -2036,6 +2045,59 @@ function render() {
   if ((S.phase === 'handEnd' || S.phase === 'gameEnd') && $('overlay').hidden && !duelHold().n) showSummary();
 }
 
+// Voces del Cau (4 nov): solo en valenciano, también jugando en castellano (en castellano suenan raro).
+// 5 nov: cuatro voces numeradas en voz/<n>/<clave>.mp3 (Matxa TTS de Projecte AINA). Cada uno elige la suya en Ajustes;
+// contra bots, los demás asientos hablan con las otras; en el online cada persona con la suya y los bots con las que sobran.
+const VOZ_N = 4;
+// 6 nov: vinga/accepte (se acepta un envide, se alternan), limpia, baclimpia, jotambe/jotambe2 (el segundo que canta de nit), bones (una pareja pasa a buenas)
+const VOZ_KEYS = ['bac', 'rebac', 'sv', 'denit', 'xic', 'xac', 'envit', 'torne', 'falta', 'acabat', 'vinga', 'accepte', 'limpia', 'baclimpia', 'jotambe', 'jotambe2', 'bones', 'novull', 'pertu', 'passe', 'lavull', 'juguem'];   // novull/pertu: se rechaza (se alternan); passe; lavull/juguem: se acepta «la partida»
+const vozAlt = (a, b) => Math.random() < 0.5 ? a : b;
+const vozNum = x => { x = Math.floor(+x); return x >= 1 && x <= VOZ_N ? x : 1; };
+function seatVoices() {
+  const mine = vozNum(SETTINGS.voz), v = [mine, 0, 0, 0];
+  if (NET && NET.role === 'host') for (const q of [1, 2, 3]) { const st = NET.seats[q]; if (st && st.kind === 'human') v[q] = vozNum(st.voz); }
+  const all = Array.from({ length: VOZ_N }, (_, i) => i + 1), used = new Set(v.filter(Boolean));
+  let pool = all.filter(x => !used.has(x)); if (!pool.length) pool = all.filter(x => x !== mine); if (!pool.length) pool = [mine];
+  let i = 0; for (const q of [1, 2, 3]) if (!v[q]) v[q] = pool[i++ % pool.length];
+  return v;
+}
+const vozCache = {};
+function vozPlay(k, n) {
+  if (SETTINGS.voces === false || !VOZ_KEYS.includes(k)) return;
+  try { const f = `voz/${vozNum(n)}/${k}.mp3`, a = vozCache[f] || (vozCache[f] = new Audio(f)); a.currentTime = 0; a.play().catch(() => {}); } catch (e) {}
+}
+// k = frase, p = asiento de quien la dice (0 = tú)
+function voz(k, p) {
+  if (!VOZ_KEYS.includes(k)) return;
+  p = [0, 1, 2, 3].includes(p) ? p : 0; const n = seatVoices()[p];
+  if (NET && NET.role === 'host' && NET.started) netEv({ k: 'voz', v: k, p, n });
+  vozPlay(k, n);
+}
+
+// Sonidos de cartas (6 nov), hechos con ruido filtrado: tapete = echar carta; recoger = llevarse cartas (Cau) o la baza (Coto);
+// roce + toque = repartir y robar
+// (el roce mientras vuela la carta y el toque al llegar). Cada golpe cambia un poco de tono y fuerza.
+const DEAL_MS = 368;   // el reparto va siempre al ritmo del modo lento (el del sonido)
+let sctx = null; const sbuf = {};
+function sfxInit() {
+  if (sctx) { if (sctx.state === 'suspended') sctx.resume().catch(() => {}); return; }
+  try { sctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
+  for (const k of ['tapete', 'roce', 'toque', 'recoger']) fetch(`sfx/${k}.mp3`).then(r => r.arrayBuffer()).then(b => sctx.decodeAudioData(b)).then(d => { sbuf[k] = d; }).catch(() => {});
+}
+addEventListener('pointerdown', sfxInit, { passive: true }); addEventListener('keydown', sfxInit);
+function sfx(k, delay = 0, vol = 1) {
+  if (SETTINGS.sonidos === false || !sctx || !sbuf[k] || document.hidden) return;
+  try {
+    const s = sctx.createBufferSource(), g = sctx.createGain(); s.buffer = sbuf[k];
+    s.playbackRate.value = 0.93 + Math.random() * 0.14; g.gain.value = 0.6 * vol * (0.75 + Math.random() * 0.25);
+    s.connect(g); g.connect(sctx.destination); s.start(sctx.currentTime + delay);
+  } catch (e) {}
+}
+const sfxDeal = ms => { sfx('roce', 0, 0.8); sfx('toque', ms * 0.92 / 1000, 0.8); };
+const SFX_NET = { tap: 'tapete', rec: 'recoger' };
+const sfxNet = k => { sfx(SFX_NET[k], 0, k === 'rec' ? 0.9 : 1); netEv({ k: 'sfx', s: k }); };   // el invitado lo oye también
+const sfxTap = () => sfxNet('tap');
+
 let calloutTimer = null;
 async function callout(txt, sub, wait = true) {
   if (NET && NET.role === 'host' && NET.started) netEv({ k: 'callout', txt, sub });
@@ -2052,8 +2114,8 @@ async function drainFeed(untilDeal) {
   const items = S.feed.splice(0, n);
   for (const i of items) if (i.duel) { DUELH.pts[i.duel.w] += i.duel.pts; DUELH.n++; }   // se guardan hasta su aviso
   for (const i of items) {
-    if (i.k === 'sing') { narr = i.txt; render(); await callout('De nit', /^(Cantas|Vuelves|Cantes|Tornes)/.test(i.txt) ? NAMES[0] : i.txt.split(' ')[0]); }
-    else if (i.k === 'nit' || i.k === 'pts') { narr = i.txt; render(); await sleep(1100); }
+    if (i.k === 'sing') { narr = i.txt; render(); voz(i.v2 || 'denit', i.p); await callout('De nit', /^(Cantas|Vuelves|Cantes|Tornes)/.test(i.txt) ? NAMES[0] : i.txt.split(' ')[0]); }
+    else if (i.k === 'nit' || i.k === 'pts') { narr = i.txt; render(); if (i.v) voz(i.v, i.p); await sleep(1100); }
     else if (i.k === 'duel') {
       const d = i.duel || { w: 0, pts: 0 };
       narr = i.txt; render();
@@ -2074,7 +2136,7 @@ async function doPlay(p, cid) {
   fx = { card: res.card, take: [], p, slot };
   S.bubbles[p] = '';
   narr = `<b>${NAMES[p]}</b> ${p === 0 ? L('juegas', 'jugues') : L('juega', 'juga')} ${cardName(res.card)}.`;
-  render();
+  render(); sfxTap();
   await sleep(900);
   // 2) se marcan las cartas que se lleva
   const cap = res.ev.find(e => e.k === 'cap'), cobra = res.ev.find(e => e.k === 'cobra');
@@ -2084,10 +2146,11 @@ async function doPlay(p, cid) {
     const who = special ? special.p : p;
     narr = `${cobra ? cobra.txt + '. ' : ''}${special ? `<b>${NAMES[who]}</b>: <b>${special.txt}</b> +${special.pts}` : cap ? `<b>${NAMES[p]}</b> ${L(`captura ${cap.n} cartas.`, `arreplega ${cap.n} cartes.`)}` : ''}`;
     render();
-    if (special) await callout(special.txt, `${NAMES[who]} · +${special.pts}`);
+    if (special) voz(special.k === 'bac' && /Limpia/.test(special.txt) ? 'baclimpia' : special.k, special.p);
+    if (special) await callout(special.txt,`${NAMES[who]} · +${special.pts}`);
     else await sleep(1100);
   } else await sleep(300);
-  fx = null;
+  fx = null; if (res.take.length) sfxNet('rec');   // se lleva las cartas de la mesa
   sim.bubbles[p] = cap ? cap.txt : '';
   if (special) sim.bubbles[special.p] = special.txt.replace(/[¡!]/g, '');
   say(sim, `${p === 0 ? L('Juegas', 'Jugues') : NAMES[p] + L(' juega', ' juga')} ${cardName(res.card)} — ${res.ev.map(e => e.txt).join(' · ')}.`);
@@ -2102,6 +2165,7 @@ async function doPlay(p, cid) {
     render(); await drainFeed(true);
     narr = L(`Reparto ${S.round} de 3.`, `Repartiment ${S.round} de 3.`);
     await animateDeal(false);
+    if (S.round === 3) voz('acabat', S.dealer);   // ya se ha repartido todo el mazo: lo dice quien reparte
     if (TUTG && TUTG.cau) await tutPause(S.round === 2 ? L('<b>Segundo reparto:</b> 3 cartas más a cada uno. La mesa sigue como estaba, y en cada mano hay 3 repartos.', '<b>Segon repartiment:</b> 3 cartes més a cadascú. El tapet continua com estava, i en cada mà hi ha 3 repartiments.') : L('<b>Último reparto.</b> Aquí todos los que tienen pareja cantan de nit al principio. Al acabar, quien capturó el último se lleva lo que queda en la mesa, y cada pareja suma un punto por cada carta por encima de 20.', '<b>Últim repartiment.</b> Ací tots els que tenen parella canten de nit al principi. En acabar, qui va arreplegar l\'últim s\'endú el que queda al tapet, i cada parella suma un punt per cada carta per damunt de 20.'));
   }
   render();
@@ -2122,7 +2186,8 @@ async function animateDeal(withTable) {
     if (reduce) return;
     const f = document.createElement('div'); f.className = 'fly'; f.innerHTML = '<span class="back"></span>'; document.body.appendChild(f);
     const w = f.offsetWidth / 2, h = f.offsetHeight / 2;
-    const a = f.animate([{ transform: `translate(${from[0] - w}px,${from[1] - h}px) scale(.75)` }, { transform: `translate(${to[0] - w}px,${to[1] - h}px) scale(1)` }], { duration: 230 * SPEEDS[speedIx][1], easing: 'cubic-bezier(.3,.7,.3,1)' });
+    const a = f.animate([{ transform: `translate(${from[0] - w}px,${from[1] - h}px) scale(.75)` }, { transform: `translate(${to[0] - w}px,${to[1] - h}px) scale(1)` }], { duration: DEAL_MS, easing: 'cubic-bezier(.3,.7,.3,1)' });
+    sfxDeal(DEAL_MS);
     await a.finished.catch(() => {}); f.remove();
   };
   const gen = GEN;
@@ -2234,14 +2299,14 @@ function rulesCoto() {
   <p>El guiñote de Alcoy: cuatro jugadores en dos parejas, baraja española de 40 cartas. Se juega hacia la derecha.</p>
   <h3>Cartas</h3><ul><li>Orden de fuerza: as, tres, rey, sota, caballo, 7, 6, 5, 4, 2.</li><li>Puntos: as 11, tres 10, rey 4, sota 3, caballo 2; el resto, 0. Con las 10 de últimas hay 130 puntos por mano.</li><li>Cualquier triunfo gana a cualquier carta de otro palo. Si no hay triunfo, gana la más alta del palo de salida.</li></ul>
   <h3>Reparto</h3><ul><li>6 cartas a cada uno, de una en una. La siguiente se deja boca arriba bajo el montón: es la pinta y marca el triunfo.</li><li>Reparte quien hizo las 10 de últimas en la mano anterior. Sale el de su derecha.</li></ul>
-  <h3>Mientras queda montón</h3><ul><li>Tirada libre: no hay que asistir ni matar.</li><li>Después de cada baza roban todos, empezando por quien la ha ganado, que sale en la siguiente.</li><li><b>Cantes:</b> rey y sota del mismo palo. Las 40 si es de triunfo, las 20 si no. Se canta cuando tu pareja acaba de ganar una baza, antes de salir a la siguiente; se pueden cantar varios a la vez y también es opcional.</li><li><b>Cambiar el 7:</b> si la pinta es figura, tres o as, quien tenga el 7 de triunfo la puede cambiar mientras quede montón, si su pareja ya ha ganado alguna baza.</li></ul>
+  <h3>Mientras queda montón</h3><ul><li>Tirada libre: no hay que asistir ni matar.</li><li>Después de cada baza roban todos, empezando por quien la ha ganado, que sale en la siguiente.</li><li><b>Cantes:</b> rey y sota del mismo palo. Las 40 si es de triunfo, las 20 si no. Se canta cuando tu pareja acaba de ganar una baza, antes de salir a la siguiente; se pueden cantar varios a la vez y también es opcional.</li><li><b>Cambiar el 7:</b> si la pinta es figura, tres o as, quien tenga el 7 de triunfo la puede cambiar mientras quede montón. Como los cantes, solo justo después de que su pareja gane una baza, antes de salir a la siguiente, le toque o no. En la última baza con montón, si la gana su pareja, se cambia solo.</li></ul>
   <h3>Arrastre (sin montón)</h3><ul><li>Siempre hay que seguir el palo.</li><li>Si va ganando un rival: hay que superarle si se puede. Sin el palo, hay que matar con triunfo, y si ya hay un triunfo, echar uno más alto si se tiene.</li><li>Si va ganando tu compañero: cualquier carta del palo; sin el palo, carta libre.</li></ul>
   <h3>Partida y coto</h3><ul><li>Se gana con 101 puntos: las 50 primeras son malas y a partir de ahí, buenas (51 buenas).</li><li>Si al acabar la mano las dos parejas pasan de 50 buenas, gana la que hizo las 10 de últimas.</li><li>Si nadie llega, se juega otra mano de vueltas sumando, y la partida acaba en el momento en que una pareja llega a 101 (con bazas o cantes): «se sale».</li><li>El coto se juega al mejor de 5 partidas (o de 3, en Ajustes).</li></ul>`,
   `<h2>Regles del Coto</h2>
   <p>El guinyot d'Alcoi: quatre jugadors en dues parelles, baralla espanyola de 40 cartes. Es juga cap a la dreta.</p>
   <h3>Cartes</h3><ul><li>Ordre de força: as, tres, rei, sota, cavall, 7, 6, 5, 4, 2.</li><li>Punts: as 11, tres 10, rei 4, sota 3, cavall 2; la resta, 0. Amb les 10 d'últimes hi ha 130 punts per mà.</li><li>Qualsevol triomf guanya a qualsevol carta d'un altre pal. Si no hi ha triomf, guanya la més alta del pal d'eixida.</li></ul>
   <h3>Repartiment</h3><ul><li>6 cartes a cadascú, d'una en una. La següent es deixa cap per amunt davall del munt: és la pinta i marca el triomf.</li><li>Reparteix qui va fer les 10 d'últimes en la mà anterior. Ix el de la seua dreta.</li></ul>
-  <h3>Mentre queda munt</h3><ul><li>Tirada lliure: no cal assistir ni matar.</li><li>Després de cada basa roben tots, començant per qui l'ha guanyada, que ix en la següent.</li><li><b>Cants:</b> rei i sota del mateix pal. Les 40 si és de triomf, les 20 si no. Es canta quan la teua parella acaba de guanyar una basa, abans d'eixir a la següent; se'n poden cantar diversos alhora i també és opcional.</li><li><b>Canviar el 7:</b> si la pinta és figura, tres o as, qui tinga el 7 de triomf la pot canviar mentre quede munt, si la seua parella ja ha guanyat alguna basa.</li></ul>
+  <h3>Mentre queda munt</h3><ul><li>Tirada lliure: no cal assistir ni matar.</li><li>Després de cada basa roben tots, començant per qui l'ha guanyada, que ix en la següent.</li><li><b>Cants:</b> rei i sota del mateix pal. Les 40 si és de triomf, les 20 si no. Es canta quan la teua parella acaba de guanyar una basa, abans d'eixir a la següent; se'n poden cantar diversos alhora i també és opcional.</li><li><b>Canviar el 7:</b> si la pinta és figura, tres o as, qui tinga el 7 de triomf la pot canviar mentre quede munt. Com els cants, només just després que la seua parella guanye una basa, abans d'eixir a la següent, li toque o no. En l'última basa amb munt, si la guanya la seua parella, es canvia sola.</li></ul>
   <h3>Arrossegament (sense munt)</h3><ul><li>Sempre cal seguir el pal.</li><li>Si guanya un rival: cal superar-lo si es pot. Sense el pal, cal matar amb triomf, i si ja hi ha un triomf, tirar-ne un de més alt si se'n té.</li><li>Si guanya el teu company: qualsevol carta del pal; sense el pal, carta lliure.</li></ul>
   <h3>Partida i coto</h3><ul><li>Es guanya amb 101 punts: els 50 primers són males i a partir d'ací, bones (51 bones).</li><li>Si en acabar la mà les dues parelles passen de 50 bones, guanya la que va fer les 10 d'últimes.</li><li>Si ningú no hi arriba, es juga una altra mà de voltes sumant, i la partida acaba en el moment en què una parella arriba a 101 (amb bases o cants): «s'ix».</li><li>El coto es juga al millor de 5 partides (o de 3, en Ajustos).</li></ul>`);
 }
@@ -2512,16 +2577,18 @@ function netGuestEv(e) {
       const seatEl = (p, av) => p === 0 ? $('hand') : ($('seat' + p) && ($('seat' + p).querySelector(av ? '.av' : '.backs') || $('seat' + p)));
       const a = e.from === 'T' ? slotXY(e.slot) : seatEl(e.from, true), z = e.p === 'T' ? slotXY(e.slot) : seatEl(e.p, false);
       if (!a || !z) return;
-      return coFly(Array.isArray(a) ? a : center(a), Array.isArray(z) ? z : center(z), '<span class="back"></span>', 230);
+      return coFly(Array.isArray(a) ? a : center(a), Array.isArray(z) ? z : center(z), '<span class="back"></span>', DEAL_MS, { fixed: true, deal: true });
     }
     const stockC = () => $('costock') ? coCenter($('costock')) : coCenter($('table'));
     const seatC = p => coCenter(coSeatTarget(p));
     const card = (id, w) => `<div style="--cw:${w}px">${cardHTML(coCard(id))}</div>`;
-    if (e.k === 'draw') await coFly(stockC(), seatC(e.p), e.pinta || e.p === 0 ? card(e.id, 46) : '<span class="back"></span>', 240);
+    if (e.k === 'draw') await coFly(stockC(), seatC(e.p), e.pinta || e.p === 0 ? card(e.id, 46) : '<span class="back"></span>', 240, { deal: true });
     else if (e.k === 'deal') { const src = e.from === 0 ? $('hand') : ($('seat' + e.from).querySelector('.av') || $('seat' + e.from)); const tb = $('table').getBoundingClientRect();
-      await coFly(coCenter(src), e.p === 'T' ? [tb.left + tb.width / 2, tb.top + tb.height / 2] : seatC(e.p), '<span class="back"></span>'.repeat(e.n || 1), 150); }
+      await coFly(coCenter(src), e.p === 'T' ? [tb.left + tb.width / 2, tb.top + tb.height / 2] : seatC(e.p), '<span class="back"></span>'.repeat(e.n || 1), DEAL_MS, { fixed: true, deal: true }); }
     else if (e.k === 'swap') { const pc = $('copinta') ? coCenter($('copinta')) : coCenter($('table')); await coFly(seatC(e.p), pc, card(e.seven, 50), 420); await coFly(pc, seatC(e.p), card(e.pinta, 50), 420); }
     else if (e.k === 'callout') callout(e.txt, e.sub, false);
+    else if (e.k === 'voz') vozPlay(e.v, e.n);
+    else if (e.k === 'sfx') { if (SFX_NET[e.s]) sfx(SFX_NET[e.s], 0, e.s === 'rec' ? 0.9 : 1); }
   }).catch(() => {});
 }
 // Los textos del anfitrión hablan de «tú» (el anfitrión) y de «Nosotros» (su pareja): para cada invitado se pasan a su punto de vista
@@ -2598,7 +2665,7 @@ function netBannerHTML() {
 const humanSeat = p => p === 0 || !!(NET && NET.role === 'host' && NET.started && NET.seats[p].kind === 'human' && NET.seats[p].online && !NET.seats[p].away);
 function netCanteWait() {
   if (NET.role !== 'host' || G.trick.length) return false;
-  for (const q of [1, 2, 3]) if (humanSeat(q) && G.turn !== q && coCantesFor(G, q).length && (G.remotePass || {})[q] !== G.trickNo) return true;
+  for (const q of [1, 2, 3]) if (humanSeat(q) && G.turn !== q && (coCantesFor(G, q).length || coCanSwap(G, q)) && (G.remotePass || {})[q] !== G.trickNo) return true;
   return false;
 }
 const seatName = p => [L('Tú (anfitrión)', 'Tu (amfitrió)'), L('Rival de la derecha', 'Rival de la dreta'), L('Compañero', 'Company'), L('Rival de la izquierda', "Rival de l'esquerra")][p];
@@ -2749,7 +2816,7 @@ function netWaitCheck() {
   let W = [], key = '';
   if (NET.started && !busy && isCoto() && G && G.phase === 'play') {
     if (G.turn !== 0 && humanSeat(G.turn)) W = [G.turn];
-    else if (netCanteWait()) W = [1, 2, 3].filter(q => humanSeat(q) && G.turn !== q && coCantesFor(G, q).length && (G.remotePass || {})[q] !== G.trickNo);
+    else if (netCanteWait()) W = [1, 2, 3].filter(q => humanSeat(q) && G.turn !== q && (coCantesFor(G, q).length || coCanSwap(G, q)) && (G.remotePass || {})[q] !== G.trickNo);
     if (W.length) key = `${G.partidaNo}.${G.handNo}.${G.trickNo}.${G.trick.length}.${W.join()}`;
   } else if (NET.started && !busy && !isCoto() && S && $('overlay').hidden) {
     if (S.phase === 'play' && S.turn !== 0 && humanSeat(S.turn)) W = [S.turn];
@@ -2809,7 +2876,7 @@ async function netHostMsg(m) {
     const p = m.seat; if (!(p >= 1 && p <= 3) || NET.seats[p].kind !== 'free') return netLobby();
     const was = seatOf(m.id);
     if (was > 0) { NET.seats[p] = NET.seats[was]; NET.seats[was] = { kind: 'free' }; return netLobby(); }   // se cambia de sitio
-    NET.seats[p] = { kind: 'human', id: m.id, name: cleanName(m.name) || L('Jugador', 'Jugador'), online: true, last: Date.now() };
+    NET.seats[p] = { kind: 'human', id: m.id, name: cleanName(m.name) || L('Jugador', 'Jugador'), online: true, last: Date.now(), voz: vozNum(m.voz) };
     return netLobby();
   }
   if (m.t === 'act' && NET.started && (G || S)) {
@@ -3015,7 +3082,7 @@ function netGuestMsg(m) {
     const mine = typeof m.me === 'number' ? m.me : -1;
     if (mine > 0) { NET.roomSaved = 0; netRoomSave(); } else netRoomClear();
     if (mine > 0) NET.autoSit = false;
-    if (NET.autoSit && mine < 0) { const f = [1, 2, 3].find(p => m.seats[p] && m.seats[p].kind === 'free'); NET.autoSit = false; if (f) netSend({ t: 'sit', id: NET.id, name: NET.name, seat: f }); }
+    if (NET.autoSit && mine < 0) { const f = [1, 2, 3].find(p => m.seats[p] && m.seats[p].kind === 'free'); NET.autoSit = false; if (f) netSend({ t: 'sit', id: NET.id, name: NET.name, seat: f, voz: vozNum(SETTINGS.voz) }); }
     const cells = [0, 1, 2, 3].map(p => { const x = m.seats[p] || { kind: 'free' };
       if (p === 0) return { kind: 'host', name: m.host, sub: L('anfitrión', 'amfitrió') };
       if (x.kind === 'free') return { kind: 'free', name: '', ctrl: `<button class="btn ${mine > 0 ? '' : 'primary'}" type="button" data-act="net-sit" data-seat="${p}">${mine > 0 ? L('Cambiarme', 'Canviar-me') : L('Sentarme', 'Seure')}</button>` };
@@ -3275,7 +3342,7 @@ function tutCoach() {
   if (k === 0) return me ? L(`Sales tú. Mientras queda montón puedes echar lo que quieras. Para empezar, echa una carta baja que no vale puntos, el <b>4 de copas</b>: así no arriesgas nada.`, `Ixes tu. Mentre queda munt pots tirar el que vulgues. Per a començar, tira una carta baixa que no val punts, el <b>4 de copes</b>: així no arrisques res.`)
     : L('Juegan los demás…', 'Juguen els altres…');
   if (k === 1 && !t && coCantesFor(G, 0).length) return L(`Tu pareja ha ganado la baza, y justo ahora, antes de que salga la siguiente, se puede <b>cantar</b>.<br>Tienes <b>rey y sota de espadas</b>: es un cante de <b>20</b>. Si fueran de triunfo (oros) serían <b>las 40</b>. En una mano puede haber hasta tres cantes de 20 (uno por palo) y uno de 40.<br>Pulsa <b>Cantar 20 en espadas</b>.`, `La teua parella ha guanyat la basa, i just ara, abans que isca la següent, es pot <b>cantar</b>.<br>Tens <b>rei i sota d'espases</b>: és un cant de <b>20</b>. Si foren de triomf (oros) serien <b>les 40</b>. En una mà pot haver-hi fins a tres cants de 20 (un per pal) i un de 40.<br>Prem <b>Cantar 20 en espases</b>.`);
-  if (k === 1 && !t && coCanSwap(G, 0)) return L(`¡20 puntos más! Ahora el <b>7 de triunfo</b>: quien lo tiene puede cambiarlo por la pinta si es buena (figura, tres o as), también justo cuando gana su pareja.<br>Tienes el 7 de oros y la pinta es el rey de oros: pulsa <b>Cambiar el 7</b>.`, `20 punts més! Ara el <b>7 de triomf</b>: qui el té pot canviar-lo per la pinta si és bona (figura, tres o as), també just quan guanya la seua parella.<br>Tens el 7 d'oros i la pinta és el rei d'oros: prem <b>Canviar el 7</b>.`);
+  if (k === 1 && !t && coCanSwap(G, 0)) return L(`¡20 puntos más! Ahora el <b>7 de triunfo</b>: quien lo tiene puede cambiarlo por la pinta si es buena (figura, tres o as), como los cantes: justo después de que gane una baza su pareja.<br>Tienes el 7 de oros y la pinta es el rey de oros: pulsa <b>Cambiar el 7</b>.`, `20 punts més! Ara el <b>7 de triomf</b>: qui el té pot canviar-lo per la pinta si és bona (figura, tres o as), com els cants: just després que guanye una basa la seua parella.<br>Tens el 7 d'oros i la pinta és el rei d'oros: prem <b>Canviar el 7</b>.`);
   if (k === 1) return me ? L(`${N[3]} ha echado el <b>as de bastos</b> (11 puntos). Tú no tienes bastos, pero tienes triunfos: puedes <b>matar con triunfo</b>. El <b>2 de oros</b> gana a cualquier carta de otro palo. ¡Échalo!`, `${N[3]} ha tirat l'<b>as de bastos</b> (11 punts). Tu no tens bastos, però tens triomfs: pots <b>matar amb triomf</b>. El <b>2 d'oros</b> guanya a qualsevol carta d'un altre pal. Tira'l!`)
     : L('Juegan los demás…', 'Juguen els altres…');
   if (k === 2) return me ? L(`Has ganado la baza, así que sales tú.<br><b>Consejo:</b> al salir, interesa irte de un palo que tu pareja <b>no tenga</b>, porque así podrá matar con triunfo. Todavía no sabes qué le falta a ${N[2]}, así que echa una carta que no vale nada: el <b>7 de copas</b>.`, `Has guanyat la basa, així que ixes tu.<br><b>Consell:</b> en eixir, interessa anar-se'n d'un pal que la teua parella <b>no tinga</b>, perquè així podrà matar amb triomf. Encara no saps què li falta a ${N[2]}, així que tira una carta que no val res: el <b>7 de copes</b>.`)
@@ -3312,8 +3379,8 @@ const TUT = {
       h: ['Sale el de la derecha de quien reparte y cada uno echa una carta. Gana la más alta del palo que ha salido, salvo que alguien eche triunfo. Quien gana se lleva las cuatro cartas y sale en la siguiente.<br><br>Mientras queda montón puedes echar <b>lo que quieras</b>, y al acabar cada baza todos roban una carta, empezando por el que la ha ganado.',
           'Ix el de la dreta del que reparteix i cadascú tira una carta. Guanya la més alta del pal que ha eixit, llevat que algú tire triomf. Qui guanya s\'endú les quatre cartes i ix en la següent.<br><br>Mentre queda munt pots tirar <b>el que vulgues</b>, i en acabar cada basa tots roben una carta, començant pel que l\'ha guanyada.'] },
     { t: ['Cantes y el 7', 'Cants i el 7'], cards: [[19], [17], [26, L('cambia', 'canvia')]],
-      h: ['Si tienes <b>rey y sota del mismo palo</b>, cantas: 20 puntos, o <b>las 40</b> si son de triunfo. Solo se canta justo después de que tu pareja gane una baza; te saldrá un botón para hacerlo.<br><br>Si la pinta es buena (figura, tres o as) y tienes el <b>7 de triunfo</b>, lo puedes cambiar por ella. En la última baza con montón se cambia solo si la gana tu pareja.',
-          'Si tens <b>rei i sota del mateix pal</b>, cantes: 20 punts, o <b>les 40</b> si són de triomf. Només es canta just després que la teua parella guanye una basa; t\'eixirà un botó per a fer-ho.<br><br>Si la pinta és bona (figura, tres o as) i tens el <b>7 de triomf</b>, la pots canviar. En l\'última basa amb munt es canvia sola si la guanya la teua parella.'] },
+      h: ['Si tienes <b>rey y sota del mismo palo</b>, cantas: 20 puntos, o <b>las 40</b> si son de triunfo. Solo se canta justo después de que tu pareja gane una baza; te saldrá un botón para hacerlo.<br><br>Si la pinta es buena (figura, tres o as) y tienes el <b>7 de triunfo</b>, lo puedes cambiar por ella, también justo después de que tu pareja gane una baza. En la última baza con montón se cambia solo si la gana tu pareja.',
+          'Si tens <b>rei i sota del mateix pal</b>, cantes: 20 punts, o <b>les 40</b> si són de triomf. Només es canta just després que la teua parella guanye una basa; t\'eixirà un botó per a fer-ho.<br><br>Si la pinta és bona (figura, tres o as) i tens el <b>7 de triomf</b>, la pots canviar, també just després que la teua parella guanye una basa. En l\'última basa amb munt es canvia sola si la guanya la teua parella.'] },
     { t: ['El arrastre', 'L\'arrossegament'], cards: [[3], [5, L('obligado', 'obligat')], [22]],
       h: ['Cuando se acaba el montón empieza el <b>arrastre</b> y cambian las normas:<br>• Hay que <b>seguir el palo</b> siempre.<br>• Si gana un rival, hay que <b>superarle</b> si se puede; si no tienes del palo, hay que <b>matar con triunfo</b>.<br>• Si gana tu compañero, basta con echar del palo.<br><br>Las cartas que no puedes jugar salen apagadas.',
           'Quan s\'acaba el munt comença l\'<b>arrossegament</b> i canvien les normes:<br>• Cal <b>seguir el pal</b> sempre.<br>• Si guanya un rival, cal <b>superar-lo</b> si es pot; si no tens del pal, cal <b>matar amb triomf</b>.<br>• Si guanya el teu company, n\'hi ha prou amb tirar del pal.<br><br>Les cartes que no pots jugar ixen apagades.'] },
@@ -3354,6 +3421,9 @@ function showCredits() {
   <h3>${L('Baraja clásica', 'Baralla clàssica')}</h3>
   <p>${L('«Baraja española completa», de <b>Basquetteur</b>, a partir de trabajos de Germarquezm, GnuBond (Aisleriot) y del Wikipedia Graphic Lab, entre otros. Publicada en Wikimedia Commons con licencia <b>Creative Commons Reconocimiento-CompartirIgual</b> (CC BY-SA). En CotoCau se ha recortado y ordenado para el juego; esa adaptación se comparte con la misma licencia.', '«Baraja española completa», de <b>Basquetteur</b>, a partir de treballs de Germarquezm, GnuBond (Aisleriot) i del Wikipedia Graphic Lab, entre altres. Publicada en Wikimedia Commons amb llicència <b>Creative Commons Reconeixement-CompartirIgual</b> (CC BY-SA). En CotoCau s\'ha retallat i ordenat per al joc; eixa adaptació es comparteix amb la mateixa llicència.')}</p>
   <p><a href="${COMMONS_DECK}" target="_blank" rel="noopener">${L('Ver el original en Wikimedia Commons', 'Vore l\'original en Wikimedia Commons')}</a> · <a href="https://creativecommons.org/licenses/by-sa/3.0/deed.es" target="_blank" rel="noopener">${L('Licencia', 'Llicència')}</a></p>
+  <h3>${L('Voces', 'Veus')}</h3>
+  <p>${L('Las cuatro voces del Cau están creadas con <b>Matxa TTS</b> de Projecte AINA (Barcelona Supercomputing Center), entrenada con los datos LaFrescat y ReFresCat. Uso no comercial.', 'Les quatre veus del Cau estan creades amb <b>Matxa TTS</b> de Projecte AINA (Barcelona Supercomputing Center), entrenada amb les dades LaFrescat i ReFresCat. Ús no comercial.')}</p>
+  <p><a href="https://huggingface.co/BSC-LT/matxa-tts-v2-ca-multiaccent-graphemes" target="_blank" rel="noopener">${L('Ver la voz original', 'Vore la veu original')}</a></p>
   <h3>${L('Otros', 'Altres')}</h3>
   <p>${L('Baraja moderna: dibujada para CotoCau. Tipografías Alegreya SC y Alegreya Sans (Juan Pablo del Peral, SIL Open Font License). Online con la librería supabase-js (Supabase, licencia MIT).', 'Baralla moderna: dibuixada per a CotoCau. Tipografies Alegreya SC i Alegreya Sans (Juan Pablo del Peral, SIL Open Font License). Online amb la llibreria supabase-js (Supabase, llicència MIT).')}</p>
   <p><a href="https://cotocau.github.io/privacidad.html" target="_blank" rel="noopener">${L('Política de privacidad', 'Política de privacitat')}</a> · ${L('Contacto', 'Contacte')}: cotocau.app@gmail.com</p>
@@ -3381,27 +3451,47 @@ function showTutorial(g, i) {
   showPanel(`<div class="tut" data-tut="1">${tabs}<h2>${L(st.t[0], st.t[1])}</h2>${cards}<p>${L(st.h[0], st.h[1])}</p>${dots}<div class="acts">${prev}${next}</div></div>`);
   panelBack = 'menu'; cover();
 }
-// Modo de pruebas (ver todas las cartas, solo contra bots): en el código solo está la huella SHA-256 de la contraseña, no la contraseña.
+// Ajustes en 4 pestañas (6 nov); las explicaciones salen al tocar «ⓘ».
+let CRED_FROM_SET = false;
+function setOpt(label, control, desc) {
+  return `<div class="opt"><label>${label}${desc ? ` <button class="info" type="button" data-info aria-label="${L('Más información', 'Més informació')}">ⓘ</button>` : ''}</label>${control}${desc ? `<span class="desc tip">${desc}</span>` : ''}</div>`;
+}
 function showSettings() {
   panelBack = 'menu';
   const off = [[false, L('Quitadas', 'Llevades')], [true, L('Puestas', 'Posades')]];
-  showPanel(`<h2>${L('Ajustes', 'Ajustos')}</h2>
-  <div class="opt"><label>${L('Idioma', 'Idioma')}</label>${seg('lang', [['es','Castellano'],['va','Valencià']], LANG, true)}</div>
-  <div class="opt"><label>${L('Nombres', 'Noms')}</label><div class="names">
+  const TABS = [['partida', '🎮', L('Partida', 'Partida')], ['sonido', '🔊', L('Sonido', 'So')], ['ayudas', '💡', L('Ayudas', 'Ajudes')], ['perfil', '👤', L('Perfil', 'Perfil')]];
+  const tab = TABS.some(t => t[0] === SETTINGS.setTab) ? SETTINGS.setTab : 'partida';
+  const tabs = `<div class="tabs settabs" role="group">${TABS.map(([k, ic, l]) => `<button type="button" data-act="settab" data-t="${k}" aria-pressed="${k === tab}"><span aria-hidden="true">${ic}</span> ${l}</button>`).join('')}</div>`;
+  let body = '';
+  if (tab === 'partida') body = [
+    setOpt(L('Idioma', 'Idioma'), seg('lang', [['es','Castellano'],['va','Valencià']], LANG, true)),
+    setOpt(L('Baraja', 'Baralla'), seg('deck', [['moderna','Moderna'],['clasica', L('Clásica', 'Clàssica')]], SETTINGS.deck, true), L('La clásica es la «Baraja española» de Basquetteur (Wikimedia Commons, licencia CC BY-SA). Más en Créditos.', 'La clàssica és la «Baraja española» de Basquetteur (Wikimedia Commons, llicència CC BY-SA). Més en Crèdits.')),
+    setOpt(L('Ritmo', 'Ritme'), seg('speed', [[0, L('Lento', 'Lent')], [1, 'Normal'], [2, L('Rápido', 'Ràpid')]], speedIx)),
+    setOpt(L('Coto al mejor de', 'Coto al millor de'), seg('cotoBest', [[3, L('3 partidas', '3 partides')], [5, L('5 partidas', '5 partides')]], SETTINGS.cotoBest || 5, true)),
+    setOpt(L(`Tu compañero (${esc(NAMES[2])})`, `El teu company (${esc(NAMES[2])})`), seg('partner', LVL(), SETTINGS.partner)),
+    setOpt(L(`Rivales (${esc(NAMES[1])} y ${esc(NAMES[3])})`, `Rivals (${esc(NAMES[1])} i ${esc(NAMES[3])})`), seg('rivals', LVL(), SETTINGS.rivals)),
+    `<div class="opt"><label>${L('Nombres de los bots', 'Noms dels bots')}</label><div class="names">
     <span><small>${L('Compañero', 'Company')}</small><input id="nm2" type="text" maxlength="14" value="${esc(NAMES[2])}"></span>
     <span><small>${L('Rival de la derecha', 'Rival de la dreta')}</small><input id="nm1" type="text" maxlength="14" value="${esc(NAMES[1])}"></span>
-    <span><small>${L('Rival de la izquierda', "Rival de l'esquerra")}</small><input id="nm3" type="text" maxlength="14" value="${esc(NAMES[3])}"></span></div></div>
-  <div class="opt"><label>${L(`Tu compañero (${esc(NAMES[2])})`, `El teu company (${esc(NAMES[2])})`)}</label>${seg('partner', LVL(), SETTINGS.partner)}</div>
-  <div class="opt"><label>${L(`Rivales (${esc(NAMES[1])} y ${esc(NAMES[3])})`, `Rivals (${esc(NAMES[1])} i ${esc(NAMES[3])})`)}</label>${seg('rivals', LVL(), SETTINGS.rivals)}</div>
-  ${true ? `<div class="opt"><label>${L('Coto al mejor de', 'Coto al millor de')}</label>${seg('cotoBest', [[3, L('3 partidas', '3 partides')], [5, L('5 partidas', '5 partides')]], SETTINGS.cotoBest || 5, true)}</div>` : ''}
-  <div class="opt"><label>${L('Ayudas en tus cartas (Cau)', 'Ajudes en les teues cartes (Cau)')}</label>${seg('hints', off, SETTINGS.hints, true)}<span class="desc">${L('Muestran debajo de cada carta qué pasa si la juegas (Captura 3, Bac +2…).', 'Mostren davall de cada carta què passa si la jugues (Arreplega 3, Bac +2…).')}</span></div>
-  <div class="opt"><label>${L('Etiquetas bajo el nombre', 'Etiquetes davall del nom')}</label>${seg('labels', off, SETTINGS.labels, true)}<span class="desc">${L('Recuerdan la última jugada de cada uno (Bac, Limpia, Captura 2…). El «De nit» se ve siempre.', "Recorden l'última jugada de cadascú (Bac, Limpia, Arreplega 2…). El «De nit» es veu sempre.")}</span></div>
-  <div class="opt"><label>Sóc socarrat</label>${seg('socarrat', [[false,'No'],[true,'Sí']], SETTINGS.socarrat, true)}<span class="desc">${L("A la manera de Cocentaina: cada vez que s'ha pixat al repartir, la pareja que no reparte se apunta un punto.", "A la manera de Cocentaina: cada vegada que s'ha pixat en repartir, la parella que no reparteix s'apunta un punt.")}</span></div>
-  <div class="opt"><label>${L('Baraja', 'Baralla')}</label>${seg('deck', [['moderna','Moderna'],['clasica', L('Clásica', 'Clàssica')]], SETTINGS.deck, true)}<span class="desc">${L('La clásica es la «Baraja española» de Basquetteur (Wikimedia Commons, licencia CC BY-SA). Más en Créditos.', 'La clàssica és la «Baraja española» de Basquetteur (Wikimedia Commons, llicència CC BY-SA). Més en Crèdits.')}</span></div>
-  <div class="opt"><label>${L('Compartir mis partidas', 'Compartir les meues partides')}</label>${seg('share', off.map(([v]) => [v, v ? L('Sí', 'Sí') : 'No']), !!SETTINGS.share, true)}<span class="desc">${L('Envía tus manos (cartas, jugadas y marcador, sin datos personales) para mejorar los bots.', 'Envia les teues mans (cartes, jugades i marcador, sense dades personals) per a millorar els bots.')}</span>
-    <span class="names"><span><small>${L('Alias', 'Àlies')}</small><input id="aliasset" type="text" maxlength="20" value="${esc(SETTINGS.alias || '')}"></span></span></div>
-  ${PRUEBAS ? `<div class="opt"><label>🧪 ${L('Ver todas las cartas (pruebas)', 'Vore totes les cartes (proves)')}</label>${seg('showAll', off, !!SETTINGS.showAll, true)}<span class="desc">${L('Para estudiar a los bots: enseña las cartas de tu compañero y de los rivales. Solo contra bots.', 'Per a estudiar els bots: mostra les cartes del teu company i dels rivals. Només contra bots.')}</span></div>` : ''}
-  <div class="opt"><label>${L('Ritmo', 'Ritme')}</label>${seg('speed', [[0, L('Lento', 'Lent')], [1, 'Normal'], [2, L('Rápido', 'Ràpid')]], speedIx)}</div>
+    <span><small>${L('Rival de la izquierda', "Rival de l'esquerra")}</small><input id="nm3" type="text" maxlength="14" value="${esc(NAMES[3])}"></span></div></div>`,
+    setOpt('Sóc socarrat', seg('socarrat', [[false,'No'],[true,'Sí']], SETTINGS.socarrat, true), L("A la manera de Cocentaina: cada vez que s'ha pixat al repartir, la pareja que no reparte se apunta un punto.", "A la manera de Cocentaina: cada vegada que s'ha pixat en repartir, la parella que no reparteix s'apunta un punt."))
+  ].join('');
+  if (tab === 'sonido') body = [
+    setOpt(L('Sonidos de cartas', 'Sons de cartes'), seg('sonidos', off, SETTINGS.sonidos !== false, true), L('Al echar carta, llevarse cartas, repartir y robar.', 'En tirar carta, endur-se cartes, repartir i robar.')),
+    setOpt(L('Voces (Cau)', 'Veus (Cau)'), seg('voces', off, SETTINGS.voces !== false, true), L('Se oye «Bac!», «De nit!», «Envide!»… cuando pasa en la mesa.', 'Se sent «Bac!», «De nit!», «Envide!»… quan passa al tapet.')),
+    SETTINGS.voces !== false ? setOpt(L('Tu voz', 'La teua veu'), seg('voz', Array.from({ length: VOZ_N }, (_, i) => [i + 1, L('Voz ', 'Veu ') + (i + 1)]), vozNum(SETTINGS.voz), VOZ_N === 2), L('Al tocar una, la oyes. Los demás jugadores hablan con las otras; en el online, cada uno con la que haya elegido.', "En tocar-ne una, la sents. La resta de jugadors parlen amb les altres; en l'online, cadascú amb la que haja triat.")) : ''
+  ].join('');
+  if (tab === 'ayudas') body = [
+    setOpt(L('Ayudas en tus cartas (Cau)', 'Ajudes en les teues cartes (Cau)'), seg('hints', off, SETTINGS.hints, true), L('Muestran debajo de cada carta qué pasa si la juegas (Captura 3, Bac +2…).', 'Mostren davall de cada carta què passa si la jugues (Arreplega 3, Bac +2…).')),
+    setOpt(L('Etiquetas bajo el nombre', 'Etiquetes davall del nom'), seg('labels', off, SETTINGS.labels, true), L('Recuerdan la última jugada de cada uno (Bac, Limpia, Captura 2…). El «De nit» se ve siempre.', "Recorden l'última jugada de cadascú (Bac, Limpia, Arreplega 2…). El «De nit» es veu sempre.")),
+    PRUEBAS ? setOpt(`🧪 ${L('Ver todas las cartas (pruebas)', 'Vore totes les cartes (proves)')}`, seg('showAll', off, !!SETTINGS.showAll, true), L('Para estudiar a los bots: enseña las cartas de tu compañero y de los rivales. Solo contra bots.', 'Per a estudiar els bots: mostra les cartes del teu company i dels rivals. Només contra bots.')) : ''
+  ].join('');
+  if (tab === 'perfil') body = [
+    `<div class="opt"><label>${L('Alias', 'Àlies')}</label><div class="names" style="grid-template-columns:1fr"><span><input id="aliasset" type="text" maxlength="20" value="${esc(SETTINGS.alias || '')}" aria-label="${L('Alias', 'Àlies')}"></span></div></div>`,
+    setOpt(L('Compartir mis partidas', 'Compartir les meues partides'), seg('share', off.map(([v]) => [v, v ? L('Sí', 'Sí') : 'No']), !!SETTINGS.share, true), L('Envía tus manos (cartas, jugadas y marcador, sin datos personales) para mejorar los bots.', 'Envia les teues mans (cartes, jugades i marcador, sense dades personals) per a millorar els bots.')),
+    `<div class="opt"><button class="btn" type="button" data-act="credits-set">${L('Créditos', 'Crèdits')}</button></div>`
+  ].join('');
+  showPanel(`<h2>${L('Ajustes', 'Ajustos')}</h2>${tabs}<div class="setbody">${body}</div>
   <div class="acts"><button class="btn primary" type="button" data-act="back">${L('Volver', 'Tornar')}</button></div>`); cover();
 }
 const esc = t => String(t).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]);
@@ -3461,12 +3551,14 @@ $('bottom').addEventListener('click', async e => {
   render(); loop();
 });
 $('panel').addEventListener('click', e => {
+  const ib = e.target.closest('[data-info]'); if (ib) { ib.closest('.opt').classList.toggle('showinfo'); return; }
   const sb = e.target.closest('[data-set]');
   if (sb) {
     const k = sb.dataset.set, v = sb.dataset.val;
-    if (k === 'hints' || k === 'labels' || k === 'socarrat' || k === 'showAll' || k === 'share') SETTINGS[k] = v === 'true';
+    if (k === 'hints' || k === 'labels' || k === 'socarrat' || k === 'showAll' || k === 'share' || k === 'voces' || k === 'sonidos') SETTINGS[k] = v === 'true';
     else if (k === 'speed') speedIx = +v;
     else if (k === 'cotoBest') SETTINGS.cotoBest = +v;
+    else if (k === 'voz') { SETTINGS.voz = vozNum(v); const sv = SETTINGS.voces; SETTINGS.voces = true; vozPlay('denit', SETTINGS.voz); SETTINGS.voces = sv; }
     else SETTINGS[k] = v;
     if (k === 'lang') applyLang(SETTINGS.lang, SETTINGS.names);
     saveSettings(); showSettings(); render(); return;
@@ -3491,7 +3583,9 @@ $('panel').addEventListener('click', e => {
   if (a === 'settings') showSettings();
   if (a === 'rules') { showRules(); panelBack = 'menu'; cover(); }
   if (a === 'tutorial') showTutMenu();
-  if (a === 'credits') { panelBack = 'menu'; showCredits(); }
+  if (a === 'credits') { CRED_FROM_SET = false; panelBack = 'menu'; showCredits(); }
+  if (a === 'credits-set') { CRED_FROM_SET = true; panelBack = 'menu'; showCredits(); }
+  if (a === 'settab') { SETTINGS.setTab = b.dataset.t; saveSettings(); showSettings(); }
   if (a === 'learn') showTutorial('coto', 0);
   if (a === 'tut') showTutorial(b.dataset.g, +b.dataset.i);
   if (a === 'tut-play') startGame(b.dataset.g);
@@ -3506,7 +3600,7 @@ $('panel').addEventListener('click', e => {
   if (a === 'net-seat') netHostSeat(+b.dataset.seat, b.dataset.kind);
   if (a === 'net-kick') netHostKick(+b.dataset.seat);
   if (a === 'net-start') netStart();
-  if (a === 'net-sit') netSend({ t: 'sit', id: NET.id, name: NET.name, seat: +b.dataset.seat });
+  if (a === 'net-sit') netSend({ t: 'sit', id: NET.id, name: NET.name, seat: +b.dataset.seat, voz: vozNum(SETTINGS.voz) });
   if (a === 'net-leave') { netLeave(); showMenu(); }
   if (a === 'net-stay') closePanel();
   if (a === 'net-invite') netInvite();
@@ -3517,7 +3611,7 @@ $('panel').addEventListener('click', e => {
   if (a === 'net-rejoin') { const r = netRoomGet(); if (r && !NET) netJoin(r.code, r.name, false, true); else showMenu(); }
   if (a === 'net-forget') { netRoomClear(); showMenu(); }
   if (a === 'net-lobby') netBackLobby();
-  if (a === 'back') showMenu();
+  if (a === 'back') { if (CRED_FROM_SET) { CRED_FROM_SET = false; showSettings(); } else showMenu(); }
   if (a === 'nexthand') { S.dealer = (S.dealer + 1) % 4; newHand(S); S.feed = []; narr = L(`Mano ${S.handNo}. Reparte ${NAMES[S.dealer]}.`, `Mà ${S.handNo}. Reparteix ${NAMES[S.dealer]}.`); closePanel(); beginHand(); }
 });
 const closable = () => !$('panel').classList.contains('menu') && panelBack !== 'menu' && (isCoto() ? G && G.phase === 'play' : !['handEnd','gameEnd'].includes(S.phase)) && !(APP.M && ['draw'].includes(APP.M.stage) && $('panel').querySelector('.draw'));
@@ -3615,15 +3709,18 @@ function coRenderHand() {
 function coRenderBottom() {
   const el = $('bottom');
   if (coDealView) { el.innerHTML = `<div class="status"><span>${L('Reparte', 'Reparteix')} <b>${NAMES[G.dealer]}</b>…</span></div>`; return; }
-  let btns = '';
+  let btns = '', sing = false, swap = false;
   if (!busy && G.phase === 'play') {
     for (const s of coCantesFor(G, 0)) btns += `<button class="btn sing" type="button" data-co="sing" data-s="${s}">${s === G.trump ? L('Cantar las 40', 'Cantar les 40') : `${L('Cantar', 'Cantar')} 20 en ${SUITN[s]}`}</button>`;
-    if (btns && G.turn !== 0) btns += `<button class="btn" type="button" data-co="nosing">${L('No cantar', 'No cantar')}</button>`;
-    if (coCanSwap(G, 0) && !(TUTG && coCantesFor(G, 0).length)) btns += `<button class="btn primary" type="button" data-co="swap">${L('Cambiar el 7', 'Canviar el 7')}</button>`;
+    sing = !!btns; swap = coCanSwap(G, 0) && !(TUTG && coCantesFor(G, 0).length);
+    if (swap) btns += `<button class="btn primary" type="button" data-co="swap">${L('Cambiar el 7', 'Canviar el 7')}</button>`;
+    if (btns && G.turn !== 0) btns += `<button class="btn" type="button" data-co="nosing">${sing && swap ? L('Seguir', 'Seguir') : sing ? L('No cantar', 'No cantar') : L('No cambiar', 'No canviar')}</button>`;
   }
   let txt = '';
   if (G.phase === 'play' && !coFx && !coShowLast) txt = G.turn === 0 && !busy ? (coArrastre(G) && G.trick.length ? L('<b>Te toca.</b> Las cartas que no puedes jugar salen apagadas.', '<b>Et toca.</b> Les cartes que no pots jugar ixen apagades.') : L('<b>Te toca.</b> Elige una carta.', '<b>Et toca.</b> Tria una carta.')) : `${L('Juega', 'Juga')} <b>${NAMES[G.turn]}</b>…`;
-  if (btns && G.turn !== 0) txt = L('Podéis cantar: ¿cantas antes de que salga la baza?', 'Podeu cantar: cantes abans que isca la basa?');
+  if (btns && G.turn !== 0) txt = sing && swap ? L('Podéis cantar y puedes cambiar el 7: ¿lo haces antes de que salga la baza?', 'Podeu cantar i pots canviar el 7: ho fas abans que isca la basa?')
+    : sing ? L('Podéis cantar: ¿cantas antes de que salga la baza?', 'Podeu cantar: cantes abans que isca la basa?')
+    : L('Puedes cambiar el 7 por la pinta: ¿lo cambias antes de que salga la baza?', 'Pots canviar el 7 per la pinta: el canvies abans que isca la basa?');
   el.innerHTML = `<div class="status ${G.turn === 0 ? 'mine' : ''}"><span>${txt}</span>${btns}</div>`;
 }
 async function coDrain() {
@@ -3637,11 +3734,12 @@ async function coDrain() {
 }
 const coCenter = el => { const r = el.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; };
 const coSeatTarget = p => p === 0 ? $('hand') : ($('seat' + p).querySelector('.backs') || $('seat' + p));
-async function coFly(from, to, html, ms = 260) {
+async function coFly(from, to, html, ms = 260, o = {}) {
   if (reduce) return;
+  const dur = o.fixed ? ms : ms * SPEEDS[speedIx][1]; if (o.deal) sfxDeal(dur);
   const f = document.createElement('div'); f.className = 'fly'; f.innerHTML = html; document.body.appendChild(f);
   const w = f.offsetWidth / 2, h = f.offsetHeight / 2;
-  const a = f.animate([{ transform: `translate(${from[0] - w}px,${from[1] - h}px)` }, { transform: `translate(${to[0] - w}px,${to[1] - h}px)` }], { duration: ms * SPEEDS[speedIx][1], easing: 'cubic-bezier(.3,.7,.3,1)' });
+  const a = f.animate([{ transform: `translate(${from[0] - w}px,${from[1] - h}px)` }, { transform: `translate(${to[0] - w}px,${to[1] - h}px)` }], { duration: dur, easing: 'cubic-bezier(.3,.7,.3,1)' });
   await a.finished.catch(() => {}); f.remove();
 }
 // después de cada baza: cada uno roba del montón, empezando por quien la ha ganado
@@ -3653,7 +3751,7 @@ async function coAnimDraw() {
   for (const d of draws) {
     const isPinta = !G.stock.length && d === draws[draws.length - 1];
     netEv({ k: 'draw', p: d.p, id: d.id, pinta: isPinta });
-    await coFly(origin, coCenter(coSeatTarget(d.p)), isPinta || d.p === 0 ? `<div style="--cw:46px">${cardHTML(coCard(d.id))}</div>` : '<span class="back"></span>', 240);
+    await coFly(origin, coCenter(coSeatTarget(d.p)), isPinta || d.p === 0 ? `<div style="--cw:46px">${cardHTML(coCard(d.id))}</div>` : '<span class="back"></span>', 240, { deal: true });
     coHide.delete(d.id); coPend = Math.max(0, coPend - 1); d.p === 0 ? coRenderHand() : coRenderSeat(d.p); coRenderTable(); $('info') && renderCotoInfo();
   }
   G.lastDraw = []; coPend = 0;
@@ -3676,12 +3774,13 @@ async function coDoPlay(p, id) {
   // lo que se roba ya está en las manos del motor: se esconde hasta que llegue volando
   if (r.done && G.lastDraw && G.lastDraw.length) { G.lastDraw.forEach(d => coHide.add(d.id)); coPend = G.lastDraw.length; }
   narr = `<b>${NAMES[p]}</b> ${p === 0 ? L('juegas', 'jugues') : L('juega', 'juga')} ${cardName(c)}.`;
+  sfxTap();
   if (!r.done) { render(); await sleep(520); if (TUTG && !TUTG.cau && p !== 0 && k < 3 && G.turn !== 0) await tutPause(tutCotoCard(k, p, c)); coFx = null; return; }
   coShowLast = true; render(); await sleep(750);
   narr = `<b>${NAMES[r.winner]}</b> ${r.winner === 0 ? L('ganas la baza', 'guanyes la basa') : L('gana la baza', 'guanya la basa')}: ${r.pts} ${L('puntos', 'punts')}${r.last ? L(' (con las 10 de últimas)', " (amb les 10 d'últimes)") : ''}.`;
   render(); await callout(r.pts >= 10 ? `+${r.pts}` : L('Baza', 'Basa'), NAMES[r.winner]);
   if (TUTG && !TUTG.cau) await tutPause(tutCotoTrick(k, p, c, r));
-  coShowLast = false; coFx = null;
+  coShowLast = false; coFx = null; sfxNet('rec');   // se lleva la baza
   if (G.phase !== 'play' && G.hands.some(h => h.length)) {   // se han salido a mitad de mano: se destapan las cartas
     coHide = new Set(); coPend = 0; G.lastDraw = []; coReveal = true; render(); await coDrain(); await sleep(2600); coReveal = false; render(); return;
   }
@@ -3698,16 +3797,17 @@ async function cotoLoop() {
       while (!$('overlay').hidden && G.phase === 'play') await new Promise(r => setTimeout(r, 200));
       save();
       if (G.phase !== 'play') break;
+      // el 7 se cambia justo después de que gane la baza la pareja, le toque o no (5 nov)
+      if (!G.trick.length) { let sw = false; for (const q of [G.turn, (G.turn + 2) % 4]) if (!humanSeat(q) && coBotSwap(G, q)) { await coAnimSwap(q); await coDrain(); sw = true; } if (sw) { render(); continue; } }
       let sang = false;
       for (let i = 0; i < 4; i++) { const q = (G.turn + i) % 4; if (humanSeat(q)) continue; const ss = coCantesFor(G, q); if (ss.length) { for (const s of ss) coSing(G, q, s); sang = true; } }
       if (sang) { render(); await coDrain(); continue; }
-      if (coCantesFor(G, 0).length && G.cantePass !== G.trickNo && G.turn !== 0) break;
+      if ((coCantesFor(G, 0).length || coCanSwap(G, 0)) && G.cantePass !== G.trickNo && G.turn !== 0) break;
       if (TUTG && G.trickNo === 1 && !G.trick.length && coCanSwap(G, 0)) break;
       if (NET && netCanteWait()) break;
       if (humanSeat(G.turn)) break;
       render(); await sleep(650);
       const p = G.turn;
-      if (coBotSwap(G, p)) { await coAnimSwap(p); await coDrain(); }
       await sleep(350);
       const forced = TUTG && TUT_BOTS[G.trickNo] ? TUT_BOTS[G.trickNo][p] : null;
       await coDoPlay(p, forced != null ? forced : coBotChoose(G, p, levelOf(p)));
@@ -3725,7 +3825,8 @@ async function animateCotoDeal() {
     if (reduce) return;
     const f = document.createElement('div'); f.className = 'fly'; f.innerHTML = '<span class="back"></span>'.repeat(n); document.body.appendChild(f);
     const w = f.offsetWidth / 2, h = f.offsetHeight / 2;
-    const a = f.animate([{ transform: `translate(${ox - w}px,${oy - h}px) scale(.75)` }, { transform: `translate(${to[0] - w}px,${to[1] - h}px) scale(1)` }], { duration: 150 * SPEEDS[speedIx][1], easing: 'cubic-bezier(.3,.7,.3,1)' });
+    const a = f.animate([{ transform: `translate(${ox - w}px,${oy - h}px) scale(.75)` }, { transform: `translate(${to[0] - w}px,${to[1] - h}px) scale(1)` }], { duration: DEAL_MS, easing: 'cubic-bezier(.3,.7,.3,1)' });
+    sfxDeal(DEAL_MS);
     await a.finished.catch(() => {}); f.remove();
   };
   const gen = GEN;
@@ -3881,7 +3982,7 @@ function showPlay() {
   $('panel').classList.add('menu'); cover();
 }
 
-window.CAU = { APP, cotoNewMatch, coNext, exportText, coSwap, coCanSwap, coBotChoose, coPlay, coLegal, get G() { return G; }, set G(v) { G = v; }, set S(v) { S = v; }, render, matchNext, newGame, newHand, applyPlay, afterPlay, INFER, SMART, holdProb, determinize, botChoose, botChooseHard, botChooseNormal, botChooseEasy, botChooseDificil, botChooseExperto, botBet, botSing, SETTINGS, betAct, betOptions, sing, startSing, resolveNit, canFirst, canSecond, cardSVG, get S() { return S; } };
+window.CAU = { APP, seatVoices, cotoNewMatch, coNext, exportText, coSwap, coCanSwap, coBotChoose, coPlay, coLegal, get G() { return G; }, set G(v) { G = v; }, set S(v) { S = v; }, render, matchNext, newGame, newHand, applyPlay, afterPlay, INFER, SMART, holdProb, determinize, botChoose, botChooseHard, botChooseNormal, botChooseEasy, botChooseDificil, botChooseExperto, botBet, botSing, SETTINGS, betAct, betOptions, sing, startSing, resolveNit, canFirst, canSecond, cardSVG, get S() { return S; } };
 
 function start(data) {
   if (data && data.app) { Object.assign(APP, data.app); S = data.S; G = data.G; if (S) S.feed = []; if (G) G.feed = []; hasSaved = true; render(); loop(); return; }
