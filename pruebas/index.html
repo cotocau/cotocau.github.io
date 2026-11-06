@@ -572,9 +572,9 @@ const BETSAY = o => (LANG === 'va' ? { pass:'passen', xic:'diuen «xic»', envit
 function betAct(S, t, a) {
   const b = S.bet;
   say(S, `${TEAMN[t]} ${BETSAY(a)}.`, 'nit');
-  if (['xic', 'xac', 'envit', 'torne', 'falta', 'vull'].includes(a)) {   // su voz suena al contarlo, con la voz de quien habla por la pareja
+  if (['xic', 'xac', 'envit', 'torne', 'falta', 'vull', 'novull', 'pass'].includes(a)) {   // su voz suena al contarlo, con la voz de quien habla por la pareja
     const fi = S.feed[S.feed.length - 1], spk = [t, t + 2].filter(q => S.sung[q]);
-    fi.v = a === 'vull' ? vozAlt('vinga', 'accepte') : a; fi.p = t === 0 && S.sung[0] ? 0 : spk.length ? spk[0] : t;
+    fi.v = a === 'vull' ? (b.pending && b.pending.falta ? vozAlt('lavull', 'juguem') : vozAlt('vinga', 'accepte')) : a === 'novull' ? vozAlt('novull', 'pertu') : a === 'pass' ? 'passe' : a; fi.p = t === 0 && S.sung[0] ? 0 : spk.length ? spk[0] : t;
   }
   S.lastBet = { t, a };
   if (a === 'pass') {   // pasar el primero es rendirse: la otra pareja gana 1
@@ -1809,7 +1809,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-06-1';
+const APP_VER = 'cau-2026-11-06-2';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
 // sus partidas llevan «-pruebas» en la versión y su online usa salas aparte (canales cc-p…), para no mezclarse con la oficial.
 const PRUEBAS = true;
@@ -2047,7 +2047,7 @@ function render() {
 // contra bots, los demás asientos hablan con las otras; en el online cada persona con la suya y los bots con las que sobran.
 const VOZ_N = 4;
 // 6 nov: vinga/accepte (se acepta un envide, se alternan), limpia, baclimpia, jotambe/jotambe2 (el segundo que canta de nit), bones (una pareja pasa a buenas)
-const VOZ_KEYS = ['bac', 'rebac', 'sv', 'denit', 'xic', 'xac', 'envit', 'torne', 'falta', 'acabat', 'vinga', 'accepte', 'limpia', 'baclimpia', 'jotambe', 'jotambe2', 'bones'];
+const VOZ_KEYS = ['bac', 'rebac', 'sv', 'denit', 'xic', 'xac', 'envit', 'torne', 'falta', 'acabat', 'vinga', 'accepte', 'limpia', 'baclimpia', 'jotambe', 'jotambe2', 'bones', 'novull', 'pertu', 'passe', 'lavull', 'juguem'];   // novull/pertu: se rechaza (se alternan); passe; lavull/juguem: se acepta «la partida»
 const vozAlt = (a, b) => Math.random() < 0.5 ? a : b;
 const vozNum = x => { x = Math.floor(+x); return x >= 1 && x <= VOZ_N ? x : 1; };
 function seatVoices() {
