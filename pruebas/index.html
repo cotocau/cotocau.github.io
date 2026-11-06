@@ -504,10 +504,12 @@ function postDeal(S) {
 const dealOrder = S => [0,1,2,3].map(i => (S.dealStart + i) % 4);
 
 function sing(S, p) {
+  const also = [0, 1, 2, 3].some(q => q !== p && S.sung[q]);
   S.sung[p] = S.dealCombos[p];
   S.bubbles[p] = 'De nit';
   say(S, p === 0 ? L('Cantas «de nit».', 'Cantes «de nit».') : `${NAMES[p]} canta «de nit».`, 'sing');
   S.feed[S.feed.length - 1].p = p;   // para la voz
+  if (also) S.feed[S.feed.length - 1].v2 = vozAlt('jotambe', 'jotambe2');   // ya había cantado otro
 }
 function canFirst(S, p) {
   return S.phase === 'play' && S.turn === p && S.round < 3 && S.nitState === 'open' && !S.first[p] && !S.sung[p] && !!S.dealCombos[p] && S.hands[p].length === 3;
@@ -570,9 +572,9 @@ const BETSAY = o => (LANG === 'va' ? { pass:'passen', xic:'diuen «xic»', envit
 function betAct(S, t, a) {
   const b = S.bet;
   say(S, `${TEAMN[t]} ${BETSAY(a)}.`, 'nit');
-  if (['xic', 'xac', 'envit', 'torne', 'falta'].includes(a)) {   // su voz suena al contarlo, con la voz de quien habla por la pareja
+  if (['xic', 'xac', 'envit', 'torne', 'falta', 'vull'].includes(a)) {   // su voz suena al contarlo, con la voz de quien habla por la pareja
     const fi = S.feed[S.feed.length - 1], spk = [t, t + 2].filter(q => S.sung[q]);
-    fi.v = a; fi.p = t === 0 && S.sung[0] ? 0 : spk.length ? spk[0] : t;
+    fi.v = a === 'vull' ? vozAlt('vinga', 'accepte') : a; fi.p = t === 0 && S.sung[0] ? 0 : spk.length ? spk[0] : t;
   }
   S.lastBet = { t, a };
   if (a === 'pass') {   // pasar el primero es rendirse: la otra pareja gana 1
@@ -1807,7 +1809,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-05-3';
+const APP_VER = 'cau-2026-11-06-1';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
 // sus partidas llevan «-pruebas» en la versión y su online usa salas aparte (canales cc-p…), para no mezclarse con la oficial.
 const PRUEBAS = true;
@@ -1982,7 +1984,15 @@ function duelHold() {
   for (const it of S.feed || []) if (it.duel) { h.pts[it.duel.w] += it.duel.pts; h.n++; }
   return h;
 }
-function renderScore(i) { setScore(i, S.score[i] - (cauHeld() ? S.summary[i].cardPts : 0) - chainPend(S, i) - duelHold().pts[i], scoreTxt, 'cau'); }
+function renderScore(i) {
+  const val = S.score[i] - (cauHeld() ? S.summary[i].cardPts : 0) - chainPend(S, i) - duelHold().pts[i], was = SCF[i].target;
+  if (val >= 20 && !(NET && NET.role === 'guest') && !S.over) {
+    S.bonesSaid = S.bonesSaid || [false, false];
+    if (!S.bonesSaid[i] && was != null && was < 20 && SCF[i].key === 'cau:c') setTimeout(() => voz('bones', i === 0 ? 0 : 1), 1300);   // «Anem ja de bones!», cuando acaba de sonar lo anterior
+    S.bonesSaid[i] = true;
+  }
+  setScore(i, val, scoreTxt, 'cau');
+}
 // Número de una celda que cuenta hasta el total con el «+N» verde al lado
 function countCell(el, from, to, fmt) {
   if (!el || to <= from) return;
@@ -2036,7 +2046,9 @@ function render() {
 // 5 nov: cuatro voces numeradas en voz/<n>/<clave>.mp3 (Matxa TTS de Projecte AINA). Cada uno elige la suya en Ajustes;
 // contra bots, los demás asientos hablan con las otras; en el online cada persona con la suya y los bots con las que sobran.
 const VOZ_N = 4;
-const VOZ_KEYS = ['bac', 'rebac', 'sv', 'denit', 'xic', 'xac', 'envit', 'torne', 'falta', 'acabat'];
+// 6 nov: vinga/accepte (se acepta un envide, se alternan), limpia, baclimpia, jotambe/jotambe2 (el segundo que canta de nit), bones (una pareja pasa a buenas)
+const VOZ_KEYS = ['bac', 'rebac', 'sv', 'denit', 'xic', 'xac', 'envit', 'torne', 'falta', 'acabat', 'vinga', 'accepte', 'limpia', 'baclimpia', 'jotambe', 'jotambe2', 'bones'];
+const vozAlt = (a, b) => Math.random() < 0.5 ? a : b;
 const vozNum = x => { x = Math.floor(+x); return x >= 1 && x <= VOZ_N ? x : 1; };
 function seatVoices() {
   const mine = vozNum(SETTINGS.voz), v = [mine, 0, 0, 0];
@@ -2075,7 +2087,7 @@ async function drainFeed(untilDeal) {
   const items = S.feed.splice(0, n);
   for (const i of items) if (i.duel) { DUELH.pts[i.duel.w] += i.duel.pts; DUELH.n++; }   // se guardan hasta su aviso
   for (const i of items) {
-    if (i.k === 'sing') { narr = i.txt; render(); voz('denit', i.p); await callout('De nit', /^(Cantas|Vuelves|Cantes|Tornes)/.test(i.txt) ? NAMES[0] : i.txt.split(' ')[0]); }
+    if (i.k === 'sing') { narr = i.txt; render(); voz(i.v2 || 'denit', i.p); await callout('De nit', /^(Cantas|Vuelves|Cantes|Tornes)/.test(i.txt) ? NAMES[0] : i.txt.split(' ')[0]); }
     else if (i.k === 'nit' || i.k === 'pts') { narr = i.txt; render(); if (i.v) voz(i.v, i.p); await sleep(1100); }
     else if (i.k === 'duel') {
       const d = i.duel || { w: 0, pts: 0 };
@@ -2107,7 +2119,7 @@ async function doPlay(p, cid) {
     const who = special ? special.p : p;
     narr = `${cobra ? cobra.txt + '. ' : ''}${special ? `<b>${NAMES[who]}</b>: <b>${special.txt}</b> +${special.pts}` : cap ? `<b>${NAMES[p]}</b> ${L(`captura ${cap.n} cartas.`, `arreplega ${cap.n} cartes.`)}` : ''}`;
     render();
-    if (special && special.k !== 'limpia') voz(special.k, special.p);
+    if (special) voz(special.k === 'bac' && /Limpia/.test(special.txt) ? 'baclimpia' : special.k, special.p);
     if (special) await callout(special.txt,`${NAMES[who]} · +${special.pts}`);
     else await sleep(1100);
   } else await sleep(300);
