@@ -285,6 +285,10 @@ button{font:inherit;color:inherit}
 .opt{display:flex;flex-direction:column;gap:6px}
 .opt label{font-weight:700;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft)}
 .opt .desc{font-size:13px;color:var(--ink-soft)}
+.opt .desc.tip{display:none}.opt.showinfo .desc.tip{display:block}
+.opt .info{border:0;background:none;color:var(--gold);font-size:16px;line-height:1;padding:0 4px;margin-left:2px;cursor:pointer;vertical-align:-1px}
+.settabs{grid-template-columns:repeat(4,1fr)}.settabs button{font-size:13px;padding:8px 2px;white-space:nowrap}
+.setbody{display:flex;flex-direction:column;gap:16px;min-height:min(430px,62vh)}
 .seg{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1px solid var(--line);border-radius:999px;padding:3px;background:rgba(0,0,0,.2)}
 .seg.two{grid-template-columns:repeat(2,1fr)}
 .seg.four{grid-template-columns:repeat(4,1fr)}
@@ -1809,7 +1813,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-06-3';
+const APP_VER = 'cau-2026-11-06-4';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
 // sus partidas llevan «-pruebas» en la versión y su online usa salas aparte (canales cc-p…), para no mezclarse con la oficial.
 const PRUEBAS = true;
@@ -3448,30 +3452,47 @@ function showTutorial(g, i) {
   showPanel(`<div class="tut" data-tut="1">${tabs}<h2>${L(st.t[0], st.t[1])}</h2>${cards}<p>${L(st.h[0], st.h[1])}</p>${dots}<div class="acts">${prev}${next}</div></div>`);
   panelBack = 'menu'; cover();
 }
-// Modo de pruebas (ver todas las cartas, solo contra bots): en el código solo está la huella SHA-256 de la contraseña, no la contraseña.
+// Ajustes en 4 pestañas (6 nov); las explicaciones salen al tocar «ⓘ».
+let CRED_FROM_SET = false;
+function setOpt(label, control, desc) {
+  return `<div class="opt"><label>${label}${desc ? ` <button class="info" type="button" data-info aria-label="${L('Más información', 'Més informació')}">ⓘ</button>` : ''}</label>${control}${desc ? `<span class="desc tip">${desc}</span>` : ''}</div>`;
+}
 function showSettings() {
   panelBack = 'menu';
   const off = [[false, L('Quitadas', 'Llevades')], [true, L('Puestas', 'Posades')]];
-  showPanel(`<h2>${L('Ajustes', 'Ajustos')}</h2>
-  <div class="opt"><label>${L('Idioma', 'Idioma')}</label>${seg('lang', [['es','Castellano'],['va','Valencià']], LANG, true)}</div>
-  <div class="opt"><label>${L('Nombres', 'Noms')}</label><div class="names">
+  const TABS = [['partida', '🎮', L('Partida', 'Partida')], ['sonido', '🔊', L('Sonido', 'So')], ['ayudas', '💡', L('Ayudas', 'Ajudes')], ['perfil', '👤', L('Perfil', 'Perfil')]];
+  const tab = TABS.some(t => t[0] === SETTINGS.setTab) ? SETTINGS.setTab : 'partida';
+  const tabs = `<div class="tabs settabs" role="group">${TABS.map(([k, ic, l]) => `<button type="button" data-act="settab" data-t="${k}" aria-pressed="${k === tab}"><span aria-hidden="true">${ic}</span> ${l}</button>`).join('')}</div>`;
+  let body = '';
+  if (tab === 'partida') body = [
+    setOpt(L('Idioma', 'Idioma'), seg('lang', [['es','Castellano'],['va','Valencià']], LANG, true)),
+    setOpt(L('Baraja', 'Baralla'), seg('deck', [['moderna','Moderna'],['clasica', L('Clásica', 'Clàssica')]], SETTINGS.deck, true), L('La clásica es la «Baraja española» de Basquetteur (Wikimedia Commons, licencia CC BY-SA). Más en Créditos.', 'La clàssica és la «Baraja española» de Basquetteur (Wikimedia Commons, llicència CC BY-SA). Més en Crèdits.')),
+    setOpt(L('Ritmo', 'Ritme'), seg('speed', [[0, L('Lento', 'Lent')], [1, 'Normal'], [2, L('Rápido', 'Ràpid')]], speedIx)),
+    setOpt(L('Coto al mejor de', 'Coto al millor de'), seg('cotoBest', [[3, L('3 partidas', '3 partides')], [5, L('5 partidas', '5 partides')]], SETTINGS.cotoBest || 5, true)),
+    setOpt(L(`Tu compañero (${esc(NAMES[2])})`, `El teu company (${esc(NAMES[2])})`), seg('partner', LVL(), SETTINGS.partner)),
+    setOpt(L(`Rivales (${esc(NAMES[1])} y ${esc(NAMES[3])})`, `Rivals (${esc(NAMES[1])} i ${esc(NAMES[3])})`), seg('rivals', LVL(), SETTINGS.rivals)),
+    `<div class="opt"><label>${L('Nombres de los bots', 'Noms dels bots')}</label><div class="names">
     <span><small>${L('Compañero', 'Company')}</small><input id="nm2" type="text" maxlength="14" value="${esc(NAMES[2])}"></span>
     <span><small>${L('Rival de la derecha', 'Rival de la dreta')}</small><input id="nm1" type="text" maxlength="14" value="${esc(NAMES[1])}"></span>
-    <span><small>${L('Rival de la izquierda', "Rival de l'esquerra")}</small><input id="nm3" type="text" maxlength="14" value="${esc(NAMES[3])}"></span></div></div>
-  <div class="opt"><label>${L(`Tu compañero (${esc(NAMES[2])})`, `El teu company (${esc(NAMES[2])})`)}</label>${seg('partner', LVL(), SETTINGS.partner)}</div>
-  <div class="opt"><label>${L(`Rivales (${esc(NAMES[1])} y ${esc(NAMES[3])})`, `Rivals (${esc(NAMES[1])} i ${esc(NAMES[3])})`)}</label>${seg('rivals', LVL(), SETTINGS.rivals)}</div>
-  ${true ? `<div class="opt"><label>${L('Coto al mejor de', 'Coto al millor de')}</label>${seg('cotoBest', [[3, L('3 partidas', '3 partides')], [5, L('5 partidas', '5 partides')]], SETTINGS.cotoBest || 5, true)}</div>` : ''}
-  <div class="opt"><label>${L('Ayudas en tus cartas (Cau)', 'Ajudes en les teues cartes (Cau)')}</label>${seg('hints', off, SETTINGS.hints, true)}<span class="desc">${L('Muestran debajo de cada carta qué pasa si la juegas (Captura 3, Bac +2…).', 'Mostren davall de cada carta què passa si la jugues (Arreplega 3, Bac +2…).')}</span></div>
-  <div class="opt"><label>${L('Etiquetas bajo el nombre', 'Etiquetes davall del nom')}</label>${seg('labels', off, SETTINGS.labels, true)}<span class="desc">${L('Recuerdan la última jugada de cada uno (Bac, Limpia, Captura 2…). El «De nit» se ve siempre.', "Recorden l'última jugada de cadascú (Bac, Limpia, Arreplega 2…). El «De nit» es veu sempre.")}</span></div>
-  <div class="opt"><label>Sóc socarrat</label>${seg('socarrat', [[false,'No'],[true,'Sí']], SETTINGS.socarrat, true)}<span class="desc">${L("A la manera de Cocentaina: cada vez que s'ha pixat al repartir, la pareja que no reparte se apunta un punto.", "A la manera de Cocentaina: cada vegada que s'ha pixat en repartir, la parella que no reparteix s'apunta un punt.")}</span></div>
-  <div class="opt"><label>${L('Baraja', 'Baralla')}</label>${seg('deck', [['moderna','Moderna'],['clasica', L('Clásica', 'Clàssica')]], SETTINGS.deck, true)}<span class="desc">${L('La clásica es la «Baraja española» de Basquetteur (Wikimedia Commons, licencia CC BY-SA). Más en Créditos.', 'La clàssica és la «Baraja española» de Basquetteur (Wikimedia Commons, llicència CC BY-SA). Més en Crèdits.')}</span></div>
-  <div class="opt"><label>${L('Compartir mis partidas', 'Compartir les meues partides')}</label>${seg('share', off.map(([v]) => [v, v ? L('Sí', 'Sí') : 'No']), !!SETTINGS.share, true)}<span class="desc">${L('Envía tus manos (cartas, jugadas y marcador, sin datos personales) para mejorar los bots.', 'Envia les teues mans (cartes, jugades i marcador, sense dades personals) per a millorar els bots.')}</span>
-    <span class="names"><span><small>${L('Alias', 'Àlies')}</small><input id="aliasset" type="text" maxlength="20" value="${esc(SETTINGS.alias || '')}"></span></span></div>
-  ${PRUEBAS ? `<div class="opt"><label>🧪 ${L('Ver todas las cartas (pruebas)', 'Vore totes les cartes (proves)')}</label>${seg('showAll', off, !!SETTINGS.showAll, true)}<span class="desc">${L('Para estudiar a los bots: enseña las cartas de tu compañero y de los rivales. Solo contra bots.', 'Per a estudiar els bots: mostra les cartes del teu company i dels rivals. Només contra bots.')}</span></div>` : ''}
-  <div class="opt"><label>${L('Sonidos de cartas', 'Sons de cartes')}</label>${seg('sonidos', off, SETTINGS.sonidos !== false, true)}<span class="desc">${L('Al echar carta, llevarse cartas, repartir y robar.', 'En tirar carta, endur-se cartes, repartir i robar.')}</span></div>
-  <div class="opt"><label>${L('Voces (Cau)', 'Veus (Cau)')}</label>${seg('voces', off, SETTINGS.voces !== false, true)}<span class="desc">${L('Se oye «Bac!», «De nit!», «Envide!»… cuando pasa en la mesa.', 'Se sent «Bac!», «De nit!», «Envide!»… quan passa al tapet.')}</span></div>
-  <div class="opt"><label>${L('Tu voz', 'La teua veu')}</label>${seg('voz', Array.from({ length: VOZ_N }, (_, i) => [i + 1, L('Voz ', 'Veu ') + (i + 1)]), vozNum(SETTINGS.voz), VOZ_N === 2)}<span class="desc">${L('Al tocar una, la oyes. Los demás jugadores hablan con las otras; en el online, cada uno con la que haya elegido.', "En tocar-ne una, la sents. La resta de jugadors parlen amb les altres; en l'online, cadascú amb la que haja triat.")}</span></div>
-  <div class="opt"><label>${L('Ritmo', 'Ritme')}</label>${seg('speed', [[0, L('Lento', 'Lent')], [1, 'Normal'], [2, L('Rápido', 'Ràpid')]], speedIx)}</div>
+    <span><small>${L('Rival de la izquierda', "Rival de l'esquerra")}</small><input id="nm3" type="text" maxlength="14" value="${esc(NAMES[3])}"></span></div></div>`,
+    setOpt('Sóc socarrat', seg('socarrat', [[false,'No'],[true,'Sí']], SETTINGS.socarrat, true), L("A la manera de Cocentaina: cada vez que s'ha pixat al repartir, la pareja que no reparte se apunta un punto.", "A la manera de Cocentaina: cada vegada que s'ha pixat en repartir, la parella que no reparteix s'apunta un punt."))
+  ].join('');
+  if (tab === 'sonido') body = [
+    setOpt(L('Sonidos de cartas', 'Sons de cartes'), seg('sonidos', off, SETTINGS.sonidos !== false, true), L('Al echar carta, llevarse cartas, repartir y robar.', 'En tirar carta, endur-se cartes, repartir i robar.')),
+    setOpt(L('Voces (Cau)', 'Veus (Cau)'), seg('voces', off, SETTINGS.voces !== false, true), L('Se oye «Bac!», «De nit!», «Envide!»… cuando pasa en la mesa.', 'Se sent «Bac!», «De nit!», «Envide!»… quan passa al tapet.')),
+    SETTINGS.voces !== false ? setOpt(L('Tu voz', 'La teua veu'), seg('voz', Array.from({ length: VOZ_N }, (_, i) => [i + 1, L('Voz ', 'Veu ') + (i + 1)]), vozNum(SETTINGS.voz), VOZ_N === 2), L('Al tocar una, la oyes. Los demás jugadores hablan con las otras; en el online, cada uno con la que haya elegido.', "En tocar-ne una, la sents. La resta de jugadors parlen amb les altres; en l'online, cadascú amb la que haja triat.")) : ''
+  ].join('');
+  if (tab === 'ayudas') body = [
+    setOpt(L('Ayudas en tus cartas (Cau)', 'Ajudes en les teues cartes (Cau)'), seg('hints', off, SETTINGS.hints, true), L('Muestran debajo de cada carta qué pasa si la juegas (Captura 3, Bac +2…).', 'Mostren davall de cada carta què passa si la jugues (Arreplega 3, Bac +2…).')),
+    setOpt(L('Etiquetas bajo el nombre', 'Etiquetes davall del nom'), seg('labels', off, SETTINGS.labels, true), L('Recuerdan la última jugada de cada uno (Bac, Limpia, Captura 2…). El «De nit» se ve siempre.', "Recorden l'última jugada de cadascú (Bac, Limpia, Arreplega 2…). El «De nit» es veu sempre.")),
+    PRUEBAS ? setOpt(`🧪 ${L('Ver todas las cartas (pruebas)', 'Vore totes les cartes (proves)')}`, seg('showAll', off, !!SETTINGS.showAll, true), L('Para estudiar a los bots: enseña las cartas de tu compañero y de los rivales. Solo contra bots.', 'Per a estudiar els bots: mostra les cartes del teu company i dels rivals. Només contra bots.')) : ''
+  ].join('');
+  if (tab === 'perfil') body = [
+    `<div class="opt"><label>${L('Alias', 'Àlies')}</label><div class="names" style="grid-template-columns:1fr"><span><input id="aliasset" type="text" maxlength="20" value="${esc(SETTINGS.alias || '')}" aria-label="${L('Alias', 'Àlies')}"></span></div></div>`,
+    setOpt(L('Compartir mis partidas', 'Compartir les meues partides'), seg('share', off.map(([v]) => [v, v ? L('Sí', 'Sí') : 'No']), !!SETTINGS.share, true), L('Envía tus manos (cartas, jugadas y marcador, sin datos personales) para mejorar los bots.', 'Envia les teues mans (cartes, jugades i marcador, sense dades personals) per a millorar els bots.')),
+    `<div class="opt"><button class="btn" type="button" data-act="credits-set">${L('Créditos', 'Crèdits')}</button></div>`
+  ].join('');
+  showPanel(`<h2>${L('Ajustes', 'Ajustos')}</h2>${tabs}<div class="setbody">${body}</div>
   <div class="acts"><button class="btn primary" type="button" data-act="back">${L('Volver', 'Tornar')}</button></div>`); cover();
 }
 const esc = t => String(t).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]);
@@ -3531,6 +3552,7 @@ $('bottom').addEventListener('click', async e => {
   render(); loop();
 });
 $('panel').addEventListener('click', e => {
+  const ib = e.target.closest('[data-info]'); if (ib) { ib.closest('.opt').classList.toggle('showinfo'); return; }
   const sb = e.target.closest('[data-set]');
   if (sb) {
     const k = sb.dataset.set, v = sb.dataset.val;
@@ -3562,7 +3584,9 @@ $('panel').addEventListener('click', e => {
   if (a === 'settings') showSettings();
   if (a === 'rules') { showRules(); panelBack = 'menu'; cover(); }
   if (a === 'tutorial') showTutMenu();
-  if (a === 'credits') { panelBack = 'menu'; showCredits(); }
+  if (a === 'credits') { CRED_FROM_SET = false; panelBack = 'menu'; showCredits(); }
+  if (a === 'credits-set') { CRED_FROM_SET = true; panelBack = 'menu'; showCredits(); }
+  if (a === 'settab') { SETTINGS.setTab = b.dataset.t; saveSettings(); showSettings(); }
   if (a === 'learn') showTutorial('coto', 0);
   if (a === 'tut') showTutorial(b.dataset.g, +b.dataset.i);
   if (a === 'tut-play') startGame(b.dataset.g);
@@ -3588,7 +3612,7 @@ $('panel').addEventListener('click', e => {
   if (a === 'net-rejoin') { const r = netRoomGet(); if (r && !NET) netJoin(r.code, r.name, false, true); else showMenu(); }
   if (a === 'net-forget') { netRoomClear(); showMenu(); }
   if (a === 'net-lobby') netBackLobby();
-  if (a === 'back') showMenu();
+  if (a === 'back') { if (CRED_FROM_SET) { CRED_FROM_SET = false; showSettings(); } else showMenu(); }
   if (a === 'nexthand') { S.dealer = (S.dealer + 1) % 4; newHand(S); S.feed = []; narr = L(`Mano ${S.handNo}. Reparte ${NAMES[S.dealer]}.`, `Mà ${S.handNo}. Reparteix ${NAMES[S.dealer]}.`); closePanel(); beginHand(); }
 });
 const closable = () => !$('panel').classList.contains('menu') && panelBack !== 'menu' && (isCoto() ? G && G.phase === 'play' : !['handEnd','gameEnd'].includes(S.phase)) && !(APP.M && ['draw'].includes(APP.M.stage) && $('panel').querySelector('.draw'));
