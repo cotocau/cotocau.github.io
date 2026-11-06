@@ -783,7 +783,7 @@ function evalPlay(S, p, cid) {
    difícil (imagina repartos posibles de las cartas ocultas y simula la vuelta entera) */
 let TUTG = null;   // partida guiada en curso
 let NET = null;    // partida online (anfitrión o invitado)
-let SETTINGS = { partner: 'experto', rivals: 'experto', hints: false, labels: false, socarrat: false, speed: 1, deck: 'clasica', lang: 'es', names: ['Toni','Maria','Vicent'], cotoBest: 5, unlocked: false, showAll: false, share: null, alias: '', voces: true, voz: 1 };
+let SETTINGS = { partner: 'experto', rivals: 'experto', hints: false, labels: false, socarrat: false, speed: 1, deck: 'clasica', lang: 'es', names: ['Toni','Maria','Vicent'], cotoBest: 5, unlocked: false, showAll: false, share: null, alias: '', voces: true, voz: 1, sonidos: true };
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('cau.settings') || '{}')); } catch (e) {}
 applyLang(SETTINGS.lang, SETTINGS.names);
 const levelOf = p => p === 2 ? SETTINGS.partner : SETTINGS.rivals;
@@ -1809,7 +1809,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-06-2';
+const APP_VER = 'cau-2026-11-06-3';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
 // sus partidas llevan «-pruebas» en la versión y su online usa salas aparte (canales cc-p…), para no mezclarse con la oficial.
 const PRUEBAS = true;
@@ -2071,6 +2071,30 @@ function voz(k, p) {
   vozPlay(k, n);
 }
 
+// Sonidos de cartas (6 nov), hechos con ruido filtrado: tapete = echar carta; recoger = llevarse cartas (Cau) o la baza (Coto);
+// roce + toque = repartir y robar
+// (el roce mientras vuela la carta y el toque al llegar). Cada golpe cambia un poco de tono y fuerza.
+const DEAL_MS = 368;   // el reparto va siempre al ritmo del modo lento (el del sonido)
+let sctx = null; const sbuf = {};
+function sfxInit() {
+  if (sctx) { if (sctx.state === 'suspended') sctx.resume().catch(() => {}); return; }
+  try { sctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
+  for (const k of ['tapete', 'roce', 'toque', 'recoger']) fetch(`sfx/${k}.mp3`).then(r => r.arrayBuffer()).then(b => sctx.decodeAudioData(b)).then(d => { sbuf[k] = d; }).catch(() => {});
+}
+addEventListener('pointerdown', sfxInit, { passive: true }); addEventListener('keydown', sfxInit);
+function sfx(k, delay = 0, vol = 1) {
+  if (SETTINGS.sonidos === false || !sctx || !sbuf[k] || document.hidden) return;
+  try {
+    const s = sctx.createBufferSource(), g = sctx.createGain(); s.buffer = sbuf[k];
+    s.playbackRate.value = 0.93 + Math.random() * 0.14; g.gain.value = 0.6 * vol * (0.75 + Math.random() * 0.25);
+    s.connect(g); g.connect(sctx.destination); s.start(sctx.currentTime + delay);
+  } catch (e) {}
+}
+const sfxDeal = ms => { sfx('roce', 0, 0.8); sfx('toque', ms * 0.92 / 1000, 0.8); };
+const SFX_NET = { tap: 'tapete', rec: 'recoger' };
+const sfxNet = k => { sfx(SFX_NET[k], 0, k === 'rec' ? 0.9 : 1); netEv({ k: 'sfx', s: k }); };   // el invitado lo oye también
+const sfxTap = () => sfxNet('tap');
+
 let calloutTimer = null;
 async function callout(txt, sub, wait = true) {
   if (NET && NET.role === 'host' && NET.started) netEv({ k: 'callout', txt, sub });
@@ -2109,7 +2133,7 @@ async function doPlay(p, cid) {
   fx = { card: res.card, take: [], p, slot };
   S.bubbles[p] = '';
   narr = `<b>${NAMES[p]}</b> ${p === 0 ? L('juegas', 'jugues') : L('juega', 'juga')} ${cardName(res.card)}.`;
-  render();
+  render(); sfxTap();
   await sleep(900);
   // 2) se marcan las cartas que se lleva
   const cap = res.ev.find(e => e.k === 'cap'), cobra = res.ev.find(e => e.k === 'cobra');
@@ -2123,7 +2147,7 @@ async function doPlay(p, cid) {
     if (special) await callout(special.txt,`${NAMES[who]} · +${special.pts}`);
     else await sleep(1100);
   } else await sleep(300);
-  fx = null;
+  fx = null; if (res.take.length) sfxNet('rec');   // se lleva las cartas de la mesa
   sim.bubbles[p] = cap ? cap.txt : '';
   if (special) sim.bubbles[special.p] = special.txt.replace(/[¡!]/g, '');
   say(sim, `${p === 0 ? L('Juegas', 'Jugues') : NAMES[p] + L(' juega', ' juga')} ${cardName(res.card)} — ${res.ev.map(e => e.txt).join(' · ')}.`);
@@ -2159,7 +2183,8 @@ async function animateDeal(withTable) {
     if (reduce) return;
     const f = document.createElement('div'); f.className = 'fly'; f.innerHTML = '<span class="back"></span>'; document.body.appendChild(f);
     const w = f.offsetWidth / 2, h = f.offsetHeight / 2;
-    const a = f.animate([{ transform: `translate(${from[0] - w}px,${from[1] - h}px) scale(.75)` }, { transform: `translate(${to[0] - w}px,${to[1] - h}px) scale(1)` }], { duration: 230 * SPEEDS[speedIx][1], easing: 'cubic-bezier(.3,.7,.3,1)' });
+    const a = f.animate([{ transform: `translate(${from[0] - w}px,${from[1] - h}px) scale(.75)` }, { transform: `translate(${to[0] - w}px,${to[1] - h}px) scale(1)` }], { duration: DEAL_MS, easing: 'cubic-bezier(.3,.7,.3,1)' });
+    sfxDeal(DEAL_MS);
     await a.finished.catch(() => {}); f.remove();
   };
   const gen = GEN;
@@ -2549,17 +2574,18 @@ function netGuestEv(e) {
       const seatEl = (p, av) => p === 0 ? $('hand') : ($('seat' + p) && ($('seat' + p).querySelector(av ? '.av' : '.backs') || $('seat' + p)));
       const a = e.from === 'T' ? slotXY(e.slot) : seatEl(e.from, true), z = e.p === 'T' ? slotXY(e.slot) : seatEl(e.p, false);
       if (!a || !z) return;
-      return coFly(Array.isArray(a) ? a : center(a), Array.isArray(z) ? z : center(z), '<span class="back"></span>', 230);
+      return coFly(Array.isArray(a) ? a : center(a), Array.isArray(z) ? z : center(z), '<span class="back"></span>', DEAL_MS, { fixed: true, deal: true });
     }
     const stockC = () => $('costock') ? coCenter($('costock')) : coCenter($('table'));
     const seatC = p => coCenter(coSeatTarget(p));
     const card = (id, w) => `<div style="--cw:${w}px">${cardHTML(coCard(id))}</div>`;
-    if (e.k === 'draw') await coFly(stockC(), seatC(e.p), e.pinta || e.p === 0 ? card(e.id, 46) : '<span class="back"></span>', 240);
+    if (e.k === 'draw') await coFly(stockC(), seatC(e.p), e.pinta || e.p === 0 ? card(e.id, 46) : '<span class="back"></span>', 240, { deal: true });
     else if (e.k === 'deal') { const src = e.from === 0 ? $('hand') : ($('seat' + e.from).querySelector('.av') || $('seat' + e.from)); const tb = $('table').getBoundingClientRect();
-      await coFly(coCenter(src), e.p === 'T' ? [tb.left + tb.width / 2, tb.top + tb.height / 2] : seatC(e.p), '<span class="back"></span>'.repeat(e.n || 1), 150); }
+      await coFly(coCenter(src), e.p === 'T' ? [tb.left + tb.width / 2, tb.top + tb.height / 2] : seatC(e.p), '<span class="back"></span>'.repeat(e.n || 1), DEAL_MS, { fixed: true, deal: true }); }
     else if (e.k === 'swap') { const pc = $('copinta') ? coCenter($('copinta')) : coCenter($('table')); await coFly(seatC(e.p), pc, card(e.seven, 50), 420); await coFly(pc, seatC(e.p), card(e.pinta, 50), 420); }
     else if (e.k === 'callout') callout(e.txt, e.sub, false);
     else if (e.k === 'voz') vozPlay(e.v, e.n);
+    else if (e.k === 'sfx') { if (SFX_NET[e.s]) sfx(SFX_NET[e.s], 0, e.s === 'rec' ? 0.9 : 1); }
   }).catch(() => {});
 }
 // Los textos del anfitrión hablan de «tú» (el anfitrión) y de «Nosotros» (su pareja): para cada invitado se pasan a su punto de vista
@@ -3442,6 +3468,7 @@ function showSettings() {
   <div class="opt"><label>${L('Compartir mis partidas', 'Compartir les meues partides')}</label>${seg('share', off.map(([v]) => [v, v ? L('Sí', 'Sí') : 'No']), !!SETTINGS.share, true)}<span class="desc">${L('Envía tus manos (cartas, jugadas y marcador, sin datos personales) para mejorar los bots.', 'Envia les teues mans (cartes, jugades i marcador, sense dades personals) per a millorar els bots.')}</span>
     <span class="names"><span><small>${L('Alias', 'Àlies')}</small><input id="aliasset" type="text" maxlength="20" value="${esc(SETTINGS.alias || '')}"></span></span></div>
   ${PRUEBAS ? `<div class="opt"><label>🧪 ${L('Ver todas las cartas (pruebas)', 'Vore totes les cartes (proves)')}</label>${seg('showAll', off, !!SETTINGS.showAll, true)}<span class="desc">${L('Para estudiar a los bots: enseña las cartas de tu compañero y de los rivales. Solo contra bots.', 'Per a estudiar els bots: mostra les cartes del teu company i dels rivals. Només contra bots.')}</span></div>` : ''}
+  <div class="opt"><label>${L('Sonidos de cartas', 'Sons de cartes')}</label>${seg('sonidos', off, SETTINGS.sonidos !== false, true)}<span class="desc">${L('Al echar carta, llevarse cartas, repartir y robar.', 'En tirar carta, endur-se cartes, repartir i robar.')}</span></div>
   <div class="opt"><label>${L('Voces (Cau)', 'Veus (Cau)')}</label>${seg('voces', off, SETTINGS.voces !== false, true)}<span class="desc">${L('Se oye «Bac!», «De nit!», «Envide!»… cuando pasa en la mesa.', 'Se sent «Bac!», «De nit!», «Envide!»… quan passa al tapet.')}</span></div>
   <div class="opt"><label>${L('Tu voz', 'La teua veu')}</label>${seg('voz', Array.from({ length: VOZ_N }, (_, i) => [i + 1, L('Voz ', 'Veu ') + (i + 1)]), vozNum(SETTINGS.voz), VOZ_N === 2)}<span class="desc">${L('Al tocar una, la oyes. Los demás jugadores hablan con las otras; en el online, cada uno con la que haya elegido.', "En tocar-ne una, la sents. La resta de jugadors parlen amb les altres; en l'online, cadascú amb la que haja triat.")}</span></div>
   <div class="opt"><label>${L('Ritmo', 'Ritme')}</label>${seg('speed', [[0, L('Lento', 'Lent')], [1, 'Normal'], [2, L('Rápido', 'Ràpid')]], speedIx)}</div>
@@ -3507,7 +3534,7 @@ $('panel').addEventListener('click', e => {
   const sb = e.target.closest('[data-set]');
   if (sb) {
     const k = sb.dataset.set, v = sb.dataset.val;
-    if (k === 'hints' || k === 'labels' || k === 'socarrat' || k === 'showAll' || k === 'share' || k === 'voces') SETTINGS[k] = v === 'true';
+    if (k === 'hints' || k === 'labels' || k === 'socarrat' || k === 'showAll' || k === 'share' || k === 'voces' || k === 'sonidos') SETTINGS[k] = v === 'true';
     else if (k === 'speed') speedIx = +v;
     else if (k === 'cotoBest') SETTINGS.cotoBest = +v;
     else if (k === 'voz') { SETTINGS.voz = vozNum(v); const sv = SETTINGS.voces; SETTINGS.voces = true; vozPlay('denit', SETTINGS.voz); SETTINGS.voces = sv; }
@@ -3684,11 +3711,12 @@ async function coDrain() {
 }
 const coCenter = el => { const r = el.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; };
 const coSeatTarget = p => p === 0 ? $('hand') : ($('seat' + p).querySelector('.backs') || $('seat' + p));
-async function coFly(from, to, html, ms = 260) {
+async function coFly(from, to, html, ms = 260, o = {}) {
   if (reduce) return;
+  const dur = o.fixed ? ms : ms * SPEEDS[speedIx][1]; if (o.deal) sfxDeal(dur);
   const f = document.createElement('div'); f.className = 'fly'; f.innerHTML = html; document.body.appendChild(f);
   const w = f.offsetWidth / 2, h = f.offsetHeight / 2;
-  const a = f.animate([{ transform: `translate(${from[0] - w}px,${from[1] - h}px)` }, { transform: `translate(${to[0] - w}px,${to[1] - h}px)` }], { duration: ms * SPEEDS[speedIx][1], easing: 'cubic-bezier(.3,.7,.3,1)' });
+  const a = f.animate([{ transform: `translate(${from[0] - w}px,${from[1] - h}px)` }, { transform: `translate(${to[0] - w}px,${to[1] - h}px)` }], { duration: dur, easing: 'cubic-bezier(.3,.7,.3,1)' });
   await a.finished.catch(() => {}); f.remove();
 }
 // después de cada baza: cada uno roba del montón, empezando por quien la ha ganado
@@ -3700,7 +3728,7 @@ async function coAnimDraw() {
   for (const d of draws) {
     const isPinta = !G.stock.length && d === draws[draws.length - 1];
     netEv({ k: 'draw', p: d.p, id: d.id, pinta: isPinta });
-    await coFly(origin, coCenter(coSeatTarget(d.p)), isPinta || d.p === 0 ? `<div style="--cw:46px">${cardHTML(coCard(d.id))}</div>` : '<span class="back"></span>', 240);
+    await coFly(origin, coCenter(coSeatTarget(d.p)), isPinta || d.p === 0 ? `<div style="--cw:46px">${cardHTML(coCard(d.id))}</div>` : '<span class="back"></span>', 240, { deal: true });
     coHide.delete(d.id); coPend = Math.max(0, coPend - 1); d.p === 0 ? coRenderHand() : coRenderSeat(d.p); coRenderTable(); $('info') && renderCotoInfo();
   }
   G.lastDraw = []; coPend = 0;
@@ -3723,12 +3751,13 @@ async function coDoPlay(p, id) {
   // lo que se roba ya está en las manos del motor: se esconde hasta que llegue volando
   if (r.done && G.lastDraw && G.lastDraw.length) { G.lastDraw.forEach(d => coHide.add(d.id)); coPend = G.lastDraw.length; }
   narr = `<b>${NAMES[p]}</b> ${p === 0 ? L('juegas', 'jugues') : L('juega', 'juga')} ${cardName(c)}.`;
+  sfxTap();
   if (!r.done) { render(); await sleep(520); if (TUTG && !TUTG.cau && p !== 0 && k < 3 && G.turn !== 0) await tutPause(tutCotoCard(k, p, c)); coFx = null; return; }
   coShowLast = true; render(); await sleep(750);
   narr = `<b>${NAMES[r.winner]}</b> ${r.winner === 0 ? L('ganas la baza', 'guanyes la basa') : L('gana la baza', 'guanya la basa')}: ${r.pts} ${L('puntos', 'punts')}${r.last ? L(' (con las 10 de últimas)', " (amb les 10 d'últimes)") : ''}.`;
   render(); await callout(r.pts >= 10 ? `+${r.pts}` : L('Baza', 'Basa'), NAMES[r.winner]);
   if (TUTG && !TUTG.cau) await tutPause(tutCotoTrick(k, p, c, r));
-  coShowLast = false; coFx = null;
+  coShowLast = false; coFx = null; sfxNet('rec');   // se lleva la baza
   if (G.phase !== 'play' && G.hands.some(h => h.length)) {   // se han salido a mitad de mano: se destapan las cartas
     coHide = new Set(); coPend = 0; G.lastDraw = []; coReveal = true; render(); await coDrain(); await sleep(2600); coReveal = false; render(); return;
   }
@@ -3773,7 +3802,8 @@ async function animateCotoDeal() {
     if (reduce) return;
     const f = document.createElement('div'); f.className = 'fly'; f.innerHTML = '<span class="back"></span>'.repeat(n); document.body.appendChild(f);
     const w = f.offsetWidth / 2, h = f.offsetHeight / 2;
-    const a = f.animate([{ transform: `translate(${ox - w}px,${oy - h}px) scale(.75)` }, { transform: `translate(${to[0] - w}px,${to[1] - h}px) scale(1)` }], { duration: 150 * SPEEDS[speedIx][1], easing: 'cubic-bezier(.3,.7,.3,1)' });
+    const a = f.animate([{ transform: `translate(${ox - w}px,${oy - h}px) scale(.75)` }, { transform: `translate(${to[0] - w}px,${to[1] - h}px) scale(1)` }], { duration: DEAL_MS, easing: 'cubic-bezier(.3,.7,.3,1)' });
+    sfxDeal(DEAL_MS);
     await a.finished.catch(() => {}); f.remove();
   };
   const gen = GEN;
