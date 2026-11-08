@@ -1838,7 +1838,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-08-4';
+const APP_VER = 'cau-2026-11-08-5';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
 // sus partidas llevan «-pruebas» en la versión y su online usa salas aparte (canales cc-p…), para no mezclarse con la oficial.
 const PRUEBAS = true;
@@ -3538,7 +3538,7 @@ function showSettings() {
   ].join('');
   if (tab === 'ayudas') body = [
     setOpt(L('Ayudas en tus cartas (Cau)', 'Ajudes en les teues cartes (Cau)'), seg('hints', off, SETTINGS.hints, true), L('Muestran debajo de cada carta qué pasa si la juegas (Captura 3, Bac +2…).', 'Mostren davall de cada carta què passa si la jugues (Arreplega 3, Bac +2…).')),
-    setOpt(L('Ordenar mis cartas', 'Ordenar les meues cartes'), seg('ordenar', [['auto', L('Automático', 'Automàtic')], ['mano', L('A mano', 'A mà')]], SETTINGS.ordenar === 'mano' ? 'mano' : 'auto', true), L('A mano: mantén el dedo sobre una carta y arrástrala a su sitio. Las cartas nuevas entran por la izquierda. Solo cambia cómo las ves tú.', "A mà: mantín el dit damunt d'una carta i arrossega-la al seu lloc. Les cartes noves entren per l'esquerra. Només canvia com les veus tu.")),
+    setOpt(L('Ordenar mis cartas', 'Ordenar les meues cartes'), seg('ordenar', [['auto', L('Automático', 'Automàtic')], ['mano', L('A mano', 'A mà')]], SETTINGS.ordenar === 'mano' ? 'mano' : 'auto', true), L('A mano: arrastra una carta a su sitio (tocar sin mover sigue jugándola). Las cartas nuevas entran por la izquierda. Solo cambia cómo las ves tú.', "A mà: arrossega una carta al seu lloc (tocar-la sense moure la continua jugant). Les cartes noves entren per l'esquerra. Només canvia com les veus tu.")),
     setOpt(L('Etiquetas bajo el nombre', 'Etiquetes davall del nom'), seg('labels', off, SETTINGS.labels, true), L('Recuerdan la última jugada de cada uno (Bac, Limpia, Captura 2…). El «De nit» se ve siempre.', "Recorden l'última jugada de cadascú (Bac, Limpia, Arreplega 2…). El «De nit» es veu sempre.")),
     PRUEBAS ? setOpt(`🧪 ${L('Ver todas las cartas (pruebas)', 'Vore totes les cartes (proves)')}`, seg('showAll', off, !!SETTINGS.showAll, true), L('Para estudiar a los bots: enseña las cartas de tu compañero y de los rivales. Solo contra bots.', 'Per a estudiar els bots: mostra les cartes del teu company i dels rivals. Només contra bots.')) : ''
   ].join('');
@@ -3554,7 +3554,7 @@ const esc = t => String(t).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', 
 function startNewGame() { ordReset(); S = newGame(); S.feed = []; narr = L(`Mano 1. Reparte ${NAMES[S.dealer]}.`, `Mà 1. Reparteix ${NAMES[S.dealer]}.`); hasSaved = true; closePanel(); beginHand(); }
 
 // Ordenar tus cartas a mano (8 nov, ajuste «Ordenar mis cartas» en Ayudas). Solo cambia cómo se ven en tu móvil:
-// el juego, los bots y el online no se enteran. Mantener el dedo ~0,3 s levanta la carta y se arrastra entre las otras;
+// el juego, los bots y el online no se enteran. Arrastrar la carta (o mantener el dedo ~0,3 s) la levanta y se mueve entre las otras;
 // al soltar no se juega. Las cartas nuevas entran por la izquierda. Se guarda por mano para poder volver a la partida.
 function ordReset() { HORD = null; try { localStorage.removeItem(ORDK); } catch (e) {} }
 function myOrder(cards, seed) {   // seed: ids en el orden en que te llegaron al repartir
@@ -3578,19 +3578,23 @@ addEventListener('pointerdown', e => {   // en toda la pantalla: cuando no es tu
   const el = cards.find(b => { const r = bcr(b); return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom; });
   if (!el) return;
   const d = DRAG = { el, id: el.dataset.id, x0: x, y0: y, tx: 0, on: false, pid: e.pointerId, grab: x - bcr(el).left };
-  d.timer = setTimeout(() => {
-    if (DRAG !== d) return;
-    if (!d.el.isConnected) d.el = $('hand').querySelector(`.hc[data-id="${d.id}"]`);   // la mano se ha redibujado mientras mantenías (juegan los bots)
-    if (!d.el) return ordStop();
-    d.grab = d.x0 - bcr(d.el).left;
-    d.on = true; DRAG_EAT = true; d.el.classList.add('lifted');
-    try { if (navigator.vibrate) navigator.vibrate(15); } catch (e2) {}
-  }, 300);
+  d.timer = setTimeout(() => ordLift(d), 300);
 });
+// la carta se levanta al mantener el dedo quieto o en cuanto empieza a arrastrarse (8 nov: tener que estar quieto frustraba)
+function ordLift(d) {
+  if (DRAG !== d || d.on) return d.on;
+  clearTimeout(d.timer);
+  if (!d.el.isConnected) d.el = $('hand').querySelector(`.hc[data-id="${d.id}"]`);   // la mano se ha redibujado mientras mantenías (juegan los bots)
+  if (!d.el) { ordStop(); return false; }
+  d.grab = d.x0 - bcr(d.el).left;
+  d.on = true; DRAG_EAT = true; d.el.classList.add('lifted');
+  try { if (navigator.vibrate) navigator.vibrate(15); } catch (e2) {}
+  return true;
+}
 addEventListener('pointermove', e => {
   const d = DRAG; if (!d || e.pointerId !== d.pid) return;
   const x = e.clientX / ZK, y = e.clientY / ZK;
-  if (!d.on) { if (Math.hypot(x - d.x0, y - d.y0) > 10) ordStop(); return; }   // se ha movido antes de tiempo: no es ordenar
+  if (!d.on && (Math.hypot(x - d.x0, y - d.y0) < 8 || !ordLift(d))) return;   // un toque que apenas se mueve sigue siendo jugar la carta
   if (e.cancelable) e.preventDefault();
   const hand = $('hand'), others = [...hand.querySelectorAll('.hc')].filter(b => b !== d.el);
   let before = null;
@@ -3612,8 +3616,8 @@ function ordEnd(e) {
 }
 addEventListener('pointerup', ordEnd); addEventListener('pointercancel', ordEnd);
 addEventListener('contextmenu', e => { if (ordOn() && DRAG) e.preventDefault(); });
-// mientras arrastras, el navegador no mueve la página (sin «touch-action: none» en la mano: en tablets, con zoom, dejaba sin efecto el toque siguiente)
-addEventListener('touchmove', e => { if (DRAG && DRAG.on && e.cancelable) e.preventDefault(); }, { passive: false });
+// mientras tienes el dedo sobre una carta, el navegador no mueve la página (sin «touch-action: none» en la mano: en tablets, con zoom, dejaba sin efecto el toque siguiente)
+addEventListener('touchmove', e => { if (DRAG && e.cancelable) e.preventDefault(); }, { passive: false });   // con el dedo sobre una carta la página no se mueve
 $('hand').addEventListener('click', e => { if (DRAG_EAT) { DRAG_EAT = false; e.stopImmediatePropagation(); e.preventDefault(); } }, true);
 $('hand').addEventListener('click', async e => {
   const b = e.target.closest('.hc'); if (!b || b.disabled) return;
