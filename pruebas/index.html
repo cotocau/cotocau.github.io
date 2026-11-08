@@ -1096,6 +1096,7 @@ function cotoNewHand(G) {
   G.pinta = G.deck.pop(); G.trump = G.pinta.s;
   G.stock = G.deck.slice().reverse().concat([G.pinta]); G.deck = [];   // se roba por arriba; la pinta es la última
   G.dealOrder = G.hands[0].map(c => c.id);   // orden en que te llegan (se ordenan al acabar de repartir)
+  G.dealOrders = G.hands.map(h => h.map(c => c.id));   // lo mismo para cada asiento (el online lo manda a cada invitado)
   G.hands.forEach(h => coSort(G, h));
   G.leader = (G.dealer + 1) % 4; G.turn = G.leader;
   G.trick = []; G.lastTrick = null; G.won = [0, 0]; G.pts = [0, 0]; G.cantes = [0, 0]; G.ultimas = [0, 0];
@@ -1837,7 +1838,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-08-3';
+const APP_VER = 'cau-2026-11-08-4';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
 // sus partidas llevan «-pruebas» en la versión y su online usa salas aparte (canales cc-p…), para no mezclarse con la oficial.
 const PRUEBAS = true;
@@ -1994,7 +1995,7 @@ function renderHand() {
   const mine = myTurn();
   if (DRAG && DRAG.on) return;   // no se redibuja mientras arrastras una carta
   $('hand').classList.toggle('ordmano', ordOn());
-  $('hand').innerHTML = myOrder(S.hands[0]).filter(c => !(fx && fx.card.id === c.id)).slice(0, dealView ? dealView.n[0] : 3).map(c => {
+  $('hand').innerHTML = myOrder(S.hands[0], S.myDeal || (S.dealSeq || []).filter(x => x.to === 0 && x.id != null).map(x => x.id)).filter(c => !(fx && fx.card.id === c.id)).slice(0, dealView ? dealView.n[0] : 3).map(c => {
     let h = '', cls = ''; if (mine && SETTINGS.hints) try { [h, cls] = hintFor(c.id); } catch (e) {}
     const tw = mine && TUTG && TUTG.cau ? tutCauWant() : null, lock = mine && TUTG && TUTG.cau && ((tw != null && c.id !== tw) || (S.round === 2 && canFirst(S, 0)));
     return `<button class="hc ${tw === c.id ? 'tutpick' : ''}" type="button" data-id="${c.id}" ${mine && !lock ? '' : 'disabled'}>${cardHTML(c)}<span class="hint ${cls}" ${h ? '' : 'style="visibility:hidden"'}>${h || '·'}</span></button>`;
@@ -2676,7 +2677,7 @@ function netCauView(g) {
     lastPlay: S.lastPlay ? { ...S.lastPlay, p: rot(S.lastPlay.p) } : null, lastCapturer: rot(S.lastCapturer),
     lastCap: S.lastCap ? { p: rot(S.lastCap.p), cards: S.lastCap.cards.map(cc) } : null,
     netHold: (h => ({ pts: tm(h.pts), n: h.n }))(duelHold()),
-    deck: S.deck.map((c, k) => ({ id: -200 - k, r: 0, s: 0 })), hands, names,
+    deck: S.deck.map((c, k) => ({ id: -200 - k, r: 0, s: 0 })), hands, names, myDeal: (S.dealSeq || []).filter(x => x.to === g && x.id != null).map(x => x.id),
     bubbles: seatArr(S.bubbles || ['', '', '', '']).map(x => netNarr(x || '', g)),
     sung: seatArr(S.sung || [null, null, null, null]).map((x, v) => v === 0 ? x : x ? { t: 1, r: -1 } : null),
     first: seatArr(S.first || []), second: seatArr(S.second || []), dealCombos: [S.dealCombos ? S.dealCombos[g] : null, null, null, null],
@@ -3088,7 +3089,7 @@ function netView(g) {
     canSing: tt(G.canSing), partidaWinner: tt(G.partidaWinner), winner: tt(G.winner),
     dealer: rot(G.dealer), turn: rot(G.turn), leader: rot(G.leader), trickNo: G.trickNo, swapped: G.swapped, sung: G.sung.slice(), trump: G.trump, pinta: G.pinta,
     trick: G.trick.map(x => ({ p: rot(x.p), c: x.c })), lastTrick: G.lastTrick ? { ...G.lastTrick, cards: G.lastTrick.cards.map(x => ({ p: rot(x.p), c: x.c })), winner: rot(G.lastTrick.winner) } : null,
-    stock: G.stock.map((c, k) => k === G.stock.length - 1 ? c : { id: -100 - k, r: 0, s: 0 }), hands, names, cantePass: (G.remotePass || {})[g] ?? null, away: !!NET.seats[g].away,
+    stock: G.stock.map((c, k) => k === G.stock.length - 1 ? c : { id: -100 - k, r: 0, s: 0 }), hands, names, dealOrder: G.dealOrders ? G.dealOrders[g] : null, cantePass: (G.remotePass || {})[g] ?? null, away: !!NET.seats[g].away,
     ui: { dv: coDealView ? { n: [0, 1, 2, 3].map(v => coDealView.n[(v + g) % 4]), stock: coDealView.stock } : null, showLast: coShowLast, reveal: coReveal, pend: coPend, hide: [...coHide], busy: busy || !!coFx }
   };
 }
@@ -3556,19 +3557,21 @@ function startNewGame() { ordReset(); S = newGame(); S.feed = []; narr = L(`Mano
 // el juego, los bots y el online no se enteran. Mantener el dedo ~0,3 s levanta la carta y se arrastra entre las otras;
 // al soltar no se juega. Las cartas nuevas entran por la izquierda. Se guarda por mano para poder volver a la partida.
 function ordReset() { HORD = null; try { localStorage.removeItem(ORDK); } catch (e) {} }
-function myOrder(cards) {
+function myOrder(cards, seed) {   // seed: ids en el orden en que te llegaron al repartir
   if (!ordOn()) return cards;
   const key = ordKey();
   if (!HORD) { try { HORD = JSON.parse(localStorage.getItem(ORDK) || 'null'); } catch (e) {} }
   if (!HORD || HORD.key !== key || !Array.isArray(HORD.ids)) HORD = { key, ids: [] };
   const have = new Set(cards.map(c => c.id)), kept = HORD.ids.filter(id => have.has(id));
-  const ids = cards.filter(c => !kept.includes(c.id)).map(c => c.id).concat(kept);   // las nuevas, a la izquierda
+  const at = id => { const i = seed ? seed.indexOf(id) : -1; return i < 0 ? -1 : i; };
+  const fresh = cards.filter(c => !kept.includes(c.id)).map(c => c.id).sort((a, b) => at(a) - at(b));   // al repartir, en el orden en que llegan
+  const ids = fresh.concat(kept);   // las nuevas, a la izquierda
   if (ids.join() !== HORD.ids.join()) { HORD.ids = ids; ordSave(); }
   return ids.map(id => cards.find(c => c.id === id));
 }
 function ordStop() { if (DRAG) clearTimeout(DRAG.timer); DRAG = null; }
-$('hand').addEventListener('pointerdown', e => {
-  if (!ordOn() || DRAG || (e.button != null && e.button > 0)) return;
+addEventListener('pointerdown', e => {   // en toda la pantalla: cuando no es tu turno las cartas están apagadas y no reciben el toque
+  if (!ordOn() || DRAG || (e.button != null && e.button > 0) || !$('hand').classList.contains('ordmano')) return;
   const hand = $('hand'), cards = [...hand.querySelectorAll('.hc')];
   if (cards.length < 2) return;
   const x = e.clientX / ZK, y = e.clientY / ZK;
@@ -3608,7 +3611,7 @@ function ordEnd(e) {
   render();
 }
 addEventListener('pointerup', ordEnd); addEventListener('pointercancel', ordEnd);
-$('hand').addEventListener('contextmenu', e => { if (ordOn()) e.preventDefault(); });
+addEventListener('contextmenu', e => { if (ordOn() && DRAG) e.preventDefault(); });
 // mientras arrastras, el navegador no mueve la página (sin «touch-action: none» en la mano: en tablets, con zoom, dejaba sin efecto el toque siguiente)
 addEventListener('touchmove', e => { if (DRAG && DRAG.on && e.cancelable) e.preventDefault(); }, { passive: false });
 $('hand').addEventListener('click', e => { if (DRAG_EAT) { DRAG_EAT = false; e.stopImmediatePropagation(); e.preventDefault(); } }, true);
@@ -3820,7 +3823,7 @@ function coRenderHand() {
   $('hand').classList.add('co-hand');
   if (DRAG && DRAG.on) return;   // no se redibuja mientras arrastras una carta
   $('hand').classList.toggle('ordmano', ordOn() && !coDealView);
-  const order = coDealView && G.dealOrder ? G.dealOrder.map(id => G.hands[0].find(c => c.id === id)).filter(Boolean) : myOrder(G.hands[0]);
+  const order = coDealView && G.dealOrder ? G.dealOrder.map(id => G.hands[0].find(c => c.id === id)).filter(Boolean) : myOrder(G.hands[0], G.dealOrder);
   $('hand').innerHTML = order.filter(c => !coHide.has(c.id)).slice(0, n).map(c => `<button class="hc ${c.id === pick ? 'tutpick' : ''}" type="button" data-id="${c.id}" ${legal.includes(c.id) ? '' : 'disabled'}>${cardHTML(c)}</button>`).join('');
 }
 function coRenderBottom() {
