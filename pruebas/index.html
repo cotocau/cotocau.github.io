@@ -124,6 +124,11 @@ button{font:inherit;color:inherit}
 .hc:not(:disabled):hover .card{transform:translateY(-8px)}
 .hc:disabled{cursor:default}
 .hc:disabled .card{filter:saturate(.8) brightness(.88)}
+/* ordenar las cartas a mano (8 nov): mantener el dedo y arrastrar */
+.hand.ordmano{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.hand.ordmano .hc:disabled{pointer-events:none}
+.hand .hc.lifted{position:relative;z-index:5;transform:translateY(-14px)}
+.hand .hc.lifted .card{box-shadow:0 0 0 3px var(--gold),0 12px 24px rgba(0,0,0,.55)}
 .hint{font-size:11px;font-weight:800;letter-spacing:.03em;padding:2px 8px;border-radius:999px;background:rgba(244,234,216,.08);color:var(--ink-soft);white-space:nowrap}
 .hint.cap{background:rgba(244,234,216,.18);color:var(--ink)}
 .hint.big{background:var(--gold);color:var(--gold-ink)}
@@ -799,8 +804,14 @@ function evalPlay(S, p, cid) {
    normal (lo que gana menos el riesgo de que el siguiente le haga bac o capture),
    difícil (imagina repartos posibles de las cartas ocultas y simula la vuelta entera) */
 let TUTG = null;   // partida guiada en curso
+// ordenar tus cartas a mano: ver myOrder
+const ORDK = 'cau.ord';
+let HORD = null, DRAG = null, DRAG_EAT = false;
+const ordOn = () => SETTINGS.ordenar === 'mano' && !TUTG;
+const ordKey = () => isCoto() ? `co-${G.partidaNo}-${G.handNo}` : `cau-${S.handNo}-${S.round}`;
+const ordSave = () => { try { localStorage.setItem(ORDK, JSON.stringify(HORD)); } catch (e) {} };
 let NET = null;    // partida online (anfitrión o invitado)
-let SETTINGS = { partner: 'experto', rivals: 'experto', hints: false, labels: false, socarrat: false, speed: 1, deck: 'clasica', lang: 'es', names: ['Toni','Maria','Vicent'], cotoBest: 5, unlocked: false, showAll: false, share: null, alias: '', voces: true, voz: 1, sonidos: true };
+let SETTINGS = { partner: 'experto', rivals: 'experto', hints: false, labels: false, socarrat: false, speed: 1, deck: 'clasica', lang: 'es', names: ['Toni','Maria','Vicent'], cotoBest: 5, unlocked: false, showAll: false, share: null, alias: '', voces: true, voz: 1, sonidos: true, ordenar: 'auto' };
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('cau.settings') || '{}')); } catch (e) {}
 applyLang(SETTINGS.lang, SETTINGS.names);
 const levelOf = p => p === 2 ? SETTINGS.partner : SETTINGS.rivals;
@@ -1826,7 +1837,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-08-2';
+const APP_VER = 'cau-2026-11-08-3';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
 // sus partidas llevan «-pruebas» en la versión y su online usa salas aparte (canales cc-p…), para no mezclarse con la oficial.
 const PRUEBAS = true;
@@ -1981,7 +1992,9 @@ function myTurn() { return S.phase === 'play' && S.turn === 0 && !busy && !fx &&
 function renderHand() {
   if (isCoto()) return;
   const mine = myTurn();
-  $('hand').innerHTML = S.hands[0].filter(c => !(fx && fx.card.id === c.id)).slice(0, dealView ? dealView.n[0] : 3).map(c => {
+  if (DRAG && DRAG.on) return;   // no se redibuja mientras arrastras una carta
+  $('hand').classList.toggle('ordmano', ordOn());
+  $('hand').innerHTML = myOrder(S.hands[0]).filter(c => !(fx && fx.card.id === c.id)).slice(0, dealView ? dealView.n[0] : 3).map(c => {
     let h = '', cls = ''; if (mine && SETTINGS.hints) try { [h, cls] = hintFor(c.id); } catch (e) {}
     const tw = mine && TUTG && TUTG.cau ? tutCauWant() : null, lock = mine && TUTG && TUTG.cau && ((tw != null && c.id !== tw) || (S.round === 2 && canFirst(S, 0)));
     return `<button class="hc ${tw === c.id ? 'tutpick' : ''}" type="button" data-id="${c.id}" ${mine && !lock ? '' : 'disabled'}>${cardHTML(c)}<span class="hint ${cls}" ${h ? '' : 'style="visibility:hidden"'}>${h || '·'}</span></button>`;
@@ -3524,6 +3537,7 @@ function showSettings() {
   ].join('');
   if (tab === 'ayudas') body = [
     setOpt(L('Ayudas en tus cartas (Cau)', 'Ajudes en les teues cartes (Cau)'), seg('hints', off, SETTINGS.hints, true), L('Muestran debajo de cada carta qué pasa si la juegas (Captura 3, Bac +2…).', 'Mostren davall de cada carta què passa si la jugues (Arreplega 3, Bac +2…).')),
+    setOpt(L('Ordenar mis cartas', 'Ordenar les meues cartes'), seg('ordenar', [['auto', L('Automático', 'Automàtic')], ['mano', L('A mano', 'A mà')]], SETTINGS.ordenar === 'mano' ? 'mano' : 'auto', true), L('A mano: mantén el dedo sobre una carta y arrástrala a su sitio. Las cartas nuevas entran por la izquierda. Solo cambia cómo las ves tú.', "A mà: mantín el dit damunt d'una carta i arrossega-la al seu lloc. Les cartes noves entren per l'esquerra. Només canvia com les veus tu.")),
     setOpt(L('Etiquetas bajo el nombre', 'Etiquetes davall del nom'), seg('labels', off, SETTINGS.labels, true), L('Recuerdan la última jugada de cada uno (Bac, Limpia, Captura 2…). El «De nit» se ve siempre.', "Recorden l'última jugada de cadascú (Bac, Limpia, Arreplega 2…). El «De nit» es veu sempre.")),
     PRUEBAS ? setOpt(`🧪 ${L('Ver todas las cartas (pruebas)', 'Vore totes les cartes (proves)')}`, seg('showAll', off, !!SETTINGS.showAll, true), L('Para estudiar a los bots: enseña las cartas de tu compañero y de los rivales. Solo contra bots.', 'Per a estudiar els bots: mostra les cartes del teu company i dels rivals. Només contra bots.')) : ''
   ].join('');
@@ -3536,8 +3550,68 @@ function showSettings() {
   <div class="acts"><button class="btn primary" type="button" data-act="back">${L('Volver', 'Tornar')}</button></div>`); cover();
 }
 const esc = t => String(t).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]);
-function startNewGame() { S = newGame(); S.feed = []; narr = L(`Mano 1. Reparte ${NAMES[S.dealer]}.`, `Mà 1. Reparteix ${NAMES[S.dealer]}.`); hasSaved = true; closePanel(); beginHand(); }
+function startNewGame() { ordReset(); S = newGame(); S.feed = []; narr = L(`Mano 1. Reparte ${NAMES[S.dealer]}.`, `Mà 1. Reparteix ${NAMES[S.dealer]}.`); hasSaved = true; closePanel(); beginHand(); }
 
+// Ordenar tus cartas a mano (8 nov, ajuste «Ordenar mis cartas» en Ayudas). Solo cambia cómo se ven en tu móvil:
+// el juego, los bots y el online no se enteran. Mantener el dedo ~0,3 s levanta la carta y se arrastra entre las otras;
+// al soltar no se juega. Las cartas nuevas entran por la izquierda. Se guarda por mano para poder volver a la partida.
+function ordReset() { HORD = null; try { localStorage.removeItem(ORDK); } catch (e) {} }
+function myOrder(cards) {
+  if (!ordOn()) return cards;
+  const key = ordKey();
+  if (!HORD) { try { HORD = JSON.parse(localStorage.getItem(ORDK) || 'null'); } catch (e) {} }
+  if (!HORD || HORD.key !== key || !Array.isArray(HORD.ids)) HORD = { key, ids: [] };
+  const have = new Set(cards.map(c => c.id)), kept = HORD.ids.filter(id => have.has(id));
+  const ids = cards.filter(c => !kept.includes(c.id)).map(c => c.id).concat(kept);   // las nuevas, a la izquierda
+  if (ids.join() !== HORD.ids.join()) { HORD.ids = ids; ordSave(); }
+  return ids.map(id => cards.find(c => c.id === id));
+}
+function ordStop() { if (DRAG) clearTimeout(DRAG.timer); DRAG = null; }
+$('hand').addEventListener('pointerdown', e => {
+  if (!ordOn() || DRAG || (e.button != null && e.button > 0)) return;
+  const hand = $('hand'), cards = [...hand.querySelectorAll('.hc')];
+  if (cards.length < 2) return;
+  const x = e.clientX / ZK, y = e.clientY / ZK;
+  const el = cards.find(b => { const r = bcr(b); return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom; });
+  if (!el) return;
+  const d = DRAG = { el, id: el.dataset.id, x0: x, y0: y, tx: 0, on: false, pid: e.pointerId, grab: x - bcr(el).left };
+  d.timer = setTimeout(() => {
+    if (DRAG !== d) return;
+    if (!d.el.isConnected) d.el = $('hand').querySelector(`.hc[data-id="${d.id}"]`);   // la mano se ha redibujado mientras mantenías (juegan los bots)
+    if (!d.el) return ordStop();
+    d.grab = d.x0 - bcr(d.el).left;
+    d.on = true; DRAG_EAT = true; d.el.classList.add('lifted');
+    try { if (navigator.vibrate) navigator.vibrate(15); } catch (e2) {}
+  }, 300);
+});
+addEventListener('pointermove', e => {
+  const d = DRAG; if (!d || e.pointerId !== d.pid) return;
+  const x = e.clientX / ZK, y = e.clientY / ZK;
+  if (!d.on) { if (Math.hypot(x - d.x0, y - d.y0) > 10) ordStop(); return; }   // se ha movido antes de tiempo: no es ordenar
+  if (e.cancelable) e.preventDefault();
+  const hand = $('hand'), others = [...hand.querySelectorAll('.hc')].filter(b => b !== d.el);
+  let before = null;
+  for (const b of others) { const r = bcr(b); if (x < r.left + r.width / 2) { before = b; break; } }
+  if (d.el.nextElementSibling !== before) hand.insertBefore(d.el, before);
+  const nat = bcr(d.el).left - d.tx;
+  d.tx = x - d.grab - nat;
+  d.el.style.transform = `translate(${d.tx}px,-14px)`;
+}, { passive: false });
+function ordEnd(e) {
+  const d = DRAG; if (!d || (e && e.pointerId !== d.pid)) return;
+  ordStop();
+  if (!d.on) return;
+  d.el.classList.remove('lifted'); d.el.style.transform = '';
+  const ids = [...$('hand').querySelectorAll('.hc')].map(b => +b.dataset.id);
+  if (HORD) { HORD.ids = ids.concat(HORD.ids.filter(id => !ids.includes(id))); ordSave(); }
+  setTimeout(() => { DRAG_EAT = false; }, 400);   // el toque que acaba de soltar no juega la carta
+  render();
+}
+addEventListener('pointerup', ordEnd); addEventListener('pointercancel', ordEnd);
+$('hand').addEventListener('contextmenu', e => { if (ordOn()) e.preventDefault(); });
+// mientras arrastras, el navegador no mueve la página (sin «touch-action: none» en la mano: en tablets, con zoom, dejaba sin efecto el toque siguiente)
+addEventListener('touchmove', e => { if (DRAG && DRAG.on && e.cancelable) e.preventDefault(); }, { passive: false });
+$('hand').addEventListener('click', e => { if (DRAG_EAT) { DRAG_EAT = false; e.stopImmediatePropagation(); e.preventDefault(); } }, true);
 $('hand').addEventListener('click', async e => {
   const b = e.target.closest('.hc'); if (!b || b.disabled) return;
   if (isCoto()) {
@@ -3744,7 +3818,9 @@ function coRenderHand() {
   if (!isCoto()) return;
   const legal = coMyLegal(), n = coDealView ? coDealView.n[0] : 6, pick = TUTG && legal.length === 1 && TUT_ME[G.trickNo] != null ? legal[0] : null;
   $('hand').classList.add('co-hand');
-  const order = coDealView && G.dealOrder ? G.dealOrder.map(id => G.hands[0].find(c => c.id === id)).filter(Boolean) : G.hands[0];
+  if (DRAG && DRAG.on) return;   // no se redibuja mientras arrastras una carta
+  $('hand').classList.toggle('ordmano', ordOn() && !coDealView);
+  const order = coDealView && G.dealOrder ? G.dealOrder.map(id => G.hands[0].find(c => c.id === id)).filter(Boolean) : myOrder(G.hands[0]);
   $('hand').innerHTML = order.filter(c => !coHide.has(c.id)).slice(0, n).map(c => `<button class="hc ${c.id === pick ? 'tutpick' : ''}" type="button" data-id="${c.id}" ${legal.includes(c.id) ? '' : 'disabled'}>${cardHTML(c)}</button>`).join('');
 }
 function coRenderBottom() {
@@ -3992,6 +4068,7 @@ function matchTiebreak() {
 let GEN = 0;
 const cotoBestNow = () => (NET && NET.best) || SETTINGS.cotoBest || 5;
 function startGame(mode) {
+  ordReset();
   if (NET) netLeave(true);
   TUTG = null; GEN++; busy = false; coDealView = null; dealView = null; fx = null; coFx = null; coShowLast = false; coHide = new Set(); coPend = 0; coReveal = false;
   APP.mode = mode; APP.M = mode === 'cotocau' ? { stage: 'coto', cur: 'coto', res: {} } : null;
