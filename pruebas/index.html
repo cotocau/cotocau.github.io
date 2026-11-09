@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-ZKgGOvl4z1nUwOH3Nu+1QNPhVQAlCfjee15keZYSUpo=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-cGUBCwgVVWcClxU7RmXEcLhGgRgTmNDakzweJ6mJCT8=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script>(()=>{try{const P='pr.',S=Storage.prototype,g=S.getItem,s=S.setItem,r=S.removeItem;S.getItem=function(k){return g.call(this,P+k)};S.setItem=function(k,v){return s.call(this,P+k,v)};S.removeItem=function(k){return r.call(this,P+k)};}catch(e){}})();</script>
 <meta name="theme-color" content="#1b3d24">
@@ -322,6 +322,14 @@ html.wide .coach{grid-column:1;grid-row:5;margin:0;max-height:100%;overflow:auto
 html.wide .coach.paused{position:relative;left:auto;right:auto;bottom:auto;max-width:none;max-height:100%}
 html.wide .board{grid-column:2;grid-row:1/6;align-self:stretch;min-height:0}
 html.wide .hand{grid-column:2;grid-row:6;padding-bottom:4px}
+/* Móvil girado (9 nov): menú principal compacto para que quepa sin desplazar */
+@media (orientation:landscape) and (max-height:520px){
+  .menu{gap:8px!important}
+  .menu .fan{height:78px;width:150px;transform:scale(.55);transform-origin:50% 100%;margin-top:-30px}
+  .menu .logo{font-size:38px}
+  .menu .stack{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .menu .stack .btn{padding:10px 14px}
+}
 @media (prefers-reduced-motion:reduce){*{animation:none !important;transition:none !important}}
 @media (max-height:660px){.brand{font-size:20px}.score b{font-size:25px}.tools .btn{padding:4px 11px}.seat.top{min-height:44px}}
 </style>
@@ -1839,7 +1847,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-09-1';
+const APP_VER = 'cau-2026-11-09-2';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
 // sus partidas llevan «-pruebas» en la versión y su online usa salas aparte (canales cc-p…), para no mezclarse con la oficial.
 const PRUEBAS = true;
@@ -1852,12 +1860,15 @@ if (PRUEBAS) { const b = document.createElement('div'); b.className = 'prbadge';
 // como si fuera un móvil de 430×860, para que las cartas no queden pequeñas con el tapete vacío. En los móviles no cambia nada.
 // Las posiciones medidas (animaciones de cartas) pasan por bcr(), que las devuelve en la misma escala que el estilo.
 let ZOOM = 1, ZK = 1, fitWH = '';
+let WIDE_PH = [760, 470];   // tamaño de diseño del móvil girado
 function fitZoom() {
   const ae = document.activeElement; if (ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) return false;   // con el teclado abierto, no se toca
   const w = innerWidth, h = innerHeight, k = w + 'x' + h; if (k === fitWH) return false; fitWH = k;
-  // tablet en horizontal: otra colocación (clase «wide»: marcador y botones a la izquierda, mesa y mano a la derecha), como si fuera 1000×640
-  const big = Math.min(w, h) >= 600, wide = big && w > h * 1.15;
-  const z = !big ? 1 : Math.round(Math.max(1, Math.min(2.2, wide ? Math.min(w / 1000, h / 640) : Math.min(w / 430, h / 860))) * 100) / 100;
+  // en horizontal: otra colocación (clase «wide»: marcador y botones a la izquierda, mesa y mano a la derecha).
+  // Tablet: como si fuera 1000×640. Móvil girado (9 nov: la app de Android ya no puede fijar la orientación): como si fuera WIDE_PH (se encoge un poco).
+  const big = Math.min(w, h) >= 600, wide = w > h * 1.15 && h < 1400;
+  const z = Math.round((big ? Math.max(1, Math.min(2.2, wide ? Math.min(w / 1000, h / 640) : Math.min(w / 430, h / 860)))
+    : wide ? Math.max(.6, Math.min(1, w / WIDE_PH[0], h / WIDE_PH[1])) : 1) * 100) / 100;
   const r = document.documentElement; r.classList.toggle('wide', wide); ZOOM = z; r.style.zoom = z === 1 ? '' : String(z);
   if (z === 1) { r.style.removeProperty('--vh'); r.style.removeProperty('--vw'); }   // sin zoom, vh y vw de siempre
   else { r.style.setProperty('--vh', (h / z / 100).toFixed(3) + 'px'); r.style.setProperty('--vw', (w / z / 100).toFixed(3) + 'px'); }
