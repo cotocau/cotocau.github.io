@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-9GSZ1GvvPMXChVRUopsWQE8KYTy6s3YfE9yIVuxYYXk=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1b080d">
 <meta name="description" content="CotoCau: el Coto y el Cau, los juegos de cartas de las filaes de Alcoy. Juega con tu compañera contra dos rivales.">
@@ -320,6 +321,14 @@ html.wide .coach{grid-column:1;grid-row:5;margin:0;max-height:100%;overflow:auto
 html.wide .coach.paused{position:relative;left:auto;right:auto;bottom:auto;max-width:none;max-height:100%}
 html.wide .board{grid-column:2;grid-row:1/6;align-self:stretch;min-height:0}
 html.wide .hand{grid-column:2;grid-row:6;padding-bottom:4px}
+/* Móvil girado (9 nov): menú principal compacto para que quepa sin desplazar */
+@media (orientation:landscape) and (max-height:520px){
+  .menu{gap:8px!important}
+  .menu .fan{height:78px;width:150px;transform:scale(.55);transform-origin:50% 100%;margin-top:-30px}
+  .menu .logo{font-size:38px}
+  .menu .stack{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .menu .stack .btn{padding:10px 14px}
+}
 @media (prefers-reduced-motion:reduce){*{animation:none !important;transition:none !important}}
 @media (max-height:660px){.brand{font-size:20px}.score b{font-size:25px}.tools .btn{padding:4px 11px}.seat.top{min-height:44px}}
 </style>
@@ -1837,7 +1846,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-08-5';
+const APP_VER = 'cau-2026-11-09-3';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
 // sus partidas llevan «-pruebas» en la versión y su online usa salas aparte (canales cc-p…), para no mezclarse con la oficial.
 const PRUEBAS = false;
@@ -1850,12 +1859,15 @@ if (PRUEBAS) { const b = document.createElement('div'); b.className = 'prbadge';
 // como si fuera un móvil de 430×860, para que las cartas no queden pequeñas con el tapete vacío. En los móviles no cambia nada.
 // Las posiciones medidas (animaciones de cartas) pasan por bcr(), que las devuelve en la misma escala que el estilo.
 let ZOOM = 1, ZK = 1, fitWH = '';
+let WIDE_PH = [760, 470];   // tamaño de diseño del móvil girado
 function fitZoom() {
   const ae = document.activeElement; if (ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) return false;   // con el teclado abierto, no se toca
   const w = innerWidth, h = innerHeight, k = w + 'x' + h; if (k === fitWH) return false; fitWH = k;
-  // tablet en horizontal: otra colocación (clase «wide»: marcador y botones a la izquierda, mesa y mano a la derecha), como si fuera 1000×640
-  const big = Math.min(w, h) >= 600, wide = big && w > h * 1.15;
-  const z = !big ? 1 : Math.round(Math.max(1, Math.min(2.2, wide ? Math.min(w / 1000, h / 640) : Math.min(w / 430, h / 860))) * 100) / 100;
+  // en horizontal: otra colocación (clase «wide»: marcador y botones a la izquierda, mesa y mano a la derecha).
+  // Tablet: como si fuera 1000×640. Móvil girado (9 nov: la app de Android ya no puede fijar la orientación): como si fuera WIDE_PH (se encoge un poco).
+  const big = Math.min(w, h) >= 600, wide = w > h * 1.15 && h < 1400;
+  const z = Math.round((big ? Math.max(1, Math.min(2.2, wide ? Math.min(w / 1000, h / 640) : Math.min(w / 430, h / 860)))
+    : wide ? Math.max(.6, Math.min(1, w / WIDE_PH[0], h / WIDE_PH[1])) : 1) * 100) / 100;
   const r = document.documentElement; r.classList.toggle('wide', wide); ZOOM = z; r.style.zoom = z === 1 ? '' : String(z);
   if (z === 1) { r.style.removeProperty('--vh'); r.style.removeProperty('--vw'); }   // sin zoom, vh y vw de siempre
   else { r.style.setProperty('--vh', (h / z / 100).toFixed(3) + 'px'); r.style.setProperty('--vw', (w / z / 100).toFixed(3) + 'px'); }
@@ -2153,10 +2165,11 @@ const sfxNet = k => { sfx(SFX_NET[k], 0, k === 'rec' ? 0.9 : 1); netEv({ k: 'sfx
 const sfxTap = () => sfxNet('tap');
 
 let calloutTimer = null;
+const escH = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 async function callout(txt, sub, wait = true) {
   if (NET && NET.role === 'host' && NET.started) netEv({ k: 'callout', txt, sub });
   const el = $('callout'); const d = 1700 * SPEEDS[speedIx][1];
-  el.innerHTML = `<div class="call" style="--cd:${d}ms"><b>${txt}</b>${sub ? `<span>${sub}</span>` : ''}</div>`;
+  el.innerHTML = `<div class="call" style="--cd:${d}ms"><b>${escH(txt)}</b>${sub ? `<span>${escH(sub)}</span>` : ''}</div>`;
   clearTimeout(calloutTimer); calloutTimer = setTimeout(() => { el.innerHTML = ''; }, d);
   if (wait) await sleep(1500);
 }
@@ -2502,7 +2515,21 @@ async function netClient() {
   }
   return c;
 }
-async function netOpen(name, onMsg) {
+// Todo lo que llega por la red se limpia antes de usarlo (9 nov, seguridad H1): en los textos, los caracteres que
+// permitirían meter HTML se cambian por otros parecidos que no lo hacen, y se quitan las claves que tocarían prototipos.
+// Así un anfitrión o un invitado con la app modificada no puede meter código en la pantalla de los demás.
+const NET_SAFE_CH = { '<': '‹', '>': '›', '&': '+', '"': '”', "'": '’', '`': '´' };
+function netSafe(v, d = 0) {
+  if (typeof v === 'string') return v.replace(/[<>&"'`]/g, c => NET_SAFE_CH[c]);
+  if (v === null || typeof v !== 'object') return typeof v === 'function' ? undefined : v;
+  if (d > 16) return null;
+  if (Array.isArray(v)) return v.map(x => netSafe(x, d + 1));
+  const o = {};
+  for (const k of Object.keys(v)) { if (k === '__proto__' || k === 'constructor' || k === 'prototype') continue; o[netSafe(k)] = netSafe(v[k], d + 1); }
+  return o;
+}
+async function netOpen(name, onMsg0) {
+  const onMsg = m => onMsg0(netSafe(m));
   if (/net=local/.test(location.search) || /net=local/.test(location.hash)) {
     const bc = new BroadcastChannel(name); bc.onmessage = e => onMsg(e.data);
     return { send: m => bc.postMessage(m), close: () => bc.close() };
