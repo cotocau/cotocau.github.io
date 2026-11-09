@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-660kzNxFQ+sUhUUBBPhqdQxHaDSw0pJ4aQ69C3Zcwpc=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-xI2eyavoKp2TtZgK6ZcetwFJhj2NgLxzVSlM9oMAXqE=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script>(()=>{try{const P='pr.',S=Storage.prototype,g=S.getItem,s=S.setItem,r=S.removeItem;S.getItem=function(k){return g.call(this,P+k)};S.setItem=function(k,v){return s.call(this,P+k,v)};S.removeItem=function(k){return r.call(this,P+k)};}catch(e){}})();</script>
 <meta name="theme-color" content="#1b3d24">
@@ -1847,7 +1847,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-09-3';
+const APP_VER = 'cau-2026-11-09-4';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
 // sus partidas llevan «-pruebas» en la versión y su online usa salas aparte (canales cc-p…), para no mezclarse con la oficial.
 const PRUEBAS = true;
@@ -2117,7 +2117,9 @@ function render() {
 // contra bots, los demás asientos hablan con las otras; en el online cada persona con la suya y los bots con las que sobran.
 const VOZ_N = 4;
 // 6 nov: vinga/accepte (se acepta un envide, se alternan), limpia, baclimpia, jotambe/jotambe2 (el segundo que canta de nit), bones (una pareja pasa a buenas)
-const VOZ_KEYS = ['bac', 'rebac', 'sv', 'denit', 'xic', 'xac', 'envit', 'torne', 'falta', 'acabat', 'vinga', 'accepte', 'limpia', 'baclimpia', 'jotambe', 'jotambe2', 'bones', 'novull', 'pertu', 'passe', 'lavull', 'juguem'];   // novull/pertu: se rechaza (se alternan); passe; lavull/juguem: se acepta «la partida»
+const VOZ_KEYS = ['bac', 'rebac', 'sv', 'denit', 'xic', 'xac', 'envit', 'torne', 'falta', 'acabat', 'vinga', 'accepte', 'limpia', 'baclimpia', 'jotambe', 'jotambe2', 'bones', 'novull', 'pertu', 'passe', 'lavull', 'juguem', 'caues',
+  // Coto (9 nov): cantes (c = empieza, y = «i vint en…» si canta otro más seguido), cambio del 7, últimas, vueltas, salir y coto
+  'c40', 'c20o', 'c20c', 'c20e', 'c20b', 'y20o', 'y20c', 'y20e', 'y20b', 'canvie', 'ultimes', 'torna', 'fora', 'ixit', 'cotoes'];   // novull/pertu: se rechaza (se alternan); passe; lavull/juguem: se acepta «la partida»
 const vozAlt = (a, b) => Math.random() < 0.5 ? a : b;
 const vozNum = x => { x = Math.floor(+x); return x >= 1 && x <= VOZ_N ? x : 1; };
 function seatVoices() {
@@ -2336,6 +2338,7 @@ function showSummary() {
   const gwait = netGuestWait(), gacts = '';
   shareRec(S.rec, 'cau', { score: S.score.slice(), over: !!S.over, winner: S.over ? S.winner : null, falta: !!S.endFalta, mid: !!S.endMid });
   if (S.phase === 'gameEnd') {
+    if (!guest && !S.caueSaid) { S.caueSaid = true; voz('caues', S.winner === 0 ? 0 : 1); }   // «El cau és nostre!»
     const why = S.endFalta ? L('Se la han jugado en el de nit.', "S'ho han jugat en el de nit.") : L('Han llegado a 40 durante la mano.', 'Han arribat a 40 durant la mà.');
     showPanel(`<h2>${winTitle()}</h2><p class="big-result">${why}</p><p style="text-align:center">${TEAMN[0]} ${scoreLine(0)} · ${TEAMN[1]} ${scoreLine(1)}</p>${guest ? (NET.match ? gwait : netEndWait()) : ''}${netRxBar()}<div class="acts">${guest ? gacts : APP.mode === 'cotocau' ? `<button class="btn primary" type="button" data-act="match">${L('Continuar', 'Continuar')}</button>` : NET ? netEndActs() : `<button class="btn" type="button" data-act="menu">${L('Salir al menú', 'Eixir al menú')}</button><button class="btn primary" type="button" data-act="newgame">${L('Nueva partida', 'Partida nova')}</button>`}</div>`);
     return;
@@ -3560,7 +3563,7 @@ function showSettings() {
   ].join('');
   if (tab === 'sonido') body = [
     setOpt(L('Sonidos de cartas', 'Sons de cartes'), seg('sonidos', off, SETTINGS.sonidos !== false, true), L('Al echar carta, llevarse cartas, repartir y robar.', 'En tirar carta, endur-se cartes, repartir i robar.')),
-    setOpt(L('Voces (Cau)', 'Veus (Cau)'), seg('voces', off, SETTINGS.voces !== false, true), L('Se oye «Bac!», «De nit!», «Envide!»… cuando pasa en la mesa.', 'Se sent «Bac!», «De nit!», «Envide!»… quan passa al tapet.')),
+    setOpt(L('Voces', 'Veus'), seg('voces', off, SETTINGS.voces !== false, true), L('Se oye «Bac!», «De nit!», «Les quaranta!»… cuando pasa en la mesa (Cau y Coto).', 'Se sent «Bac!», «De nit!», «Les quaranta!»… quan passa al tapet (Cau i Coto).')),
     SETTINGS.voces !== false ? setOpt(L('Tu voz', 'La teua veu'), seg('voz', Array.from({ length: VOZ_N }, (_, i) => [i + 1, L('Voz ', 'Veu ') + (i + 1)]), vozNum(SETTINGS.voz), VOZ_N === 2), L('Al tocar una, la oyes. Los demás jugadores hablan con las otras; en el online, cada uno con la que haya elegido.', "En tocar-ne una, la sents. La resta de jugadors parlen amb les altres; en l'online, cadascú amb la que haja triat.")) : ''
   ].join('');
   if (tab === 'ayudas') body = [
@@ -3874,12 +3877,24 @@ function coRenderBottom() {
     : L('Puedes cambiar el 7 por la pinta: ¿lo cambias antes de que salga la baza?', 'Pots canviar el 7 per la pinta: el canvies abans que isca la basa?');
   el.innerHTML = `<div class="status ${G.turn === 0 ? 'mine' : ''}"><span>${txt}</span>${btns}</div>`;
 }
+// quién dice cada aviso del Coto (para su voz): «Cantas…/Ganas…» = tú; si no, el nombre con que empieza
+const coSeatOf = txt => /^(Cantas|Cantes|Cambias|Canvies|Ganas|Guanyes)/.test(txt) ? 0 : ([1, 2, 3].find(q => txt.startsWith(NAMES[q] + ' ')) || 0);
+const coTeamOf = txt => txt.startsWith(TEAMN[1] + ' ') ? 1 : 0;
 async function coDrain() {
   const items = G.feed.splice(0);
+  let lastCante = -1, saidOut = false, vc = null;
   for (const i of items) {
     const who = /^(Cantas|Cantes|Cambias|Canvies)/.test(i.txt) ? NAMES[0] : i.txt.split(' ')[0];
-    if (i.k === 'cante') { narr = i.txt; render(); await callout(/40/.test(i.txt) ? L('Las 40', 'Les 40') : '20 en ' + (i.txt.match(/20 en (\S+?)\./) || [, ''])[1], who); }
-    else if (i.k === 'swap') { narr = i.txt; render(); await callout(L('Cambia el 7', 'Canvia el 7'), who); }
+    // voces del Coto (9 nov)
+    if (i.k === 'cante') {
+      const q = coSeatOf(i.txt), m = i.txt.match(/20 en (\S+?)\./), su = m ? SUITN.indexOf(m[1]) : -1;
+      vc = [/40/.test(i.txt) || su < 0 ? 'c40' : (lastCante === q ? 'y20' : 'c20') + 'oceb'[su], q]; lastCante = q;   // suena con su aviso
+    } else lastCante = -1;
+    if (i.k === 'swap') vc = ['canvie', coSeatOf(i.txt)];
+    if (i.k === 'baza' && /10 de últimas|10 d'últimes/.test(i.txt)) voz('ultimes', coSeatOf(i.txt));
+    if (i.k === 'pts' && (/llegan a 101|arriben a 101/.test(i.txt) || (/ganan la partida|guanyen la partida/.test(i.txt) && !saidOut))) { saidOut = true; voz(vozAlt('fora', 'ixit'), coTeamOf(i.txt)); }
+    if (i.k === 'cante') { narr = i.txt; render(); if (vc) voz(vc[0], vc[1]); vc = null; await callout(/40/.test(i.txt) ? L('Las 40', 'Les 40') : '20 en ' + (i.txt.match(/20 en (\S+?)\./) || [, ''])[1], who); }
+    else if (i.k === 'swap') { narr = i.txt; render(); if (vc) voz(vc[0], vc[1]); vc = null; await callout(L('Cambia el 7', 'Canvia el 7'), who); }
     else if (i.k === 'pts') { narr = i.txt; render(); await sleep(1300); }
   }
 }
@@ -4016,6 +4031,7 @@ async function beginCoto() {
   const tut = TUTG && !TUTG.cau && !TUTG.intro;
   try {
     G.feed = [];
+    if (G.vueltas && !tut) voz('torna', G.dealer);   // «Anem de tornà!» (lo dice quien reparte)
     if (tut) { TUTG.intro = true; for (const t of tutCotoIntro(0)) await tutPause(t); if (gen !== GEN) return; }
     await animateCotoDeal();
     if (tut && gen === GEN) for (const t of tutCotoIntro(1)) await tutPause(t);
@@ -4026,6 +4042,7 @@ async function beginCoto() {
 function showCotoSummary() {
   if (TUTG) return showGuidedEnd();
   if (NET && NET.role === 'guest') return netGuestSummary();
+  if (G.phase === 'cotoEnd' && !G.cotoSaid) { G.cotoSaid = true; setTimeout(() => voz('cotoes', G.winner === 0 ? 0 : 1), 900); }   // «El coto és nostre!»
   shareRec(G.rec, 'coto', { score: G.score.slice(), phase: G.phase, partidaWinner: G.partidaWinner ?? null, wins: G.wins.slice(), mid: !!G.endMid, summary: G.handSummary || null });
   const H = G.handSummary || [{ pts: 0, cantes: 0, ultimas: 0, total: 0 }, { pts: 0, cantes: 0, ultimas: 0, total: 0 }];
   const row = (l, k) => `<tr><td>${l}</td><td>${H[0][k]}</td><td>${H[1][k]}</td></tr>`;
