@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-xI2eyavoKp2TtZgK6ZcetwFJhj2NgLxzVSlM9oMAXqE=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-DbPgOcjk6bgg4eE7qMwLPRMka5ipg5qloNBS2ww0VqE=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script>(()=>{try{const P='pr.',S=Storage.prototype,g=S.getItem,s=S.setItem,r=S.removeItem;S.getItem=function(k){return g.call(this,P+k)};S.setItem=function(k,v){return s.call(this,P+k,v)};S.removeItem=function(k){return r.call(this,P+k)};}catch(e){}})();</script>
 <meta name="theme-color" content="#1b3d24">
@@ -1758,6 +1758,17 @@ function coSureExit(G, p, all) {
   const tablePts = G.trick.reduce((a, x) => a + CPTS[x.c.r], 0);
   const w = G.trick.length ? coTrickWinner(G, G.trick) : null;
   const lastTrick = G.hands.every(h => h.length <= 1) && !G.stock.length;
+  // (10 nov) saliendo con montón: si mi compañero tiene a la vista una carta que gana seguro (la pinta que se llevó al cambiar
+  // el 7, un cante), salgo con la carta que, sumada a la suya, da la salida: la baza es nuestra juegue lo que juegue el rival
+  if (!w && G.stock.length) {
+    const q = (p + 2) % 4, ms = G.revealed[q].map(coCard).filter(m => coIsMaster(G, m, unseen));
+    if (ms.length) {
+      const m = ms.reduce((a, b) => CPTS[b.r] > CPTS[a.r] ? b : a);
+      const ok = coLegal(G, p).filter(c => CPTS[c.r] + CPTS[m.r] >= need)
+        .sort((a, b) => (a.s === G.trump) - (b.s === G.trump) || CSTR[a.r] - CSTR[b.r]);
+      if (ok.length) { if (all) ok.forEach(c => all.push(c.id)); return ok[0].id; }
+    }
+  }
   let best = null;
   for (const c of coLegal(G, p)) {
     if (w && team(w.p) !== t && !coBeats(c, w.c, G.trump)) continue;
@@ -1847,7 +1858,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-09-4';
+const APP_VER = 'cau-2026-11-10-1';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
 // sus partidas llevan «-pruebas» en la versión y su online usa salas aparte (canales cc-p…), para no mezclarse con la oficial.
 const PRUEBAS = true;
