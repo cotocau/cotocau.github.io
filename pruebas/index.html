@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-UkwguFUx4UhXj2PIzPOi7b4lxxobGwH3IwfU4uHc6lA=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-Hgf+9NGxU6FbX+cdnMB4gJ/ZdQj3vLIyNf15b+XNF9Y=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script>(()=>{try{const P='pr.',S=Storage.prototype,g=S.getItem,s=S.setItem,r=S.removeItem;S.getItem=function(k){return g.call(this,P+k)};S.setItem=function(k,v){return s.call(this,P+k,v)};S.removeItem=function(k){return r.call(this,P+k)};}catch(e){}})();</script>
 <meta name="theme-color" content="#1b3d24">
@@ -1668,9 +1668,11 @@ function coBotExpert(G, p, N = CO_EXP.N || 40) {
     if (m) {
       let best = null, bv = -1e9; for (const c of legal) { const v = sum[c.id] / m - 0.01 * (CSTR[c.r] + (c.s === G.trump ? 10 : 0)) + Math.random() * 1e-4; if (v > bv) { bv = v; best = c.id; } }   // a igualdad, se guarda la carta fuerte
       // pero si juego el último y la baza ya es de mi compañero, a (casi) igualdad cargo los puntos ahora: más vale cobrarlos ya
-      // (11 nov) solo de otro palo: un triunfo no se carga así, aunque dé igual (en la mesa no se hace)
+      // (11 nov) solo de otro palo: un triunfo no se carga así (en la mesa no se hace), salvo que con sus puntos nos salgamos (101)
       if (CO_EXP.loadTol && G.trick.length === 3 && team(coTrickWinner(G, G.trick).p) === t) {
-        const ok = legal.filter(c => c.s !== G.trump && sum[c.id] / m >= bv - CO_EXP.loadTol).sort((a, b) => CPTS[b.r] - CPTS[a.r] || CSTR[a.r] - CSTR[b.r]);
+        const T0 = G.score[t] + G.trick.reduce((a, x) => a + CPTS[x.c.r], 0), sale = c => T0 + CPTS[c.r] >= 101;
+        const near = legal.filter(c => sum[c.id] / m >= bv - CO_EXP.loadTol), otro = near.filter(c => c.s !== G.trump);
+        const ok = near.filter(c => c.s !== G.trump || (sale(c) && !otro.some(sale))).sort((a, b) => CPTS[b.r] - CPTS[a.r] || CSTR[a.r] - CSTR[b.r]);
         if (ok.length && CPTS[ok[0].r] > CPTS[coCard(best).r]) return ok[0].id;
       }
       return best;
@@ -1859,7 +1861,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-11-1';
+const APP_VER = 'cau-2026-11-11-2';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
 // sus partidas llevan «-pruebas» en la versión y su online usa salas aparte (canales cc-p…), para no mezclarse con la oficial.
 const PRUEBAS = true;
