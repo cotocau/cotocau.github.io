@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-hLVtvEZ5rTSaeplYbDKPoSTjbmKWzbuSVVVYwphtIAc=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-L6IKDx5paQIWbq7PR/SwNBcObVcZpHmsyjcNCqC+YxM=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script>(()=>{try{const P='pr.',S=Storage.prototype,g=S.getItem,s=S.setItem,r=S.removeItem;S.getItem=function(k){return g.call(this,P+k)};S.setItem=function(k,v){return s.call(this,P+k,v)};S.removeItem=function(k){return r.call(this,P+k)};}catch(e){}})();</script>
 <meta name="theme-color" content="#1b3d24">
@@ -1210,6 +1210,11 @@ function coPlay(G, p, cid) {
     const lead = G.trick[0].c.s, w = coTrickWinner(G, G.trick);
     if (c.s !== lead && !G.voids[p].includes(lead)) G.voids[p].push(lead);
     if (c.s !== lead && c.s !== G.trump && team(w.p) !== team(p) && !G.voids[p].includes(G.trump) && !(w.c.s === G.trump)) G.voids[p].push(G.trump);
+    // (13 nov) si sigue el palo con una carta que no mata a la del rival que va ganando, es que no tiene ninguna de ese palo que la mate (está obligado a matar)
+    if (c.s === lead && w.c.s === lead && team(w.p) !== team(p) && !coBeats(c, w.c, G.trump)) {
+      if (!G.noHi) G.noHi = [[], [], [], []];
+      for (let r = 0; r < 10; r++) if (CSTR[r] > CSTR[w.c.r]) { const id = lead * 10 + r; if (!G.noHi[p].includes(id)) G.noHi[p].push(id); }
+    }
   }
   // carga sobre baza del compañero: si carga X puntos de un palo, no lleva cartas de más puntos de ese palo
   if (G.trick.length === 3 && coArrastre(G) && CPTS[c.r] > 0 && team(coTrickWinner(G, G.trick).p) === team(p) && !(c.s !== G.trick[0].c.s && c.s === G.trump)) {
@@ -1875,7 +1880,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-13-1';
+const APP_VER = 'cau-2026-11-13-2';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
 // sus partidas llevan «-pruebas» en la versión y su online usa salas aparte (canales cc-p…), para no mezclarse con la oficial.
 const PRUEBAS = true;
