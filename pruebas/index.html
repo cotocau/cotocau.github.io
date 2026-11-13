@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-Hgf+9NGxU6FbX+cdnMB4gJ/ZdQj3vLIyNf15b+XNF9Y=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-hLVtvEZ5rTSaeplYbDKPoSTjbmKWzbuSVVVYwphtIAc=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script>(()=>{try{const P='pr.',S=Storage.prototype,g=S.getItem,s=S.setItem,r=S.removeItem;S.getItem=function(k){return g.call(this,P+k)};S.setItem=function(k,v){return s.call(this,P+k,v)};S.removeItem=function(k){return r.call(this,P+k)};}catch(e){}})();</script>
 <meta name="theme-color" content="#1b3d24">
@@ -382,10 +382,24 @@ html.wide .hand{grid-column:2;grid-row:6;padding-bottom:4px}
   const m = location.hash.match(/[#&]mig=([^&]+)/); if (!m) return;
   history.replaceState(null, '', location.pathname + location.search);
   if (localStorage.getItem('cau.settings') || localStorage.getItem('cau.uid')) return;
+  if (m[1].length > 20000) return;
   const d = JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(m[1])))));
-  for (const k of ['cau.settings', 'app.v1', 'cau.v2', 'cau.queue']) if (typeof d[k] === 'string' && d[k].length < 500000) { JSON.parse(d[k]); localStorage.setItem(k, d[k]); }
-  if (typeof d['cau.uid'] === 'string' && /^[a-z0-9]{4,40}$/.test(d['cau.uid'])) localStorage.setItem('cau.uid', d['cau.uid']);
+  // 13 nov (auditoría, M1): del enlace solo se aceptan ajustes conocidos y limpios. No se acepta «compartir partidas»
+  // (se vuelve a preguntar), ni partidas guardadas, ni la cola de envíos, ni el código del móvil: lo que llega en un enlace puede haberlo escrito cualquiera.
+  if (typeof d['cau.settings'] === 'string' && d['cau.settings'].length < 4000) {
+    const o = JSON.parse(d['cau.settings']), c = {}, txt = (t, n) => String(t == null ? '' : t).replace(/[^\p{L}\p{N} ._\-·]/gu, '').trim().slice(0, n);
+    const uno = (k, vals) => { if (vals.includes(o[k])) c[k] = o[k]; };
+    uno('lang', ['es', 'va']); uno('deck', ['moderna', 'clasica']); uno('speed', [0, 1, 2]); uno('cotoBest', [3, 5]); uno('voz', [1, 2, 3, 4]); uno('ordenar', ['auto', 'mano']);
+    uno('partner', ['facil', 'normal', 'dificil', 'experto']); uno('rivals', ['facil', 'normal', 'dificil', 'experto']);
+    for (const k of ['hints', 'labels', 'socarrat', 'voces', 'sonidos']) if (typeof o[k] === 'boolean') c[k] = o[k];
+    if (typeof o.alias === 'string') c.alias = txt(o.alias, 20);
+    if (Array.isArray(o.names) && o.names.length === 3) { const n = o.names.map(x => txt(x, 14)); if (n.every(Boolean)) c.names = n; }
+    localStorage.setItem('cau.settings', JSON.stringify(c));
+  }
+  // el código del móvil tampoco se importa: cada móvil crea el suyo
 } catch (e) {} })();
+// 13 nov (auditoría, M4): la app no funciona incrustada dentro de otra página (evita que otra web engañe con los toques)
+if (window.top !== window.self) { document.documentElement.style.display = 'none'; try { window.top.location = window.self.location.href; } catch (e) {} throw new Error('incrustada'); }
 (() => {
 'use strict';
 /* ---------------- Motor del Cau ---------------- */
@@ -1861,7 +1875,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-11-2';
+const APP_VER = 'cau-2026-11-13-1';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
 // sus partidas llevan «-pruebas» en la versión y su online usa salas aparte (canales cc-p…), para no mezclarse con la oficial.
 const PRUEBAS = true;
@@ -2538,7 +2552,8 @@ async function netClient() {
 // Así un anfitrión o un invitado con la app modificada no puede meter código en la pantalla de los demás.
 const NET_SAFE_CH = { '<': '‹', '>': '›', '&': '+', '"': '”', "'": '’', '`': '´' };
 function netSafe(v, d = 0) {
-  if (typeof v === 'string') return v.replace(/[<>&"'`]/g, c => NET_SAFE_CH[c]);
+  // la única etiqueta que se deja pasar es la negrita (<b>…</b>), que usan los textos de la partida (13 nov)
+  if (typeof v === 'string') return v.replace(/[\u0001\u0002]/g, '').replace(/<(\/?)b>/g, '\u0001$1\u0002').replace(/[<>&"'`]/g, c => NET_SAFE_CH[c]).replace(/\u0001(\/?)\u0002/g, '<$1b>');
   if (v === null || typeof v !== 'object') return typeof v === 'function' ? undefined : v;
   if (d > 16) return null;
   if (Array.isArray(v)) return v.map(x => netSafe(x, d + 1));
@@ -2570,15 +2585,15 @@ function netPresenceSync(st) {
   NETP.count = all.length; NETP.synced = true;
   const mine = NET && NET.role === 'host' ? NET.code : null;
   NETP.open = all.filter(x => x.open && !x.started && typeof x.code === 'string' && /^[A-Z]{6}$/.test(x.code) && x.code !== mine && NETMODES().some(m => m[0] === x.mode))
-    .map(x => ({ code: x.code, mode: x.mode, host: cleanName(x.host) || L('Anfitrión', 'Amfitrió'), free: Math.max(0, Math.min(3, x.free | 0)), people: Math.max(1, Math.min(4, x.people | 0)) }))
+    .map(x => ({ code: x.code, mode: x.mode, f: typeof x.f === 'string' && /^[0-9a-f]{12}$/.test(x.f) ? x.f : '', host: cleanName(x.host) || L('Anfitrión', 'Amfitrió'), free: Math.max(0, Math.min(3, x.free | 0)), people: Math.max(1, Math.min(4, x.people | 0)) }))
     .filter(x => x.free > 0).sort((a, b) => b.people - a.people || a.code.localeCompare(b.code));
   const el = $('netcount'); if (el) el.textContent = netCountTxt();
   const ol = $('netopen'); if (ol) ol.innerHTML = netOpenListHTML();
 }
 const netOpenListHTML = () => NETP.err && !NETP.synced ? `<p class="desc">${L('No se pueden ver las mesas ahora mismo. Comprueba la conexión.', 'No es poden veure les taules ara mateix. Comprova la connexió.')}</p>` : !NETP.synced ? `<p class="desc">${L('Buscando mesas…', 'Buscant taules…')}</p>`
   : !NETP.open.length ? `<p class="desc">${L('Ahora mismo no hay ninguna mesa abierta.', 'Ara mateix no hi ha cap taula oberta.')}</p>`
-  : NETP.open.slice(0, 8).map(x => `<div class="netopen-row"><div><b>${esc(x.host)}</b> · ${netModeName(x.mode)}<small>${x.free === 1 ? L('Falta 1 persona', 'Falta 1 persona') : L(`${x.free} sitios libres`, `${x.free} llocs lliures`)}</small></div><button class="btn primary" type="button" data-act="net-open-join" data-code="${x.code}">${L('Entrar', 'Entrar')}</button></div>`).join('');
-const netCountTxt = () => NETP.count == null ? '' : L(`Mesas en uso: ${Math.min(NETP.count, NET_MAX_TABLES)}/${NET_MAX_TABLES}`, `Taules en ús: ${Math.min(NETP.count, NET_MAX_TABLES)}/${NET_MAX_TABLES}`);
+  : NETP.open.slice(0, 8).map(x => `<div class="netopen-row"><div><b>${esc(x.host)}</b> · ${netModeName(x.mode)}<small>${x.free === 1 ? L('Falta 1 persona', 'Falta 1 persona') : L(`${x.free} sitios libres`, `${x.free} llocs lliures`)}</small></div><button class="btn primary" type="button" data-act="net-open-join" data-code="${x.code}" data-f="${x.f}">${L('Entrar', 'Entrar')}</button></div>`).join('');
+const netCountTxt = () => NETP.count == null ? '' : L(`Mesas en uso: ${NETP.count > 99 ? '99+' : NETP.count}`, `Taules en ús: ${NETP.count > 99 ? '99+' : NETP.count}`);
 // Las mesas se anuncian con mensajes normales (como las salas) en el canal «cc-mesas»: cada anfitrión dice cada pocos segundos
 // que su mesa existe; solo las abiertas llevan código y nombre. Quien entra pregunta «hola» y los anfitriones contestan al momento.
 async function netPresenceOpen() {
@@ -2592,7 +2607,8 @@ async function netPresenceOpen() {
       tr = await netOpen(NETNS + 'mesas', m => {
         if (!m || typeof m.k !== 'string' || m.k.length > 24) return;
         if (m.k === 'hola') { if (Date.now() - lastHola > 1000) { lastHola = Date.now(); say(); } return; }
-        if (m.p && typeof m.p === 'object' && m.p.mesa) { if (seen.size < 300 || seen.has(m.k)) seen.set(m.k, { p: m.p, t: Date.now() }); } else seen.delete(m.k);
+        // un anuncio vacío («cierro la mesa») no borra nada: cualquiera podría borrar las mesas de otros; caducan solas (13 nov, S6)
+        if (m.p && typeof m.p === 'object' && m.p.mesa) { if (seen.size < 300 || seen.has(m.k)) seen.set(m.k, { p: m.p, t: Date.now() }); } else return;
         sync();
       });
       const iv = setInterval(() => { if (mine && Date.now() - last >= (mine.started ? 15000 : 4000)) say(); sync(); }, 2000);
@@ -2619,7 +2635,7 @@ async function netPresenceTrack(on) {
       // lo que se anuncia: si la mesa está abierta, también quién la abre y cuántos sitios quedan para personas
       // las mesas con invitación solo cuentan para «Mesas en uso»: no dicen su código a nadie
       const p = { mesa: 1, started: !!NET.started };
-      if (NET.open) Object.assign(p, { code: NET.code, mode: NET.mode, open: true, host: NET.name, free: NET.seats.filter(x => x.kind === 'free').length, people: NET.seats.filter(x => x.kind === 'host' || x.kind === 'human').length });
+      if (NET.open) Object.assign(p, { code: NET.code, mode: NET.mode, open: true, f: NET.fp || '', host: NET.name, free: NET.seats.filter(x => x.kind === 'free').length, people: NET.seats.filter(x => x.kind === 'host' || x.kind === 'human').length });
       const k = JSON.stringify(p); if (k === NETP.last && NETP.tracking) return;
       NETP.last = k; await ch.track(p); NETP.tracking = true;
     } else if (!on && NETP.tracking) { await ch.untrack(); NETP.tracking = false; NETP.last = ''; }
@@ -2662,6 +2678,7 @@ function netEv(e) {
     const st = NET.seats[q]; if (st.kind !== 'human' || !st.online || !NET.priv[st.id]) continue;
     const rot = x => typeof x === 'number' ? (x - q + 4) % 4 : x;
     const ev = { ...e, p: rot(e.p), from: rot(e.from) };
+    if (e.k === 'draw' && !e.pinta && e.p !== q) delete ev.id;   // 13 nov (auditoría, T1): la carta que roba otro no se le dice a nadie
     if (e.k === 'callout' && e.sub) { const sb = netNarr(e.sub, q); ev.sub = sb === st.name ? L('Tú', 'Tu') : sb; }
     try { NET.priv[st.id].send({ t: 'ev', e: ev }); } catch (x) {}
   }
@@ -2791,12 +2808,12 @@ const NET_MAX_TABLES = 50;
 // logo de WhatsApp (no hay emoji de WhatsApp): bocadillo verde con el teléfono
 const WA_ICON = '<svg class="wa" viewBox="0 0 32 32" aria-hidden="true"><path fill="#fff" d="M16 2.2A13.8 13.8 0 0 0 4.1 22.9L2.3 29.7l7-1.8A13.8 13.8 0 1 0 16 2.2z"/><path fill="#25D366" d="M16 4.5a11.5 11.5 0 0 0-9.8 17.6l.3.4-1.1 4 4.1-1.1.4.2A11.5 11.5 0 1 0 16 4.5z"/><path fill="#fff" d="M12.3 9.6c-.3-.6-.5-.6-.8-.6h-.7c-.2 0-.6.1-1 .5s-1.3 1.2-1.3 3 1.3 3.5 1.5 3.7c.2.2 2.5 4 6.2 5.5 3.1 1.2 3.7 1 4.4.9.7-.1 2.2-.9 2.5-1.7.3-.9.3-1.6.2-1.7-.1-.2-.3-.2-.7-.4l-2.4-1.2c-.3-.1-.6-.2-.8.2l-1.1 1.4c-.2.2-.4.3-.7.1-.4-.2-1.5-.6-2.9-1.8-1.1-1-1.8-2.1-2-2.5-.2-.4 0-.5.2-.7l.5-.6c.2-.2.2-.4.4-.6.1-.2.1-.5 0-.6l-1.5-3.4z"/></svg>';
 // Invitación por enlace: «…/cau/?sala=ABCD» abre la app directamente en esa sala (quien recibe el enlace no necesita la contraseña)
-let netLink = null, netLinkOk = false;
+let netLink = null, netLinkOk = false, netLinkPin = null;
 // Partida online a medias (invitado): se recuerda la sala para volver solo al abrir la app; mientras siga, no se puede entrar en otra.
 const NETR_KEY = 'cau.netroom', NETR_MAX = 3 * 3600e3;
 let netAutoTried = false;
 function netRoomGet() { try { const r = JSON.parse(localStorage.getItem(NETR_KEY) || 'null'); if (r && /^[A-Z]{4,6}$/.test(r.code) && Date.now() - r.t < NETR_MAX) return r; localStorage.removeItem(NETR_KEY); } catch (e) {} return null; }
-function netRoomSave() { try { if (NET && NET.role === 'guest' && (!NET.roomSaved || Date.now() - NET.roomSaved > 60000)) { NET.roomSaved = Date.now(); localStorage.setItem(NETR_KEY, JSON.stringify({ code: NET.code, name: NET.name, t: Date.now() })); } } catch (e) {} }
+function netRoomSave() { try { if (NET && NET.role === 'guest' && (!NET.roomSaved || Date.now() - NET.roomSaved > 60000)) { NET.roomSaved = Date.now(); localStorage.setItem(NETR_KEY, JSON.stringify({ code: NET.code, name: NET.name, t: Date.now(), f: NET.hfp || '' })); } } catch (e) {} }
 function netRoomClear() { try { localStorage.removeItem(NETR_KEY); } catch (e) {} if (NET) NET.roomSaved = 0; }
 function showRejoinBlock() {
   const r = netRoomGet(); if (!r) return showOnline();
@@ -2805,7 +2822,8 @@ function showRejoinBlock() {
 }
 (() => { try {
   const u = new URL(location.href), c = (u.searchParams.get('sala') || '').toUpperCase();
-  if (/^[A-Z]{4,6}$/.test(c)) { netLink = c; u.searchParams.delete('sala'); history.replaceState(null, '', u.pathname + u.search + u.hash); }
+  const k = (u.searchParams.get('k') || '').toLowerCase();
+  if (/^[A-Z]{4,6}$/.test(c)) { netLink = c; if (/^[0-9a-f]{12}$/.test(k)) netLinkPin = { code: c, f: k }; u.searchParams.delete('sala'); u.searchParams.delete('k'); history.replaceState(null, '', u.pathname + u.search + u.hash); }
 } catch (e) {} })();
 // Partida rápida: la mesa abierta con más gente y sitio libre; si no hay, se abre una (CotoCau) y se espera allí.
 async function netQuick(name) {
@@ -2814,7 +2832,7 @@ async function netQuick(name) {
   const ch = await netPresenceOpen();
   for (let i = 0; ch && !NETP.synced && i < 15; i++) await new Promise(r => setTimeout(r, 200));
   const t = NETP.open[0];
-  if (t) return netJoin(t.code, name, true);
+  if (t) return netJoin(t.code, name, true, false, t.f);
   netHost(name, 'cotocau', true);
 }
 function showInvite(code) {
@@ -2826,7 +2844,8 @@ function showInvite(code) {
   <div class="acts"><button class="btn" type="button" data-act="back">${L('Ahora no', 'Ara no')}</button><button class="btn primary" type="button" data-act="net-join">${L('Entrar en la sala', 'Entrar en la sala')}</button></div>`);
   panelBack = 'menu'; cover();
 }
-function netInviteURL() { const u = new URL(location.href); u.hash = ''; u.searchParams.set('sala', NET.code); return u.toString(); }
+// El enlace lleva la huella de la clave del anfitrión (k): quien entra con el enlace solo acepta a ese anfitrión (13 nov, auditoría T3)
+function netInviteURL() { const u = new URL(location.href); u.hash = ''; u.searchParams.set('sala', NET.code); if (NET.fp) u.searchParams.set('k', NET.fp); return u.toString(); }
 async function netInvite() {
   if (!NET) return;
   const url = netInviteURL();
@@ -2839,11 +2858,11 @@ async function netHost(name, mode, open) {
   if (netRoomGet()) return showRejoinBlock();
   name = cleanName(name) || L('Anfitrión', 'Amfitrió');
   mode = NETMODES().some(x => x[0] === mode) ? mode : 'coto5';
-  if (NETP.count != null && NETP.count >= NET_MAX_TABLES) return showOnline(L(`Ahora mismo están todas las mesas en uso (${NET_MAX_TABLES}/${NET_MAX_TABLES}). Prueba en un rato.`, `Ara mateix estan totes les taules en ús (${NET_MAX_TABLES}/${NET_MAX_TABLES}). Prova-ho d'ací a una estona.`));
+  // 13 nov (auditoría, S1): el contador de mesas es solo informativo. Cualquiera podía anunciar 50 mesas falsas y nadie podía abrir sala.
   if (name !== SETTINGS.alias && !SETTINGS.alias) { SETTINGS.alias = name; saveSettings(); }
   NET = { role: 'host', code: netCode(), name, mode, open: !!open, best: mode === 'coto3' ? 3 : mode === 'coto5' ? 5 : (SETTINGS.cotoBest || 5), started: false, priv: {}, seats: [{ kind: 'host', name }, { kind: 'free' }, { kind: 'free' }, { kind: 'free' }] };
   showPanel(`<h2>${L('Creando sala…', 'Creant sala…')}</h2>`); cover();
-  try { NET.keys = await netKeys(false); NET.pub = await netOpen(NETNS + NET.code, netHostPub); }
+  try { NET.keys = await netKeys(false); NET.fp = (await netIdOf(NET.keys.raw)).slice(1, 13); NET.pub = await netOpen(NETNS + NET.code, netHostPub); }
   catch (e) { NET = null; return showOnline(L('No se ha podido conectar. Comprueba la conexión a internet.', 'No s\'ha pogut connectar. Comprova la connexió a internet.') + ' (' + esc(e.message) + ')'); }
   NET.timer = setInterval(netHostTick, 3000);
   netPresenceTrack(true);
@@ -2942,14 +2961,22 @@ async function netHostPub(m) {
   let id; try { id = await netIdOf(m.pk); } catch (e) { return; }
   if (!NET || (NET.kicked && NET.kicked.has(id))) { try { NET.pub.send({ t: 'kicked', to: id }); } catch (e) {} return; }
   if (NET.started && !NET.seats.some(x => x.kind === 'human' && x.id === id)) { try { NET.pub.send({ t: 'full', to: id }); } catch (e) {} return; }   // ya se juega: solo vuelven los de la mesa
+  if (NET.ban && NET.ban[id] > Date.now()) return;
   NET.opening = NET.opening || new Set();
   if (!NET.priv[id]) {
-    if (NET.opening.has(id) || Object.keys(NET.priv).length >= 8) return;
+    if (NET.opening.has(id)) return;
+    if (Object.keys(NET.priv).length >= 8) {   // sala llena de conexiones: sale la más antigua que no se ha sentado (si lleva al menos 5 s)
+      const sent = new Set(NET.seats.filter(x => x.kind === 'human').map(x => x.id)), t = Date.now();
+      const viejo = Object.keys(NET.priv).filter(k => !sent.has(k) && t - ((NET.rate && NET.rate[k] && NET.rate[k].t0) || 0) > 5000).sort((a, b) => ((NET.rate[a] || {}).t0 || 0) - ((NET.rate[b] || {}).t0 || 0))[0];
+      if (!viejo) return;
+      netDrop(viejo, false);
+    }
     NET.opening.add(id);
     try {
       const sec = await netSecret(NET.keys.priv, m.pk, NET.code); if (!NET) return;
       try { NET.pub.send({ t: 'welcome', to: id, hpk: NET.keys.raw }); } catch (e) {}   // contesta ya: invitado y anfitrión abren el canal privado a la vez
       NET.priv[id] = await netOpen(NETNS + NET.code + '-' + sec, x => netHostMsg(Object.assign({}, x, { id })));
+      if (NET) { const t = Date.now(); (NET.rate = NET.rate || {})[id] = { n: 0, t, t0: t, hi: 0 }; }
     }
     catch (e) { return; } finally { NET && NET.opening.delete(id); }
     return;
@@ -2957,10 +2984,24 @@ async function netHostPub(m) {
   try { NET.pub.send({ t: 'welcome', to: id, hpk: NET.keys.raw }); } catch (e) {}
 }
 // Canal privado de cada jugador: lo que llega por aquí es de ese jugador (el código lo pone el anfitrión, no el mensaje)
+// 13 nov (auditoría, S4): una conexión que manda demasiados mensajes se corta un minuto (si estaba sentada, en la sala deja el
+// sitio libre y en plena partida juega un bot por ella); y una que lleva minuto y medio sin sentarse deja su hueco a otros.
+function netDrop(id, ban) {
+  if (!NET || NET.role !== 'host') return;
+  const q = NET.seats.findIndex(x => x.kind === 'human' && x.id === id), ch = NET.priv[id];
+  delete NET.priv[id]; try { ch && ch.close(); } catch (e) {}
+  if (NET.rate) delete NET.rate[id];
+  if (ban) (NET.ban = NET.ban || {})[id] = Date.now() + 60000;
+  if (q > 0) { if (NET.started) { NET.seats[q].online = false; NET.seats[q].last = 0; netSchedule(); render(); if (!busy) loop(); } else { NET.seats[q] = { kind: 'free' }; netLobby(); } }
+}
 async function netHostMsg(m) {
-  if (!NET || NET.role !== 'host' || !m || !m.id) return;
+  if (!NET || NET.role !== 'host' || !m || !m.id || !NET.priv[m.id]) return;
   const seatOf = id => NET.seats.findIndex(x => x.kind === 'human' && x.id === id);
   if (NET.kicked && NET.kicked.has(m.id)) return;
+  const now0 = Date.now(), rt = (NET.rate = NET.rate || {})[m.id] = NET.rate[m.id] || { n: 0, t: now0, t0: now0, hi: 0 };
+  if (now0 - rt.t > 3000) { rt.t = now0; rt.n = 0; }
+  if (++rt.n > 60) return netDrop(m.id, true);
+  if (m.t === 'hi') { if (now0 - rt.hi < 700) return; rt.hi = now0; }
   // Alguien sale: en la sala su sitio queda libre al momento; en plena partida pasa a «sin conexión» ya (juega un bot) y puede volver
   if (m.t === 'leave') {
     const q = seatOf(m.id);
@@ -2972,7 +3013,7 @@ async function netHostMsg(m) {
   if (m.t === 'rx') { const q = seatOf(m.id); if (q > 0) netRxHost(NET.seats[q], m.k); return; }
   if (m.t === 'ping') { const q = seatOf(m.id); if (q > 0) { const was = NET.seats[q].online; NET.seats[q].last = Date.now(); NET.seats[q].online = true; if (!was) { NAMES[q] = NET.seats[q].name; netSchedule(); if (NET.started) render(); if (NET.started && !busy) loop(); } } return; }
   if (m.t === 'sit' && !NET.started) {
-    const p = m.seat; if (!(p >= 1 && p <= 3) || NET.seats[p].kind !== 'free') return netLobby();
+    const p = m.seat; if (!Number.isInteger(p) || !(p >= 1 && p <= 3) || NET.seats[p].kind !== 'free') return netLobby();
     const was = seatOf(m.id);
     if (was > 0) { NET.seats[p] = NET.seats[was]; NET.seats[was] = { kind: 'free' }; return netLobby(); }   // se cambia de sitio
     NET.seats[p] = { kind: 'human', id: m.id, name: cleanName(m.name) || L('Jugador', 'Jugador'), online: true, last: Date.now(), voz: vozNum(m.voz) };
@@ -3006,6 +3047,7 @@ function netHostTick() {
   netWaitCheck();
   if (NET.vote) netVoteSend();
   const now = Date.now();
+  if (!NET.started) { const sent = new Set(NET.seats.filter(x => x.kind === 'human').map(x => x.id)); for (const k of Object.keys(NET.priv)) if (!sent.has(k) && now - ((NET.rate && NET.rate[k] && NET.rate[k].t0) || now) > 90000) netDrop(k, false); }
   for (const q of [1, 2, 3]) { const st = NET.seats[q]; if (st.kind !== 'human') continue; const on = now - (st.last || 0) < 15000; if (on !== st.online) { st.online = on; if (NET.started) { netSchedule(); render(); if (!on && !busy) loop(); } else { if (!on) NET.seats[q] = { kind: 'free' }; netLobby(); } } }   // en la sala, quien pierde la conexión deja su sitio libre
 }
 function netStart() {
@@ -3134,15 +3176,18 @@ function netView(g) {
     dealer: rot(G.dealer), turn: rot(G.turn), leader: rot(G.leader), trickNo: G.trickNo, swapped: G.swapped, sung: G.sung.slice(), trump: G.trump, pinta: G.pinta,
     trick: G.trick.map(x => ({ p: rot(x.p), c: x.c })), lastTrick: G.lastTrick ? { ...G.lastTrick, cards: G.lastTrick.cards.map(x => ({ p: rot(x.p), c: x.c })), winner: rot(G.lastTrick.winner) } : null,
     stock: G.stock.map((c, k) => k === G.stock.length - 1 ? c : { id: -100 - k, r: 0, s: 0 }), hands, names, dealOrder: G.dealOrders ? G.dealOrders[g] : null, cantePass: (G.remotePass || {})[g] ?? null, away: !!NET.seats[g].away,
-    ui: { dv: coDealView ? { n: [0, 1, 2, 3].map(v => coDealView.n[(v + g) % 4]), stock: coDealView.stock } : null, showLast: coShowLast, reveal: coReveal, pend: coPend, hide: [...coHide], busy: busy || !!coFx }
+    ui: { dv: coDealView ? { n: [0, 1, 2, 3].map(v => coDealView.n[(v + g) % 4]), stock: coDealView.stock } : null, showLast: coShowLast, reveal: coReveal, pend: coPend, hide: [...coHide].filter(id => G.hands[g].some(c => c.id === id)), busy: busy || !!coFx }
   };
 }
-async function netJoin(code, name, autoSit, rejoin) {
-  { const r = netRoomGet(); if (r && r.code !== code) return showRejoinBlock(); if (r) rejoin = true; }
+async function netJoin(code, name, autoSit, rejoin, pin) {
+  // pin = huella del anfitrión que se espera: la del enlace, la de la lista de mesas o, al volver, la del anfitrión con el que se jugaba
+  { const r = netRoomGet(); if (r && r.code !== code) return showRejoinBlock(); if (r) { rejoin = true; if (typeof r.f === 'string' && /^[0-9a-f]{12}$/.test(r.f)) pin = r.f; } }
+  if (!pin && netLinkPin && netLinkPin.code === code) pin = netLinkPin.f;
+  pin = typeof pin === 'string' && /^[0-9a-f]{12}$/.test(pin) ? pin : '';
   name = cleanName(name) || L('Jugador', 'Jugador');
   if (!/^[A-Z]{4,6}$/.test(code)) return showOnline(L('El código son 6 letras.', 'El codi són 6 lletres.'));
   if (!SETTINGS.alias) { SETTINGS.alias = name; saveSettings(); }
-  NET = { role: 'guest', code, name, lastHost: Date.now(), seats: null, priv: null, autoSit: !!autoSit || !!rejoin, rejoin: !!rejoin, joinT: Date.now() };   // al volver a una sala, se sienta solo si su sitio se liberó
+  NET = { role: 'guest', code, name, pin, lastHost: Date.now(), seats: null, priv: null, autoSit: !!autoSit || !!rejoin, rejoin: !!rejoin, joinT: Date.now() };   // al volver a una sala, se sienta solo si su sitio se liberó
   showPanel(`<h2>${L('Conectando…', 'Connectant…')}</h2>`); cover();
   try { NET.keys = await netKeys(true); NET.id = await netIdOf(NET.keys.raw); NET.pub = await netOpen(NETNS + code, netGuestPub); }
   catch (e) { NET = null; return showOnline(L('No se ha podido conectar. Comprueba la conexión a internet.', 'No s\'ha pogut connectar. Comprova la connexió a internet.') + ' (' + esc(e.message) + ')'); }
@@ -3160,14 +3205,49 @@ const netHello = () => { try { NET && NET.pub && NET.pub.send({ t: 'hello', pk: 
 // Canal común: el invitado solo atiende las respuestas a su saludo
 async function netGuestPub(m) {
   if (!NET || NET.role !== 'guest' || !m || m.to !== NET.id || NET.priv) return;
-  if (m.t === 'welcome' && typeof m.hpk === 'string' && !NET.joining) {
-    NET.joining = true;
-    try { const sec = await netSecret(NET.keys.priv, m.hpk, NET.code); if (!NET || NET.priv) return; NET.privName = NETNS + NET.code + '-' + sec; NET.priv = await netOpen(NET.privName, netGuestMsg); NET.priv.send({ t: 'hi' }); }
-    catch (e) {} finally { if (NET) NET.joining = false; }
+  if (m.t === 'welcome' && typeof m.hpk === 'string' && m.hpk.length <= 200 && !NET.joining) {
+    const yo = NET;
+    const abrir = async hpk => {
+      if (NET !== yo || NET.priv || NET.joining) return;
+      NET.joining = true;
+      try {
+        const fp = (await netIdOf(hpk)).slice(1, 13); if (NET !== yo || NET.priv) return;
+        if (NET.pin && fp !== NET.pin) return;   // no es el anfitrión de la invitación: alguien se hace pasar por él (13 nov, auditoría T3)
+        const sec = await netSecret(NET.keys.priv, hpk, NET.code); if (NET !== yo || NET.priv) return;
+        if (NET.deny) { clearTimeout(NET.deny); NET.deny = null; }
+        NET.hfp = fp; NET.privName = NETNS + NET.code + '-' + sec; NET.priv = await netOpen(NET.privName, netGuestMsg); NET.priv.send({ t: 'hi' });
+      }
+      catch (e) {} finally { if (NET === yo) NET.joining = false; }
+    };
+    if (NET.pin) return abrir(m.hpk);
+    // Sin huella (se entró escribiendo el código): se espera un instante por si contestan DOS anfitriones distintos. Si pasa,
+    // uno de los dos es falso y no se entra con ninguno (13 nov, auditoría T3).
+    const w = NET.wel = NET.wel || { ks: new Set(), t: null };
+    w.ks.add(m.hpk);
+    if (w.ks.size > 1) {
+      clearTimeout(w.t); const volver = NET.rejoin; if (!volver) netRoomClear();
+      netLeave(true);
+      showPanel(`<h2>${L('No se puede entrar con el código', 'No es pot entrar amb el codi')}</h2><p>${L('En esta sala contesta más de un anfitrión, y uno de los dos no es el de verdad. Pide al anfitrión que te mande el enlace de invitación y entra con él.', "En esta sala contesta més d'un amfitrió, i un dels dos no és el de veritat. Demana a l'amfitrió que t'envie l'enllaç d'invitació i entra amb ell.")}</p><div class="acts"><button class="btn primary" type="button" data-act="menu">${L('Menú', 'Menú')}</button></div>`); cover();
+      return;
+    }
+    if (!w.t) { const hpk = m.hpk; w.t = setTimeout(() => abrir(hpk), 600); }
     return;
   }
-  if (m.t === 'kicked') return netGuestMsg({ t: 'kick' });
-  if (m.t === 'full') { netRoomClear(); netLeave(true); showPanel(`<h2>${L('La partida ya ha empezado', 'La partida ja ha començat')}</h2><p>${L('En esta sala ya se está jugando. Pide al anfitrión que te avise cuando acaben.', 'En esta sala ja s\'està jugant. Demana a l\'amfitrió que t\'avise quan acaben.')}</p><div class="acts"><button class="btn primary" type="button" data-act="menu">${L('Menú', 'Menú')}</button></div>`); }
+  // «Te han sacado» y «ya ha empezado» llegan por el canal común, donde puede escribir cualquiera que sepa el código (13 nov, S3):
+  // se espera un momento por si llega la bienvenida del anfitrión de verdad y, al volver a una partida, no se olvida la sala.
+  if ((m.t === 'kicked' || m.t === 'full') && !NET.deny) {
+    const t = m.t, yo = NET;
+    NET.deny = setTimeout(() => {
+      if (NET !== yo) return;
+      if (NET.role !== 'guest' || NET.priv || NET.joining) { NET.deny = null; return; }
+      const volver = NET.rejoin; if (!volver) netRoomClear();
+      netLeave(true);
+      const btn = volver ? `<button class="btn" type="button" data-act="net-forget">${L('Olvidar esta partida', 'Oblidar esta partida')}</button><button class="btn primary" type="button" data-act="menu">${L('Menú', 'Menú')}</button>` : `<button class="btn primary" type="button" data-act="menu">${L('Menú', 'Menú')}</button>`;
+      if (t === 'kicked') showPanel(`<h2>${L('No puedes entrar en esta sala', 'No pots entrar en esta sala')}</h2><p>${L('El anfitrión te ha sacado de la sala.', "L'amfitrió t'ha tret de la sala.")}</p><div class="acts">${btn}</div>`);
+      else showPanel(`<h2>${L('La partida ya ha empezado', 'La partida ja ha començat')}</h2><p>${L('En esta sala ya se está jugando. Pide al anfitrión que te avise cuando acaben.', 'En esta sala ja s\'està jugant. Demana a l\'amfitrió que t\'avise quan acaben.')}</p><div class="acts">${btn}</div>`);
+      cover();
+    }, 1500);
+  }
 }
 // Canal privado: todo lo que llega aquí es del anfitrión
 function netGuestMsg(m) {
@@ -3760,7 +3840,7 @@ $('panel').addEventListener('click', e => {
   if (a === 'online') showOnline();
   if (a === 'net-host') netHost(($('netname') || {}).value, b.dataset.mode);
   if (a === 'net-quick') netQuick(($('netname') || {}).value);
-  if (a === 'net-open-join') netJoin(String(b.dataset.code || ''), ($('netname') || {}).value, true);
+  if (a === 'net-open-join') netJoin(String(b.dataset.code || ''), ($('netname') || {}).value, true, false, String(b.dataset.f || ''));
   if (a === 'net-open' && NET && NET.role === 'host' && !NET.started) { NET.open = b.dataset.on === '1'; netLobby(); }
   if (a === 'net-join') netJoin((($('netcode') || {}).value || '').trim().toUpperCase(), ($('netname') || {}).value);
   if (a === 'net-seat') netHostSeat(+b.dataset.seat, b.dataset.kind);
@@ -4165,7 +4245,7 @@ function showPlay() {
   $('panel').classList.add('menu'); cover();
 }
 
-window.CAU = { APP, get ZOOM() { return { zoom: ZOOM, factorMedido: ZK }; }, seatVoices, cotoNewMatch, coNext, exportText, coSwap, coCanSwap, coBotChoose, coPlay, coLegal, get G() { return G; }, set G(v) { G = v; }, set S(v) { S = v; }, render, matchNext, newGame, newHand, applyPlay, afterPlay, INFER, SMART, holdProb, determinize, botChoose, botChooseHard, botChooseNormal, botChooseEasy, botChooseDificil, botChooseExperto, botBet, botSing, SETTINGS, betAct, betOptions, sing, startSing, resolveNit, canFirst, canSecond, cardSVG, get S() { return S; } };
+if (PRUEBAS || /net=local/.test(location.search + location.hash)) window.CAU = { APP, get ZOOM() { return { zoom: ZOOM, factorMedido: ZK }; }, seatVoices, cotoNewMatch, coNext, exportText, coSwap, coCanSwap, coBotChoose, coPlay, coLegal, get G() { return G; }, set G(v) { G = v; }, set S(v) { S = v; }, render, matchNext, newGame, newHand, applyPlay, afterPlay, INFER, SMART, holdProb, determinize, botChoose, botChooseHard, botChooseNormal, botChooseEasy, botChooseDificil, botChooseExperto, botBet, botSing, SETTINGS, betAct, betOptions, sing, startSing, resolveNit, canFirst, canSecond, cardSVG, get S() { return S; } };
 
 function start(data) {
   if (data && data.app) { Object.assign(APP, data.app); S = data.S; G = data.G; if (S) S.feed = []; if (G) G.feed = []; hasSaved = true; render(); loop(); return; }
