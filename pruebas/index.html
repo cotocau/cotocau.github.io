@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-L6IKDx5paQIWbq7PR/SwNBcObVcZpHmsyjcNCqC+YxM=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-iQiJSYbm/jmKASZ6qVp7JHo8xB+VqZxg2UMfT0/4saE=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script>(()=>{try{const P='pr.',S=Storage.prototype,g=S.getItem,s=S.setItem,r=S.removeItem;S.getItem=function(k){return g.call(this,P+k)};S.setItem=function(k,v){return s.call(this,P+k,v)};S.removeItem=function(k){return r.call(this,P+k)};}catch(e){}})();</script>
 <meta name="theme-color" content="#1b3d24">
@@ -1880,7 +1880,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-13-2';
+const APP_VER = 'cau-2026-11-14-1';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
 // sus partidas llevan «-pruebas» en la versión y su online usa salas aparte (canales cc-p…), para no mezclarse con la oficial.
 const PRUEBAS = true;
@@ -2301,19 +2301,19 @@ async function animateDeal(withTable) {
       await fly([ox, oy], slotXY(st.slot));
       if (gen !== GEN || !dealView) return;
       if (st.pixat) {
-        dealView.temp = { card: st.card, slot: st.slot }; renderTable();
+        dealView.temp = { card: st.card, slot: st.slot }; renderTable(); netSchedule();
         narr = L(`<b>S'ha pixat:</b> ${RNA[st.card.r]} ya estaba en el tapete. Se aparta y volverá al mazo al acabar de repartir.`, `<b>S'ha pixat:</b> ${RNA[st.card.r]} ja estava al tapet. S'aparta i tornarà a la baralla en acabar de repartir.`); $('narr').innerHTML = narr;
         await callout("S'ha pixat", SETTINGS.socarrat ? `${TEAMN[1 - team(S.dealer)]} · +1` : `${RN[st.card.r]} ${L('repetido', 'repetit')}`);
-        dealView.temp = null; renderTable();
+        dealView.temp = null; renderTable(); netSchedule();
         netEv({ k: 'cfly', from: 'T', slot: st.slot, p: S.dealer });
         await fly(slotXY(st.slot), [ox, oy]);
-      } else { dealView.tableIds.add(st.card.id); renderTable(); }
+      } else { dealView.tableIds.add(st.card.id); renderTable(); netSchedule(); }
     } else {
       const p = st.to;
       netEv({ k: 'cfly', from: S.dealer, p });
       await fly([ox, oy], center(p === 0 ? $('hand') : ($('seat' + p).querySelector('.backs') || $('seat' + p))));
       if (gen !== GEN || !dealView) return;
-      dealView.n[p]++; p === 0 ? renderHand() : renderSeat(p);
+      dealView.n[p]++; p === 0 ? renderHand() : renderSeat(p); netSchedule();   // 14 nov: el invitado ve repartirse las cartas una a una
     }
   }
   dealView = null; render();
@@ -4101,14 +4101,14 @@ async function animateCotoDeal() {
     netEv({ k: 'deal', from: G.dealer, p, n: st.n });
     await fly(center(p === 0 ? $('hand') : ($('seat' + p).querySelector('.backs') || $('seat' + p))), st.n);
     if (gen !== GEN || !coDealView) return;
-    coDealView.n[p] += st.n; p === 0 ? coRenderHand() : coRenderSeat(p);
+    coDealView.n[p] += st.n; p === 0 ? coRenderHand() : coRenderSeat(p); netSchedule();   // 14 nov: el invitado ve repartirse las cartas una a una
   }
   const tb = bcr($('table'));
   // se destapa la pinta
   netEv({ k: 'deal', from: G.dealer, p: 'T', n: 1 });
   await fly([tb.left + tb.width * 0.5, tb.top + tb.height * 0.5], 1);
   if (gen !== GEN || !coDealView) return;
-  coDealView.stock = true; coRenderTable();
+  coDealView.stock = true; coRenderTable(); netSchedule();
   await sleep(500);
   if (gen !== GEN) return;
   // se ordena la mano (triunfos a la derecha) con una pequeña animación
