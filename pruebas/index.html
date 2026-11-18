@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-iQiJSYbm/jmKASZ6qVp7JHo8xB+VqZxg2UMfT0/4saE=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-0uACSE1yyXaW5JKKX5h2DRmOtKcYa8e5+MEnW3gFB3s=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script>(()=>{try{const P='pr.',S=Storage.prototype,g=S.getItem,s=S.setItem,r=S.removeItem;S.getItem=function(k){return g.call(this,P+k)};S.setItem=function(k,v){return s.call(this,P+k,v)};S.removeItem=function(k){return r.call(this,P+k)};}catch(e){}})();</script>
 <meta name="theme-color" content="#1b3d24">
@@ -1880,7 +1880,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-14-1';
+const APP_VER = 'cau-2026-11-18-1';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
 // sus partidas llevan «-pruebas» en la versión y su online usa salas aparte (canales cc-p…), para no mezclarse con la oficial.
 const PRUEBAS = true;
@@ -1978,7 +1978,7 @@ function renderSeat(p) {
   el.className = 'seat ' + (p === 2 ? 'top' : 'side') + ((S.phase === 'play' || S.phase === 'nit') && S.turn === p ? ' turn' : '');
   const dealer = S.dealer === p ? `<span class="dealer">${L('Reparte', 'Reparteix')}</span>` : '';
   const role = p === 2 ? L('Compañero', 'Company') : 'Rival', mk = netSeatMark(p, role);
-  el.innerHTML = `<div class="av ${team(p) === 0 ? 'us' : ''}${mk.av}">${NAMES[p][0]}</div><div class="who"><span class="nm">${NAMES[p]}</span>${mk.sub}${dealer}</div><div class="backs" aria-label="${n} ${L('cartas', 'cartes')}">${backs}</div><div class="bubble">${(SETTINGS.labels || /^De nit/.test(S.bubbles[p] || '')) ? (S.bubbles[p] || '') : ''}</div>`;
+  el.innerHTML = `<div class="av ${team(p) === 0 ? 'us' : ''}${mk.av}">${NAMES[p][0]}</div><div class="who"><span class="nm">${NAMES[p]}</span>${mk.sub}${dealer}</div><div class="backs" aria-label="${n} ${L('cartas', 'cartes')}">${backs}</div><div class="bubble">${dealView ? '' : (SETTINGS.labels || /^De nit/.test(S.bubbles[p] || '')) ? (S.bubbles[p] || '') : ''}</div>`;
 }
 
 let dealView = null;   // durante la animación de reparto: cuántas cartas se ven ya
