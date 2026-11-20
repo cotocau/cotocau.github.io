@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-+LNpAB7V8zECBZx0Agl3uYl4LahEKNc/FUTksRhk6rQ=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-x2QdTNbt6h5AUrheekJUZAXMh7i+QJ4yB4Pq0rlbH3g=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script>(()=>{try{const P='pr.',S=Storage.prototype,g=S.getItem,s=S.setItem,r=S.removeItem;S.getItem=function(k){return g.call(this,P+k)};S.setItem=function(k,v){return s.call(this,P+k,v)};S.removeItem=function(k){return r.call(this,P+k)};}catch(e){}})();</script>
 <meta name="theme-color" content="#1b3d24">
@@ -73,6 +73,7 @@ button{font:inherit;color:inherit}
 .pile .stack.none .top{opacity:.18}
 .pile .n{position:absolute;left:17px;bottom:0;transform:translateX(-50%);min-width:22px;padding:0 5px;border-radius:10px;background:var(--gold);color:var(--gold-ink);font:800 13px/18px system-ui,sans-serif;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.6);transition:bottom .45s ease-out}
 .pile.them .n{background:var(--rival)}
+.pile.nonum .n{display:none}
 .pile.pop .stack{animation:pilePop .38s ease-out}
 @keyframes pilePop{0%{transform:scale(1)}45%{transform:scale(1.12)}100%{transform:scale(1)}}
 .row{flex:1;min-height:0;display:grid;grid-template-columns:72px minmax(0,1fr) 72px;gap:6px}
@@ -205,6 +206,8 @@ button{font:inherit;color:inherit}
 .co-count{margin-left:calc(var(--cw)*-.22)}
 .co-pinta .card{--cw:inherit}
 .co-stock .back.big{position:absolute;left:0;top:0;width:var(--cw);height:calc(var(--cw)*1.5);border-radius:6px}
+/* grosor del montón (20 nov): canto de papel debajo de la carta de arriba, más fino a medida que se roba */
+.co-stock .co-edge{position:absolute;left:0;width:var(--cw);border-radius:0 0 6px 6px;transform:translateX(-22%);background:repeating-linear-gradient(to top,#efe5cf 0 1px,#a99b80 1px 1.7px);box-shadow:0 2px 3px rgba(0,0,0,.5)}
 .co-count{position:absolute;left:calc(var(--cw)*.5);top:calc(var(--cw)*.75);transform:translate(-50%,-50%);background:rgba(27,8,13,.85);color:var(--gold);font-weight:800;font-size:12px;border-radius:999px;padding:1px 7px}
 .co-trump{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:12px;color:var(--ink-soft);background:rgba(0,0,0,.25);padding:3px 9px;border-radius:999px}
 .co-trump b{color:var(--gold)}
@@ -1897,7 +1900,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-20-4';
+const APP_VER = 'cau-2026-11-20-5';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
 // sus partidas llevan «-pruebas» en la versión y su online usa salas aparte (canales cc-p…), para no mezclarse con la oficial.
 const PRUEBAS = true;
@@ -2008,27 +2011,33 @@ const stacked = cards => cards.map((h, k) => k === 0 ? h : `<div class="stk" sty
 // grueso (PILE_MM px), con una transición suave; el número va encima. El vuestro junto a tus cartas, el de ellos junto
 // a Toni (asiento de la derecha). También en el invitado online, que recibe S.cap en la vista.
 const PILE_MM = 0.8;
+let pileHold = [0, 0];   // Coto: cartas de la baza que aún están volando (el montón crece cuando llegan)
 function placePiles() {
   const h = bcr($('hand')), s1 = bcr($('seat1')), p0 = $('pile0'), p1 = $('pile1');
-  if (h.width) { p0.style.left = (h.left + 6) + 'px'; p0.style.top = (h.top + h.height / 2 - 42) + 'px'; }
+  if (isCoto()) {   // en el Coto la mano ocupa todo el ancho: el vuestro va en la esquina del tapete de vuestro lado (abajo a la izquierda, siempre libre)
+    const f = bcr($('table')); if (f.width) { p0.style.left = (f.left + 4) + 'px'; p0.style.top = (f.bottom - 88) + 'px'; }
+  } else if (h.width) { p0.style.left = (h.left + 6) + 'px'; p0.style.top = (h.top + h.height / 2 - 42) + 'px'; }
   if (s1.width) { p1.style.left = (s1.left + s1.width / 2 - 17) + 'px'; p1.style.top = (s1.bottom - 92) + 'px'; }
 }
 function renderPiles() {
   const box = $('piles'); if (!box) return;
-  const on = !isCoto() && S && Array.isArray(S.cap);
+  // Coto: las cartas de las bazas ganadas (4 por baza), sin número: los puntos ya salen en el marcador
+  const co = isCoto(), on = co ? !!(G && Array.isArray(G.won)) : !!(S && Array.isArray(S.cap));
   box.hidden = !on; if (!on) return;
   placePiles();
   for (const t of [0, 1]) {
-    const el = $('pile' + t), n = S.cap[t] || 0;
+    const el = $('pile' + t), n = co ? Math.max(0, (G.won[t] || 0) * 4 - pileHold[t]) : (S.cap[t] || 0);
+    el.classList.toggle('nonum', co);
     if (!el.firstChild) el.innerHTML = '<div class="stack"><span class="edge"></span><span class="back top"></span></div><b class="n"></b>';
-    if (el.dataset.n === String(n)) continue;
+    if (el.dataset.n === String(n) && el.dataset.g === String(co)) continue;
+    if (el.dataset.g !== String(co)) { delete el.dataset.n; el.dataset.g = String(co); }
     const prev = el.dataset.n == null ? null : +el.dataset.n;
     const th = Math.max(0, n - 1) * PILE_MM;   // grosor: una rayita por carta debajo de la de arriba
     el.querySelector('.stack').classList.toggle('none', !n);
     el.querySelector('.edge').style.height = th + 'px';
     el.querySelector('.top').style.bottom = (4 + th) + 'px';
     const nb = el.querySelector('.n'); nb.textContent = n; nb.style.bottom = (16 + th) + 'px';
-    el.title = (t === 0 ? L('Cartas que lleváis', 'Cartes que porteu') : L('Cartas que llevan', 'Cartes que porten')) + `: ${n}`;
+    el.title = co ? '' : (t === 0 ? L('Cartas que lleváis', 'Cartes que porteu') : L('Cartas que llevan', 'Cartes que porten')) + `: ${n}`;
     el.dataset.n = String(n);
     if (prev != null && n > prev) { el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
   }
@@ -4000,7 +4009,8 @@ function coRenderTable() {
   // montón con la pinta debajo
   if (coDealView ? coDealView.stock : G.stock.length + coPend) {
     const n = coDealView ? 16 : G.stock.length + coPend;
-    h += `<div class="co-stock" id="costock"><div class="co-pinta" id="copinta">${cardHTML(G.pinta)}</div>${n > 1 ? `<span class="back big"></span><span class="co-count">${n}</span>` : ''}</div>`;
+    const th = Math.max(0, n - 2) * 1.1;   // grosor: el montón adelgaza a medida que se roba
+    h += `<div class="co-stock" id="costock"><div class="co-pinta" id="copinta">${cardHTML(G.pinta)}</div>${n > 1 ? `${th ? `<span class="co-edge" style="top:calc(var(--cw)*1.5 - ${th}px);height:${th}px"></span>` : ''}<span class="back big" style="top:-${th}px"></span><span class="co-count" style="margin-top:-${th}px">${n}</span>` : ''}</div>`;
   } else if (!coDealView) h += `<div class="co-trump">${L('Pintan', 'Pinten')} <b>${SUITN[G.trump]}</b></div>`;
   const trick = coShowLast && G.lastTrick ? G.lastTrick.cards : G.trick;
   const win = coShowLast && G.lastTrick ? G.lastTrick.winner : null;
@@ -4107,10 +4117,13 @@ async function coDoPlay(p, id) {
   narr = `<b>${NAMES[p]}</b> ${p === 0 ? L('juegas', 'jugues') : L('juega', 'juga')} ${cardName(c)}.`;
   sfxTap();
   if (!r.done) { render(); await sleep(520); if (TUTG && !TUTG.cau && p !== 0 && k < 3 && G.turn !== 0) await tutPause(tutCotoCard(k, p, c)); coFx = null; return; }
+  pileHold = [0, 0]; pileHold[team(r.winner)] = 4;
   coShowLast = true; render(); await sleep(750);
   narr = `<b>${NAMES[r.winner]}</b> ${r.winner === 0 ? L('ganas la baza', 'guanyes la basa') : L('gana la baza', 'guanya la basa')}: ${r.pts} ${L('puntos', 'punts')}${r.last ? L(' (con las 10 de últimas)', " (amb les 10 d'últimes)") : ''}.`;
   render(); await callout(r.pts >= 10 ? `+${r.pts}` : L('Baza', 'Basa'), NAMES[r.winner]);
   if (TUTG && !TUTG.cau) await tutPause(tutCotoTrick(k, p, c, r));
+  if (G.lastTrick) await flyToPile(G.lastTrick.cards.map(x => x.c.id), team(G.lastTrick.winner));   // la baza vuela a su montón (20 nov)
+  pileHold = [0, 0];
   coShowLast = false; coFx = null; sfxNet('rec');   // se lleva la baza
   if (G.phase !== 'play' && G.hands.some(h => h.length)) {   // se han salido a mitad de mano: se destapan las cartas
     coHide = new Set(); coPend = 0; G.lastDraw = []; coReveal = true; render(); await coDrain(); await sleep(2600); coReveal = false; render(); return;
