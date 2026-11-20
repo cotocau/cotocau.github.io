@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-DGdUl/w+ueYsZZ+itmWdcrSNIg7/tGihu3ZnedeX+oI=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-EG9ODtCJTzzsSAAaLGnm5nJnMw4uMhkS9fUwheNoqK8=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script>(()=>{try{const P='pr.',S=Storage.prototype,g=S.getItem,s=S.setItem,r=S.removeItem;S.getItem=function(k){return g.call(this,P+k)};S.setItem=function(k,v){return s.call(this,P+k,v)};S.removeItem=function(k){return r.call(this,P+k)};}catch(e){}})();</script>
 <meta name="theme-color" content="#1b3d24">
@@ -62,7 +62,19 @@ button{font:inherit;color:inherit}
 .btn.warn{border-color:var(--rival);color:var(--rival)}
 .btn.sing{background:var(--gold);color:var(--gold-ink);border-color:var(--gold);font-size:15px;padding:8px 18px;animation:glow 1.6s ease-in-out infinite}
 
-.board{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px}
+.board{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px;position:relative}
+/* Cau: montones de cartas recogidas de cada pareja (20 nov), bajo su marcador */
+.piles{position:absolute;left:0;right:0;top:0;height:0;pointer-events:none;z-index:4}
+.pile{position:absolute;top:0;width:34px;height:66px}
+.pile.us{left:6px}.pile.them{right:6px}
+.pile .stack{position:absolute;left:0;bottom:0;width:34px;height:66px;transform-origin:50% 100%}
+.pile .back{position:absolute;left:0;width:30px;height:44px;margin:0;border-radius:4px;box-shadow:0 1px 2px rgba(0,0,0,.55)}
+.deck-clasica .pile .back{width:30px;height:44px}
+.pile .stack.none .back{opacity:.18}
+.pile .n{position:absolute;left:15px;bottom:4px;transform:translateX(-50%);min-width:22px;padding:0 5px;border-radius:10px;background:var(--gold);color:var(--gold-ink);font:800 13px/18px system-ui,sans-serif;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.6)}
+.pile.them .n{background:var(--rival)}
+.pile.pop .stack{animation:pilePop .38s ease-out}
+@keyframes pilePop{0%{transform:scale(1)}45%{transform:scale(1.18)}100%{transform:scale(1)}}
 .row{flex:1;min-height:0;display:grid;grid-template-columns:72px minmax(0,1fr) 72px;gap:6px}
 .felt{position:relative;min-height:0;border-radius:20px;background:radial-gradient(ellipse at 50% 40%,var(--felt),var(--felt-deep) 78%);box-shadow:inset 0 0 0 1px rgba(227,178,79,.28),inset 0 0 0 7px rgba(0,0,0,.12),inset 0 0 50px rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:14px 10px;overflow:hidden}
 .felt::before{content:"";position:absolute;inset:7px;border-radius:14px;border:1px dashed rgba(227,178,79,.18);pointer-events:none}
@@ -365,6 +377,7 @@ html.wide .hand{grid-column:2;grid-row:6;padding-bottom:4px}
       <div class="felt"><div class="table" id="table"></div><div class="callout" id="callout"></div></div>
       <div class="seat side" id="seat1"></div>
     </div>
+    <div class="piles" id="piles" hidden><div class="pile us" id="pile0"></div><div class="pile them" id="pile1"></div></div>
   </section>
   <div class="coach" id="coach" hidden aria-live="polite"></div>
   <div class="narr" id="narr" aria-live="polite"></div>
@@ -1884,7 +1897,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-20-2';
+const APP_VER = 'cau-2026-11-20-3';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
 // sus partidas llevan «-pruebas» en la versión y su online usa salas aparte (canales cc-p…), para no mezclarse con la oficial.
 const PRUEBAS = true;
@@ -1968,8 +1981,8 @@ function loadApp() { try { const a = JSON.parse(localStorage.getItem('app.v1') |
 
 function cardHTML(c, cls = '') {
   const lbl = `${RN[c.r]} ${ofSuit(c.s)}`;
-  if (SETTINGS.deck === 'clasica') return `<div class="card cl ${cls}" role="img" aria-label="${lbl}" style="background-position:${(c.r / 9 * 100).toFixed(3)}% ${(c.s / 4 * 100).toFixed(3)}%"></div>`;
-  return `<div class="card ${cls}" role="img" aria-label="${lbl}">${cardSVG(c)}</div>`;
+  if (SETTINGS.deck === 'clasica') return `<div class="card cl ${cls}" data-cid="${c.id}" role="img" aria-label="${lbl}" style="background-position:${(c.r / 9 * 100).toFixed(3)}% ${(c.s / 4 * 100).toFixed(3)}%"></div>`;
+  return `<div class="card ${cls}" data-cid="${c.id}" role="img" aria-label="${lbl}">${cardSVG(c)}</div>`;
 }
 
 // modo pruebas: cartas de los bots boca arriba en formato compacto
@@ -1991,6 +2004,42 @@ function slotHTML(sl, inner) {
   return `<div class="slot" style="left:${x + sl.dx}%;top:${y + sl.dy}%;--rot:${sl.rot}deg">${inner}</div>`;
 }
 const stacked = cards => cards.map((h, k) => k === 0 ? h : `<div class="stk" style="left:${k * 26}%;top:${k * 20}%">${h}</div>`).join('');
+// Cau: montón boca abajo de cada pareja con las cartas que lleva recogidas (20 nov). Crece una capa cada 6 cartas
+// (como mucho 8) y da un saltito cuando aumenta (también en el invitado online, que recibe S.cap en la vista).
+function renderPiles() {
+  const box = $('piles'); if (!box) return;
+  const on = !isCoto() && S && Array.isArray(S.cap) && S.phase !== 'menu';
+  box.hidden = !on; if (!on) return;
+  for (const t of [0, 1]) {
+    const el = $('pile' + t), n = S.cap[t] || 0;
+    if (el.dataset.n === String(n)) continue;
+    const prev = el.dataset.n == null ? null : +el.dataset.n;
+    const layers = Math.max(1, n ? Math.min(8, 1 + Math.floor(n / 6)) : 1);
+    let h = ''; for (let i = 0; i < layers; i++) h += `<span class="back" style="bottom:${4 + i * 2}px;left:${i * 0.5}px"></span>`;
+    el.innerHTML = `<div class="stack${n ? '' : ' none'}">${h}</div><b class="n">${n}</b>`;
+    el.title = (t === 0 ? L('Cartas que lleváis', 'Cartes que porteu') : L('Cartas que llevan', 'Cartes que porten')) + `: ${n}`;
+    el.dataset.n = String(n);
+    if (prev != null && n > prev) { el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
+  }
+}
+// las cartas recogidas vuelan de la mesa al montón de su pareja
+async function flyToPile(ids, t) {
+  const pile = $('pile' + t); if (reduce || !pile || $('piles').hidden) return;
+  const pr = bcr(pile), tx = pr.left + 15, ty = pr.top + pr.height - 26;
+  const els = [...$('table').querySelectorAll('.card[data-cid]')].filter(e => ids.includes(+e.dataset.cid));
+  const go = els.map((e, k) => {
+    const r = bcr(e), f = document.createElement('div'); f.className = 'fly';
+    const c = e.cloneNode(true); c.classList.remove('taking', 'incoming', 'last'); c.style.width = r.width + 'px'; c.style.height = r.height + 'px'; c.style.position = 'static';
+    f.appendChild(c); document.body.appendChild(f); e.style.visibility = 'hidden';
+    const sc = 30 / r.width;
+    const a = f.animate([{ transform: `translate(${r.left}px,${r.top}px) scale(1)`, opacity: 1 },
+      { transform: `translate(${tx - r.width / 2}px,${ty - r.height / 2}px) scale(${sc}) rotate(${(k % 2 ? 1 : -1) * 8}deg)`, opacity: .9 }],
+      { duration: 430, delay: k * 55, easing: 'cubic-bezier(.4,0,.6,1)', fill: 'forwards' });
+    return a.finished.catch(() => {}).then(() => f.remove());
+  });
+  await Promise.all(go);
+}
+
 function renderTable() {
   if (isCoto()) return;
   // el tamaño de las cartas se ajusta al tapete para que quepan 3 columnas y 4 filas sin pisarse
@@ -2133,6 +2182,7 @@ function render() {
   if (!TUTG && $('coach') && !netBannerHTML()) $('coach').hidden = true;
   if (NET && NET.role === 'host' && NET.started) netSchedule();
   const bl = $('btnLast'); if (bl) { const co = isCoto(); bl.hidden = co ? !(G && G.lastTrick) : !(S && S.lastCap && S.phase !== 'handEnd'); bl.textContent = co ? L('Última baza', 'Última basa') : L('Última recogida', 'Última arreplegada'); }
+  renderPiles();
   if (isCoto() && G) return renderCoto();
   $('hand').classList.remove('co-hand');
   document.body.classList.toggle('deck-clasica', SETTINGS.deck === 'clasica');
@@ -2257,6 +2307,7 @@ async function doPlay(p, cid) {
     if (special) await callout(special.txt,`${NAMES[who]} · +${special.pts}`);
     else await sleep(1100);
   } else await sleep(300);
+  if (res.take.length) await flyToPile(res.take, team(sim.lastCapturer ?? p));   // vuelan a su montón (20 nov)
   fx = null; if (res.take.length) sfxNet('rec');   // se lleva las cartas de la mesa
   sim.bubbles[p] = cap ? cap.txt : '';
   if (special) sim.bubbles[special.p] = special.txt.replace(/[¡!]/g, '');
