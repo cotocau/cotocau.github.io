@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-EG9ODtCJTzzsSAAaLGnm5nJnMw4uMhkS9fUwheNoqK8=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-+LNpAB7V8zECBZx0Agl3uYl4LahEKNc/FUTksRhk6rQ=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script>(()=>{try{const P='pr.',S=Storage.prototype,g=S.getItem,s=S.setItem,r=S.removeItem;S.getItem=function(k){return g.call(this,P+k)};S.setItem=function(k,v){return s.call(this,P+k,v)};S.removeItem=function(k){return r.call(this,P+k)};}catch(e){}})();</script>
 <meta name="theme-color" content="#1b3d24">
@@ -63,18 +63,18 @@ button{font:inherit;color:inherit}
 .btn.sing{background:var(--gold);color:var(--gold-ink);border-color:var(--gold);font-size:15px;padding:8px 18px;animation:glow 1.6s ease-in-out infinite}
 
 .board{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px;position:relative}
-/* Cau: montones de cartas recogidas de cada pareja (20 nov), bajo su marcador */
-.piles{position:absolute;left:0;right:0;top:0;height:0;pointer-events:none;z-index:4}
-.pile{position:absolute;top:0;width:34px;height:66px}
-.pile.us{left:6px}.pile.them{right:6px}
-.pile .stack{position:absolute;left:0;bottom:0;width:34px;height:66px;transform-origin:50% 100%}
-.pile .back{position:absolute;left:0;width:30px;height:44px;margin:0;border-radius:4px;box-shadow:0 1px 2px rgba(0,0,0,.55)}
-.deck-clasica .pile .back{width:30px;height:44px}
-.pile .stack.none .back{opacity:.18}
-.pile .n{position:absolute;left:15px;bottom:4px;transform:translateX(-50%);min-width:22px;padding:0 5px;border-radius:10px;background:var(--gold);color:var(--gold-ink);font:800 13px/18px system-ui,sans-serif;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.6)}
+/* Cau: montones de cartas recogidas (20 nov): el vuestro junto a tus cartas, el de ellos junto a Toni. Se colocan por medidas (placePiles) */
+.piles{position:absolute;left:0;top:0;width:0;height:0;pointer-events:none;z-index:4}
+.pile{position:fixed;left:0;top:0;width:34px;height:84px}
+.pile .stack{position:absolute;left:2px;bottom:0;width:30px;height:84px;transform-origin:50% 100%}
+.pile .edge{position:absolute;left:0;bottom:4px;width:30px;height:0;border-radius:3px;background:repeating-linear-gradient(to top,#efe5cf 0 1px,#a99b80 1px 1.6px);box-shadow:0 1px 2px rgba(0,0,0,.55);transition:height .45s ease-out}
+.pile .top{position:absolute;left:0;bottom:4px;width:30px;height:44px;margin:0;border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,.55);transition:bottom .45s ease-out}
+.deck-clasica .pile .top{width:30px;height:44px}
+.pile .stack.none .top{opacity:.18}
+.pile .n{position:absolute;left:17px;bottom:0;transform:translateX(-50%);min-width:22px;padding:0 5px;border-radius:10px;background:var(--gold);color:var(--gold-ink);font:800 13px/18px system-ui,sans-serif;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.6);transition:bottom .45s ease-out}
 .pile.them .n{background:var(--rival)}
 .pile.pop .stack{animation:pilePop .38s ease-out}
-@keyframes pilePop{0%{transform:scale(1)}45%{transform:scale(1.18)}100%{transform:scale(1)}}
+@keyframes pilePop{0%{transform:scale(1)}45%{transform:scale(1.12)}100%{transform:scale(1)}}
 .row{flex:1;min-height:0;display:grid;grid-template-columns:72px minmax(0,1fr) 72px;gap:6px}
 .felt{position:relative;min-height:0;border-radius:20px;background:radial-gradient(ellipse at 50% 40%,var(--felt),var(--felt-deep) 78%);box-shadow:inset 0 0 0 1px rgba(227,178,79,.28),inset 0 0 0 7px rgba(0,0,0,.12),inset 0 0 50px rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:14px 10px;overflow:hidden}
 .felt::before{content:"";position:absolute;inset:7px;border-radius:14px;border:1px dashed rgba(227,178,79,.18);pointer-events:none}
@@ -1897,7 +1897,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-20-3';
+const APP_VER = 'cau-2026-11-20-4';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
 // sus partidas llevan «-pruebas» en la versión y su online usa salas aparte (canales cc-p…), para no mezclarse con la oficial.
 const PRUEBAS = true;
@@ -2004,19 +2004,30 @@ function slotHTML(sl, inner) {
   return `<div class="slot" style="left:${x + sl.dx}%;top:${y + sl.dy}%;--rot:${sl.rot}deg">${inner}</div>`;
 }
 const stacked = cards => cards.map((h, k) => k === 0 ? h : `<div class="stk" style="left:${k * 26}%;top:${k * 20}%">${h}</div>`).join('');
-// Cau: montón boca abajo de cada pareja con las cartas que lleva recogidas (20 nov). Crece una capa cada 6 cartas
-// (como mucho 8) y da un saltito cuando aumenta (también en el invitado online, que recibe S.cap en la vista).
+// Cau: montón boca abajo de cada pareja con las cartas que lleva recogidas (20 nov). Cada carta lo hace un poco más
+// grueso (PILE_MM px), con una transición suave; el número va encima. El vuestro junto a tus cartas, el de ellos junto
+// a Toni (asiento de la derecha). También en el invitado online, que recibe S.cap en la vista.
+const PILE_MM = 0.8;
+function placePiles() {
+  const h = bcr($('hand')), s1 = bcr($('seat1')), p0 = $('pile0'), p1 = $('pile1');
+  if (h.width) { p0.style.left = (h.left + 6) + 'px'; p0.style.top = (h.top + h.height / 2 - 42) + 'px'; }
+  if (s1.width) { p1.style.left = (s1.left + s1.width / 2 - 17) + 'px'; p1.style.top = (s1.bottom - 92) + 'px'; }
+}
 function renderPiles() {
   const box = $('piles'); if (!box) return;
-  const on = !isCoto() && S && Array.isArray(S.cap) && S.phase !== 'menu';
+  const on = !isCoto() && S && Array.isArray(S.cap);
   box.hidden = !on; if (!on) return;
+  placePiles();
   for (const t of [0, 1]) {
     const el = $('pile' + t), n = S.cap[t] || 0;
+    if (!el.firstChild) el.innerHTML = '<div class="stack"><span class="edge"></span><span class="back top"></span></div><b class="n"></b>';
     if (el.dataset.n === String(n)) continue;
     const prev = el.dataset.n == null ? null : +el.dataset.n;
-    const layers = Math.max(1, n ? Math.min(8, 1 + Math.floor(n / 6)) : 1);
-    let h = ''; for (let i = 0; i < layers; i++) h += `<span class="back" style="bottom:${4 + i * 2}px;left:${i * 0.5}px"></span>`;
-    el.innerHTML = `<div class="stack${n ? '' : ' none'}">${h}</div><b class="n">${n}</b>`;
+    const th = Math.max(0, n - 1) * PILE_MM;   // grosor: una rayita por carta debajo de la de arriba
+    el.querySelector('.stack').classList.toggle('none', !n);
+    el.querySelector('.edge').style.height = th + 'px';
+    el.querySelector('.top').style.bottom = (4 + th) + 'px';
+    const nb = el.querySelector('.n'); nb.textContent = n; nb.style.bottom = (16 + th) + 'px';
     el.title = (t === 0 ? L('Cartas que lleváis', 'Cartes que porteu') : L('Cartas que llevan', 'Cartes que porten')) + `: ${n}`;
     el.dataset.n = String(n);
     if (prev != null && n > prev) { el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
@@ -2025,7 +2036,7 @@ function renderPiles() {
 // las cartas recogidas vuelan de la mesa al montón de su pareja
 async function flyToPile(ids, t) {
   const pile = $('pile' + t); if (reduce || !pile || $('piles').hidden) return;
-  const pr = bcr(pile), tx = pr.left + 15, ty = pr.top + pr.height - 26;
+  const pr = bcr(pile.querySelector('.top') || pile), tx = pr.left + pr.width / 2, ty = pr.top + pr.height / 2;
   const els = [...$('table').querySelectorAll('.card[data-cid]')].filter(e => ids.includes(+e.dataset.cid));
   const go = els.map((e, k) => {
     const r = bcr(e), f = document.createElement('div'); f.className = 'fly';
