@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="es">
+<html lang="es" data-color="verde">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-2rluECrs7p/sSG1/CCj8khNMp340e5POfTmGMYs3yFY=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-txpyVHbijLuI7CEen7nVdGQrCQpWpp2c8/ocpBtApog=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#1b080d">
+<meta name="theme-color" content="#07170e">
 <meta name="description" content="CotoCau: el Coto y el Cau, los juegos de cartas de las filaes de Alcoy. Juega con tu compañera contra dos rivales.">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icons/icon-192.png">
@@ -865,7 +865,7 @@ const ordOn = () => SETTINGS.ordenar === 'mano' && !TUTG;
 const ordKey = () => isCoto() ? `co-${G.partidaNo}-${G.handNo}` : `cau-${S.handNo}-${S.round}`;
 const ordSave = () => { try { localStorage.setItem(ORDK, JSON.stringify(HORD)); } catch (e) {} };
 let NET = null;    // partida online (anfitrión o invitado)
-let SETTINGS = { partner: 'experto', rivals: 'experto', hints: false, labels: false, socarrat: false, speed: 1, deck: 'clasica', lang: 'es', names: ['Toni','Maria','Vicent'], cotoBest: 5, unlocked: false, showAll: false, share: null, alias: '', voces: true, voz: 1, sonidos: true, ordenar: 'auto', color: 'granate' };
+let SETTINGS = { partner: 'experto', rivals: 'experto', hints: false, labels: false, socarrat: false, speed: 1, deck: 'clasica', lang: 'es', names: ['Toni','Maria','Vicent'], cotoBest: 5, unlocked: false, showAll: false, share: null, alias: '', voces: true, voz: 1, sonidos: true, ordenar: 'auto', color: 'verde' };
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('cau.settings') || '{}')); } catch (e) {}
 applyLang(SETTINGS.lang, SETTINGS.names);
 const levelOf = p => p === 2 ? SETTINGS.partner : SETTINGS.rivals;
@@ -1912,7 +1912,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-21-7';
+const APP_VER = 'cau-2026-11-21-8';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
 // sus partidas llevan «-pruebas» en la versión y su online usa salas aparte (canales cc-p…), para no mezclarse con la oficial.
 const PRUEBAS = false;
@@ -1986,7 +1986,8 @@ function showShareAsk() {
   <p class="desc">${L('Puedes cambiarlo cuando quieras en Ajustes.', 'Pots canviar-ho quan vulgues en Ajustos.')}</p>
   <div class="acts"><button class="btn" type="button" data-act="share-no">${L('No compartir', 'No compartir')}</button><button class="btn primary" type="button" data-act="share-yes">${L('Compartir', 'Compartir')}</button></div>`); cover();
 }
-function applyColor() { const c = SETTINGS.color === 'verde' ? 'verde' : ''; if (c) document.documentElement.dataset.color = c; else delete document.documentElement.dataset.color; const m = document.querySelector('meta[name=theme-color]'); if (m) m.content = c === 'verde' ? '#07170e' : '#1b080d'; }
+// verde por defecto (21 nov); solo «granate» lo quita
+function applyColor() { const c = SETTINGS.color === 'granate' ? '' : 'verde'; if (c) document.documentElement.dataset.color = c; else delete document.documentElement.dataset.color; const m = document.querySelector('meta[name=theme-color]'); if (m) m.content = c === 'verde' ? '#07170e' : '#1b080d'; }
 try { applyColor(); } catch (e) {}
 function saveSettings() { SETTINGS.speed = speedIx; try { localStorage.setItem('cau.settings', JSON.stringify(SETTINGS)); } catch (e) {} }
 const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -3737,7 +3738,7 @@ function showSettings() {
   let body = '';
   if (tab === 'partida') body = [
     setOpt(L('Idioma', 'Idioma'), seg('lang', [['es','Castellano'],['va','Valencià']], LANG, true)),
-    setOpt(L('Color', 'Color'), seg('color', [['granate', L('Granate', 'Granat')], ['verde', L('Verde', 'Verd')]], SETTINGS.color === 'verde' ? 'verde' : 'granate', true), L('Granate: el de siempre. Verde: cambia toda la interfaz (mesa, fondo, paneles y menús).', 'Granat: el de sempre. Verd: canvia tota la interfície (taula, fons, panells i menús).')),
+    setOpt(L('Color', 'Color'), seg('color', [['granate', L('Granate', 'Granat')], ['verde', L('Verde', 'Verd')]], SETTINGS.color === 'granate' ? 'granate' : 'verde', true), L('Verde: el tapete de siempre en la mesa y en toda la interfaz. Granate: el color de las primeras versiones.', 'Verd: el tapet de sempre a la taula i en tota la interfície. Granat: el color de les primeres versions.')),
     setOpt(L('Baraja', 'Baralla'), seg('deck', [['moderna','Moderna'],['clasica', L('Clásica', 'Clàssica')]], SETTINGS.deck, true), L('La clásica es la «Baraja española» de Basquetteur (Wikimedia Commons, licencia CC BY-SA). Más en Créditos.', 'La clàssica és la «Baraja española» de Basquetteur (Wikimedia Commons, llicència CC BY-SA). Més en Crèdits.')),
     setOpt(L('Ritmo', 'Ritme'), seg('speed', [[0, L('Lento', 'Lent')], [1, 'Normal'], [2, L('Rápido', 'Ràpid')]], speedIx)),
     setOpt(L('Coto al mejor de', 'Coto al millor de'), seg('cotoBest', [[3, L('3 partidas', '3 partides')], [5, L('5 partidas', '5 partides')]], SETTINGS.cotoBest || 5, true)),

@@ -8,8 +8,8 @@
   "id": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#1b080d",
-  "theme_color": "#1b080d",
+  "background_color": "#07170e",
+  "theme_color": "#07170e",
   "categories": [
     "games"
   ],
