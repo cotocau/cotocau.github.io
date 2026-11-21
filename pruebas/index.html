@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-D2+smMccu00oB0taE5Uwi8L4kWaVRa5QCIQNMK4cSz8=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-YCzprLX0oDNR7jg/nYR/TyKj5Nktto9gWdWmb5RFG8s=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script>(()=>{try{const P='pr.',S=Storage.prototype,g=S.getItem,s=S.setItem,r=S.removeItem;S.getItem=function(k){return g.call(this,P+k)};S.setItem=function(k,v){return s.call(this,P+k,v)};S.removeItem=function(k){return r.call(this,P+k)};}catch(e){}})();</script>
 <meta name="theme-color" content="#1b3d24">
@@ -32,6 +32,10 @@ img{max-width:100%}
   --f-body:"Alegreya Sans", "Segoe UI", system-ui, sans-serif;
   color-scheme:dark;
 }
+/* color del tapete (21 nov, solo pruebas): «tapete» = solo la mesa en verde; «todo» = también el fondo y los paneles */
+html[data-color="tapete"]{--felt:#1f6e3f;--felt-deep:#0a3320}
+html[data-color="todo"]{--felt:#1f6e3f;--felt-deep:#0a3320;--bg:#07170e;--panel:#0c2216;--seat:#123221}
+html[data-color="todo"] .call,html[data-color="todo"] .co-count{background:rgba(7,23,14,.85)}
 *{box-sizing:border-box}
 [hidden]{display:none !important}
 html,body{height:100%}
@@ -405,7 +409,7 @@ html.wide .hand{grid-column:2;grid-row:6;padding-bottom:4px}
   if (typeof d['cau.settings'] === 'string' && d['cau.settings'].length < 4000) {
     const o = JSON.parse(d['cau.settings']), c = {}, txt = (t, n) => String(t == null ? '' : t).replace(/[^\p{L}\p{N} ._\-·]/gu, '').trim().slice(0, n);
     const uno = (k, vals) => { if (vals.includes(o[k])) c[k] = o[k]; };
-    uno('lang', ['es', 'va']); uno('deck', ['moderna', 'clasica']); uno('speed', [0, 1, 2]); uno('cotoBest', [3, 5]); uno('voz', [1, 2, 3, 4]); uno('ordenar', ['auto', 'mano']);
+    uno('lang', ['es', 'va']); uno('deck', ['moderna', 'clasica']); uno('speed', [0, 1, 2]); uno('cotoBest', [3, 5]); uno('voz', [1, 2, 3, 4]); uno('ordenar', ['auto', 'mano']); uno('color', ['granate', 'tapete', 'todo']);
     uno('partner', ['facil', 'normal', 'dificil', 'experto']); uno('rivals', ['facil', 'normal', 'dificil', 'experto']);
     for (const k of ['hints', 'labels', 'socarrat', 'voces', 'sonidos']) if (typeof o[k] === 'boolean') c[k] = o[k];
     if (typeof o.alias === 'string') c.alias = txt(o.alias, 20);
@@ -859,7 +863,7 @@ const ordOn = () => SETTINGS.ordenar === 'mano' && !TUTG;
 const ordKey = () => isCoto() ? `co-${G.partidaNo}-${G.handNo}` : `cau-${S.handNo}-${S.round}`;
 const ordSave = () => { try { localStorage.setItem(ORDK, JSON.stringify(HORD)); } catch (e) {} };
 let NET = null;    // partida online (anfitrión o invitado)
-let SETTINGS = { partner: 'experto', rivals: 'experto', hints: false, labels: false, socarrat: false, speed: 1, deck: 'clasica', lang: 'es', names: ['Toni','Maria','Vicent'], cotoBest: 5, unlocked: false, showAll: false, share: null, alias: '', voces: true, voz: 1, sonidos: true, ordenar: 'auto' };
+let SETTINGS = { partner: 'experto', rivals: 'experto', hints: false, labels: false, socarrat: false, speed: 1, deck: 'clasica', lang: 'es', names: ['Toni','Maria','Vicent'], cotoBest: 5, unlocked: false, showAll: false, share: null, alias: '', voces: true, voz: 1, sonidos: true, ordenar: 'auto', color: 'granate' };
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('cau.settings') || '{}')); } catch (e) {}
 applyLang(SETTINGS.lang, SETTINGS.names);
 const levelOf = p => p === 2 ? SETTINGS.partner : SETTINGS.rivals;
@@ -1906,7 +1910,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-21-4';
+const APP_VER = 'cau-2026-11-21-5';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
 // sus partidas llevan «-pruebas» en la versión y su online usa salas aparte (canales cc-p…), para no mezclarse con la oficial.
 const PRUEBAS = true;
@@ -1980,6 +1984,8 @@ function showShareAsk() {
   <p class="desc">${L('Puedes cambiarlo cuando quieras en Ajustes.', 'Pots canviar-ho quan vulgues en Ajustos.')}</p>
   <div class="acts"><button class="btn" type="button" data-act="share-no">${L('No compartir', 'No compartir')}</button><button class="btn primary" type="button" data-act="share-yes">${L('Compartir', 'Compartir')}</button></div>`); cover();
 }
+function applyColor() { const c = PRUEBAS && ['tapete', 'todo'].includes(SETTINGS.color) ? SETTINGS.color : ''; if (c) document.documentElement.dataset.color = c; else delete document.documentElement.dataset.color; const m = document.querySelector('meta[name=theme-color]'); if (m) m.content = c === 'todo' ? '#07170e' : '#1b080d'; }
+try { applyColor(); } catch (e) {}
 function saveSettings() { SETTINGS.speed = speedIx; try { localStorage.setItem('cau.settings', JSON.stringify(SETTINGS)); } catch (e) {} }
 const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 const sleep = ms => new Promise(r => setTimeout(r, ms * SPEEDS[speedIx][1]));
@@ -3729,6 +3735,7 @@ function showSettings() {
   let body = '';
   if (tab === 'partida') body = [
     setOpt(L('Idioma', 'Idioma'), seg('lang', [['es','Castellano'],['va','Valencià']], LANG, true)),
+    PRUEBAS ? setOpt(`🧪 ${L('Color del tapete', 'Color del tapet')}`, seg('color', [['granate', L('Granate', 'Granat')], ['tapete', L('Tapete verde', 'Tapet verd')], ['todo', L('Todo verde', 'Tot verd')]], ['tapete', 'todo'].includes(SETTINGS.color) ? SETTINGS.color : 'granate', false), L('Granate: el de siempre. Tapete verde: solo la mesa, como un tapete de cartas. Todo verde: también el fondo y los paneles. Solo en pruebas.', 'Granat: el de sempre. Tapet verd: només la taula, com un tapet de cartes. Tot verd: també el fons i els panells. Només en proves.')) : '',
     setOpt(L('Baraja', 'Baralla'), seg('deck', [['moderna','Moderna'],['clasica', L('Clásica', 'Clàssica')]], SETTINGS.deck, true), L('La clásica es la «Baraja española» de Basquetteur (Wikimedia Commons, licencia CC BY-SA). Más en Créditos.', 'La clàssica és la «Baraja española» de Basquetteur (Wikimedia Commons, llicència CC BY-SA). Més en Crèdits.')),
     setOpt(L('Ritmo', 'Ritme'), seg('speed', [[0, L('Lento', 'Lent')], [1, 'Normal'], [2, L('Rápido', 'Ràpid')]], speedIx)),
     setOpt(L('Coto al mejor de', 'Coto al millor de'), seg('cotoBest', [[3, L('3 partidas', '3 partides')], [5, L('5 partidas', '5 partides')]], SETTINGS.cotoBest || 5, true)),
@@ -3892,6 +3899,7 @@ $('panel').addEventListener('click', e => {
     else if (k === 'voz') { SETTINGS.voz = vozNum(v); const sv = SETTINGS.voces; SETTINGS.voces = true; vozPlay('denit', SETTINGS.voz); SETTINGS.voces = sv; }
     else SETTINGS[k] = v;
     if (k === 'lang') applyLang(SETTINGS.lang, SETTINGS.names);
+    if (k === 'color') applyColor();
     saveSettings(); showSettings(); render(); return;
   }
   const b = e.target.closest('[data-act]'); if (!b) return;
