@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-4LjPPykSxz7Q4pSsOCTz8owUVV7jB3WUdsNbD660JmE=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-Jj+Q+nzmcmGsFieLgBPKuiRrKsVWMzJRX41VVfmZvVc=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script>(()=>{try{const P='pr.',S=Storage.prototype,g=S.getItem,s=S.setItem,r=S.removeItem;S.getItem=function(k){return g.call(this,P+k)};S.setItem=function(k,v){return s.call(this,P+k,v)};S.removeItem=function(k){return r.call(this,P+k)};}catch(e){}})();</script>
 <meta name="theme-color" content="#1b3d24">
@@ -32,7 +32,7 @@ img{max-width:100%}
   --f-body:"Alegreya Sans", "Segoe UI", system-ui, sans-serif;
   color-scheme:dark;
 }
-/* color verde (21 nov, solo pruebas): cambia toda la interfaz (mesa, fondo, paneles y menús, también el principal) */
+/* color verde (21 nov): cambia toda la interfaz (mesa, fondo, paneles y menús, también el principal) */
 html[data-color="verde"]{--felt:#1f6e3f;--felt-deep:#0a3320;--bg:#07170e;--panel:#0c2216;--seat:#123221}
 html[data-color="verde"] .call,html[data-color="verde"] .co-count{background:rgba(7,23,14,.85)}
 html[data-color="verde"] .overlay{background:rgba(3,10,6,.72)}
@@ -1913,7 +1913,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-21-6';
+const APP_VER = 'cau-2026-11-21-7';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
 // sus partidas llevan «-pruebas» en la versión y su online usa salas aparte (canales cc-p…), para no mezclarse con la oficial.
 const PRUEBAS = true;
@@ -1987,7 +1987,7 @@ function showShareAsk() {
   <p class="desc">${L('Puedes cambiarlo cuando quieras en Ajustes.', 'Pots canviar-ho quan vulgues en Ajustos.')}</p>
   <div class="acts"><button class="btn" type="button" data-act="share-no">${L('No compartir', 'No compartir')}</button><button class="btn primary" type="button" data-act="share-yes">${L('Compartir', 'Compartir')}</button></div>`); cover();
 }
-function applyColor() { const c = PRUEBAS && SETTINGS.color === 'verde' ? 'verde' : ''; if (c) document.documentElement.dataset.color = c; else delete document.documentElement.dataset.color; const m = document.querySelector('meta[name=theme-color]'); if (m) m.content = c === 'verde' ? '#07170e' : '#1b080d'; }
+function applyColor() { const c = SETTINGS.color === 'verde' ? 'verde' : ''; if (c) document.documentElement.dataset.color = c; else delete document.documentElement.dataset.color; const m = document.querySelector('meta[name=theme-color]'); if (m) m.content = c === 'verde' ? '#07170e' : '#1b080d'; }
 try { applyColor(); } catch (e) {}
 function saveSettings() { SETTINGS.speed = speedIx; try { localStorage.setItem('cau.settings', JSON.stringify(SETTINGS)); } catch (e) {} }
 const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -3738,7 +3738,7 @@ function showSettings() {
   let body = '';
   if (tab === 'partida') body = [
     setOpt(L('Idioma', 'Idioma'), seg('lang', [['es','Castellano'],['va','Valencià']], LANG, true)),
-    PRUEBAS ? setOpt(`🧪 ${L('Color', 'Color')}`, seg('color', [['granate', L('Granate', 'Granat')], ['verde', L('Verde', 'Verd')]], SETTINGS.color === 'verde' ? 'verde' : 'granate', true), L('Granate: el de siempre. Verde: cambia toda la interfaz (mesa, fondo, paneles y menús). Solo en pruebas.', 'Granat: el de sempre. Verd: canvia tota la interfície (taula, fons, panells i menús). Només en proves.')) : '',
+    setOpt(L('Color', 'Color'), seg('color', [['granate', L('Granate', 'Granat')], ['verde', L('Verde', 'Verd')]], SETTINGS.color === 'verde' ? 'verde' : 'granate', true), L('Granate: el de siempre. Verde: cambia toda la interfaz (mesa, fondo, paneles y menús).', 'Granat: el de sempre. Verd: canvia tota la interfície (taula, fons, panells i menús).')),
     setOpt(L('Baraja', 'Baralla'), seg('deck', [['moderna','Moderna'],['clasica', L('Clásica', 'Clàssica')]], SETTINGS.deck, true), L('La clásica es la «Baraja española» de Basquetteur (Wikimedia Commons, licencia CC BY-SA). Más en Créditos.', 'La clàssica és la «Baraja española» de Basquetteur (Wikimedia Commons, llicència CC BY-SA). Més en Crèdits.')),
     setOpt(L('Ritmo', 'Ritme'), seg('speed', [[0, L('Lento', 'Lent')], [1, 'Normal'], [2, L('Rápido', 'Ràpid')]], speedIx)),
     setOpt(L('Coto al mejor de', 'Coto al millor de'), seg('cotoBest', [[3, L('3 partidas', '3 partides')], [5, L('5 partidas', '5 partides')]], SETTINGS.cotoBest || 5, true)),
