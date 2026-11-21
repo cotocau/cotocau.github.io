@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-9xw9Qi0vS7U8edx7mHB2/baXXrB7kTJUcS1pr+5oIU0=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-yhTDS0sMocFf7hykd1jhyfRo0Sbr3uxK08JJ80fEY0s=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1b080d">
 <meta name="description" content="CotoCau: el Coto y el Cau, los juegos de cartas de las filaes de Alcoy. Juega con tu compañera contra dos rivales.">
@@ -648,13 +648,15 @@ function betAct(S, t, a) {
   if (a === 'falta') { if (b.pending) b.acc = b.pending.total; b.pending = { by: t, falta: true }; b.turnTeam = 1 - t; return; }
   if (a === 'vull' || a === 'xac') { if (b.pending.falta) return showdown(S, true); b.acc = b.pending.total; return showdown(S, false); }
   if (a === 'novull') {
-    // cobra lo aceptado o, si es más, una por cada de nit de su pareja (20 nov: xic, envide, no vull con dos de nit = 2); como mínimo 1
-    const w = b.pending.by, pts = Math.max(1, b.acc || 0, nitsOf(S, w));
+    // cobra lo aceptado (mínimo 1) más 1 si su pareja tiene los dos de nit (21 nov: xic, envide, torne, no vull con dos de nit = 3)
+    const w = b.pending.by, pts = nitPay(S, w, b);
     say(S, apunt(w, pts), 'pts');
     S.bet = null; S.nitState = 'resolved'; S.phase = 'play'; addPts(S, w, 'nit', pts);
   }
 }
 const nitsOf = (S, t) => [t, t + 2].filter(q => S.sung[q]).length;   // cuántos de nit tiene cantados la pareja
+// No querer (21 nov): lo aceptado (mínimo 1) y, si la pareja que apostó tiene los dos de nit, 1 más por el de nit suelto del compañero
+const nitPay = (S, w, b) => Math.max(1, b.acc || 0) + Math.max(0, nitsOf(S, w) - 1);
 function showdown(S, falta) {
   const A = teamBest(S, 0), B = teamBest(S, 1);
   const w = (A.c.t !== B.c.t) ? (A.c.t > B.c.t ? 0 : 1) : (A.c.r !== B.c.r ? (A.c.r > B.c.r ? 0 : 1) : (A.pos < B.pos ? 0 : 1));
@@ -1100,7 +1102,7 @@ function botBet(S) {
   } else {
     a = (P > 0.8 && b.pending.kind !== 'torne') ? 'torne' : P > ((lvl === 'dificil' || lvl === 'experto') ? 0.45 : 0.5) ? 'vull' : 'novull';
     // si no querer cuesta lo mismo que perder (sus de nit lo cobran igual), se acepta
-    if (a === 'novull' && Math.max(1, b.acc || 0, nitsOf(S, b.pending.by)) >= b.pending.total) a = 'vull';
+    if (a === 'novull' && nitPay(S, b.pending.by, b) >= b.pending.total) a = 'vull';
   }
   betAct(S, t, a);
 }
@@ -1899,7 +1901,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-21-2';
+const APP_VER = 'cau-2026-11-21-3';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
 // sus partidas llevan «-pruebas» en la versión y su online usa salas aparte (canales cc-p…), para no mezclarse con la oficial.
 const PRUEBAS = false;
@@ -2507,7 +2509,7 @@ function showRules(tab) {
   <p>El bac queda pendent al tapet fins que juga el següent. Si fa rebac, l'escala és per a ell. Si el bac deixa el tapet buit també és limpia (3 punts), i si li fan rebac la limpia passa al que el fa. L'última jugada de la mà no fa limpia.</p>
   <h3>De nit</h3><ul><li>Amb parella a la mà, cantes «de nit» en el teu torn, abans de jugar. Has de prémer el botó; si jugues sense cantar, el perds.</li><li>Amb rondí (trio), si ningú et discuteix el de nit, tornes a cantar quan et queden dues cartes: un altre punt.</li><li>Quan algú canta, els altres que també en tenen ho diuen en eixe moment. En l'últim repartiment canten tots al principi.</li><li>Si només canta una parella, s'apunta 1 per cada cant (tu i el teu company, 2).</li><li>Si canten les dues parelles, els punts dels cants es perden i només parlen els que han cantat, començant per la dreta del que dona: <b>xic</b> (1), <b>xac</b> (l'acceptes), <b>envide</b> (2), <b>torne a envidar</b> (2 més, només una vegada) o <b>la partida</b>. Es cobra només el que s'aposta.</li><li>Si el primer que parla passa, l'altra parella guanya 1. Si no es vol una aposta (o es passa a un xic), el que ha apostat cobra el que ja estava acceptat o, si és més, una per cada de nit de la seua parella; com a mínim 1. Mai poden passar els dos.</li><li>Qui guanya el de nit parlat no se sap fins que acaba eixe repartiment.</li><li>Guanya la jugada més alta: rondí a parella, i entre iguals la més alta (rei > cavall > sota > 7 … > as). Si empaten, guanya qui és mà.</li></ul>
   <h3>Punts</h3><ul><li>Es juga a 40: els primers 20 són «roïns» i els 20 següents, «bones». Guanya qui arriba a 40, en el moment en què hi arriba.</li><li>Al final de cada mà, qui arreplega l'últim s'endú el que queda al tapet (no és limpia), i cada parella suma un punt per cada carta que passe de 20.</li><li>Sóc socarrat (opcional): cada vegada que s'ha pixat, la parella que no dona s'apunta un punt.</li></ul>
-  ${PRUEBAS ? `<h3>Dubtes pendents</h3><ul><li>Si dos de nit són iguals (per exemple, parella de cincs contra parella de cincs), ara guanya qui és mà.</li><li>Si us jugueu la partida en el de nit i una parella arriba a 40 abans d'acabar la mà, ara guanya eixa parella i el de nit no es mira.</li><li>Xic, envide, torne a envidar i no es vol: la parella del xic cobra 2 (el que estava acceptat). Si eixa parella té dos de nit, falta saber si són 2 o 3.</li><li>Passar: ara, si el primer que parla passa, l'altra parella guanya 1. Falta saber si es pot passar i que parle el company amb la seua mà i se les jugue ell.</li><li>Sant Vicent: ara val 5 punts i el rebac perd els seus 3. Falta confirmar quant val.</li></ul>` : ''}
+  ${PRUEBAS ? `<h3>Dubtes pendents</h3><ul><li>Passar: ara, si el primer que parla passa, l'altra parella guanya 1. Falta acabar d'aclarir com funciona quan la teua parella també té de nit (passar-li la paraula al company, que parle amb la seua mà).</li></ul>` : ''}
   ` : `<h2>Reglas del Cau</h2>
   <p>Cuatro jugadores en dos parejas, baraja española de 40 cartas. Se juega hacia la derecha. Solo cuenta el número, nunca el palo.</p>
   <h3>Reparto</h3><ul><li>Una carta al centro, una a cada jugador, otra al centro… hasta tener 4 en el tapete y 3 cada uno.</li><li>Si en el tapete se repite un número, «s'ha pixat»: la repetida se aparta, sale otra y, al acabar de repartir, la repetida entra en el mazo en una posición al azar.</li><li>Cuando nadie tiene cartas se reparten otras 3. Hay 3 repartos por mano y cada reparto empieza jugada nueva.</li></ul>
@@ -2517,7 +2519,7 @@ function showRules(tab) {
   <p>El bac queda pendiente en la mesa hasta que juega el siguiente. Si hace rebac, la escala es para él. Si el bac deja la mesa vacía también es limpia (3 puntos), y si le hacen rebac la limpia pasa al que lo hace. La última jugada de la mano no hace limpia.</p>
   <h3>De nit</h3><ul><li>Con pareja en la mano, cantas «de nit» en tu turno, antes de jugar. Tienes que pulsar el botón; si juegas sin cantar, lo pierdes.</li><li>Con rondín (trío), si nadie te discute el de nit, vuelves a cantar cuando te quedan dos cartas: otro punto.</li><li>Cuando alguien canta, los demás que también tienen lo dicen en ese momento. En el último reparto cantan todos al principio.</li><li>Si solo canta una pareja, se apunta 1 por cada canto (tú y tu compañero, 2).</li><li>Si cantan las dos parejas, los puntos de los cantos se pierden y solo hablan los que han cantado, empezando por la derecha de quien reparte: <b>xic</b> (1), <b>xac</b> (lo aceptas), <b>envide</b> (2), <b>torne a envidar</b> (2 más, solo una vez) o <b>la partida</b>. Se cobra solo lo apostado.</li><li>Si el primero que habla pasa, la otra pareja gana 1. Si no se quiere una apuesta (o se pasa a un xic), el que apostó cobra lo que ya estaba aceptado o, si es más, una por cada de nit de su pareja; como mínimo 1. Nunca pueden pasar los dos.</li><li>Quién gana el de nit hablado no se sabe hasta que acaba ese reparto.</li><li>Gana la jugada más alta: rondín a pareja, y entre iguales la más alta (rey > caballo > sota > 7 … > as). Si empatan, gana quien es mano.</li></ul>
   <h3>Puntos</h3><ul><li>Se juega a 40: los primeros 20 son «malas» y los siguientes 20, «buenas». Gana quien llega a 40, en el momento en que llega.</li><li>Al final de cada mano, quien captura el último se lleva lo que queda en la mesa (no es limpia), y cada pareja suma un punto por cada carta que pase de 20.</li><li>Sóc socarrat (opcional): cada vez que s'ha pixat, la pareja que no reparte se apunta un punto.</li></ul>
-  ${PRUEBAS ? `<h3>Dudas pendientes</h3><ul><li>Si dos de nit son iguales (por ejemplo, pareja de cincos contra pareja de cincos), ahora gana quien es mano.</li><li>Si os jugáis la partida en el de nit y una pareja llega a 40 antes de acabar la mano, ahora gana esa pareja y el de nit no se mira.</li><li>Xic, envide, torne a envidar y no se quiere: la pareja del xic cobra 2 (lo aceptado). Si esa pareja tiene dos de nit, falta saber si son 2 o 3.</li><li>Pasar: ahora, si el primero que habla pasa, la otra pareja gana 1. Falta saber si se puede pasar y que hable el compañero con su mano y se las juegue él.</li><li>Sant Vicent: ahora vale 5 puntos y el rebac pierde sus 3. Falta confirmar cuánto vale.</li></ul>` : ''}
+  ${PRUEBAS ? `<h3>Dudas pendientes</h3><ul><li>Pasar: ahora, si el primero que habla pasa, la otra pareja gana 1. Falta acabar de aclarar cómo funciona cuando tu pareja también tiene de nit (pasarle la palabra al compañero, que hable con su mano).</li></ul>` : ''}
   `) + close);
 }
 
