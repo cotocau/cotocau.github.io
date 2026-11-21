@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-o1QZuZ0MPjLjZ9R496Yz+NGnksbGw5HWTy3VzgR2GeM=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-jSl3ny8k8ahcGrKPgv+KYwAbHA6PdZwy5uurHsaaEhg=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1b080d">
 <meta name="description" content="CotoCau: el Coto y el Cau, los juegos de cartas de las filaes de Alcoy. Juega con tu compañera contra dos rivales.">
@@ -61,7 +61,20 @@ button{font:inherit;color:inherit}
 .btn.warn{border-color:var(--rival);color:var(--rival)}
 .btn.sing{background:var(--gold);color:var(--gold-ink);border-color:var(--gold);font-size:15px;padding:8px 18px;animation:glow 1.6s ease-in-out infinite}
 
-.board{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px}
+.board{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px;position:relative}
+/* Cau: montones de cartas recogidas (20 nov): el vuestro junto a tus cartas, el de ellos junto a Toni. Se colocan por medidas (placePiles) */
+.piles{position:absolute;left:0;top:0;width:0;height:0;pointer-events:none;z-index:4}
+.pile{position:fixed;left:0;top:0;width:34px;height:84px}
+.pile .stack{position:absolute;left:2px;bottom:0;width:30px;height:84px;transform-origin:50% 100%}
+.pile .edge{position:absolute;left:0;bottom:4px;width:30px;height:0;border-radius:3px;background:repeating-linear-gradient(to top,#efe5cf 0 1px,#a99b80 1px 1.6px);box-shadow:0 1px 2px rgba(0,0,0,.55);transition:height .45s ease-out}
+.pile .top{position:absolute;left:0;bottom:4px;width:30px;height:44px;margin:0;border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,.55);transition:bottom .45s ease-out}
+.deck-clasica .pile .top{width:30px;height:44px}
+.pile .stack.none .top{opacity:.18}
+.pile .n{position:absolute;left:17px;bottom:0;transform:translateX(-50%);min-width:22px;padding:0 5px;border-radius:10px;background:var(--gold);color:var(--gold-ink);font:800 13px/18px system-ui,sans-serif;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.6);transition:bottom .45s ease-out}
+.pile.them .n{background:var(--rival)}
+.pile.nonum .n{display:none}
+.pile.pop .stack{animation:pilePop .38s ease-out}
+@keyframes pilePop{0%{transform:scale(1)}45%{transform:scale(1.12)}100%{transform:scale(1)}}
 .row{flex:1;min-height:0;display:grid;grid-template-columns:72px minmax(0,1fr) 72px;gap:6px}
 .felt{position:relative;min-height:0;border-radius:20px;background:radial-gradient(ellipse at 50% 40%,var(--felt),var(--felt-deep) 78%);box-shadow:inset 0 0 0 1px rgba(227,178,79,.28),inset 0 0 0 7px rgba(0,0,0,.12),inset 0 0 50px rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:14px 10px;overflow:hidden}
 .felt::before{content:"";position:absolute;inset:7px;border-radius:14px;border:1px dashed rgba(227,178,79,.18);pointer-events:none}
@@ -192,6 +205,8 @@ button{font:inherit;color:inherit}
 .co-count{margin-left:calc(var(--cw)*-.22)}
 .co-pinta .card{--cw:inherit}
 .co-stock .back.big{position:absolute;left:0;top:0;width:var(--cw);height:calc(var(--cw)*1.5);border-radius:6px}
+/* grosor del montón (20 nov): canto de papel debajo de la carta de arriba, más fino a medida que se roba */
+.co-stock .co-edge{position:absolute;left:0;width:var(--cw);border-radius:0 0 6px 6px;transform:translateX(-22%);background:repeating-linear-gradient(to top,#efe5cf 0 1px,#a99b80 1px 1.7px);box-shadow:0 2px 3px rgba(0,0,0,.5)}
 .co-count{position:absolute;left:calc(var(--cw)*.5);top:calc(var(--cw)*.75);transform:translate(-50%,-50%);background:rgba(27,8,13,.85);color:var(--gold);font-weight:800;font-size:12px;border-radius:999px;padding:1px 7px}
 .co-trump{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:12px;color:var(--ink-soft);background:rgba(0,0,0,.25);padding:3px 9px;border-radius:999px}
 .co-trump b{color:var(--gold)}
@@ -364,6 +379,7 @@ html.wide .hand{grid-column:2;grid-row:6;padding-bottom:4px}
       <div class="felt"><div class="table" id="table"></div><div class="callout" id="callout"></div></div>
       <div class="seat side" id="seat1"></div>
     </div>
+    <div class="piles" id="piles" hidden><div class="pile us" id="pile0"></div><div class="pile them" id="pile1"></div></div>
   </section>
   <div class="coach" id="coach" hidden aria-live="polite"></div>
   <div class="narr" id="narr" aria-live="polite"></div>
@@ -632,11 +648,13 @@ function betAct(S, t, a) {
   if (a === 'falta') { if (b.pending) b.acc = b.pending.total; b.pending = { by: t, falta: true }; b.turnTeam = 1 - t; return; }
   if (a === 'vull' || a === 'xac') { if (b.pending.falta) return showdown(S, true); b.acc = b.pending.total; return showdown(S, false); }
   if (a === 'novull') {
-    const w = b.pending.by, pts = Math.max(1, b.acc);
+    // cobra lo aceptado o, si es más, una por cada de nit de su pareja (20 nov: xic, envide, no vull con dos de nit = 2); como mínimo 1
+    const w = b.pending.by, pts = Math.max(1, b.acc || 0, nitsOf(S, w));
     say(S, apunt(w, pts), 'pts');
     S.bet = null; S.nitState = 'resolved'; S.phase = 'play'; addPts(S, w, 'nit', pts);
   }
 }
+const nitsOf = (S, t) => [t, t + 2].filter(q => S.sung[q]).length;   // cuántos de nit tiene cantados la pareja
 function showdown(S, falta) {
   const A = teamBest(S, 0), B = teamBest(S, 1);
   const w = (A.c.t !== B.c.t) ? (A.c.t > B.c.t ? 0 : 1) : (A.c.r !== B.c.r ? (A.c.r > B.c.r ? 0 : 1) : (A.pos < B.pos ? 0 : 1));
@@ -1081,6 +1099,8 @@ function botBet(S) {
     a = P > 0.75 ? 'envit' : 'xac';
   } else {
     a = (P > 0.8 && b.pending.kind !== 'torne') ? 'torne' : P > ((lvl === 'dificil' || lvl === 'experto') ? 0.45 : 0.5) ? 'vull' : 'novull';
+    // si no querer cuesta lo mismo que perder (sus de nit lo cobran igual), se acepta
+    if (a === 'novull' && Math.max(1, b.acc || 0, nitsOf(S, b.pending.by)) >= b.pending.total) a = 'vull';
   }
   betAct(S, t, a);
 }
@@ -1879,7 +1899,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-18-1';
+const APP_VER = 'cau-2026-11-20-5';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
 // sus partidas llevan «-pruebas» en la versión y su online usa salas aparte (canales cc-p…), para no mezclarse con la oficial.
 const PRUEBAS = false;
@@ -1963,8 +1983,8 @@ function loadApp() { try { const a = JSON.parse(localStorage.getItem('app.v1') |
 
 function cardHTML(c, cls = '') {
   const lbl = `${RN[c.r]} ${ofSuit(c.s)}`;
-  if (SETTINGS.deck === 'clasica') return `<div class="card cl ${cls}" role="img" aria-label="${lbl}" style="background-position:${(c.r / 9 * 100).toFixed(3)}% ${(c.s / 4 * 100).toFixed(3)}%"></div>`;
-  return `<div class="card ${cls}" role="img" aria-label="${lbl}">${cardSVG(c)}</div>`;
+  if (SETTINGS.deck === 'clasica') return `<div class="card cl ${cls}" data-cid="${c.id}" role="img" aria-label="${lbl}" style="background-position:${(c.r / 9 * 100).toFixed(3)}% ${(c.s / 4 * 100).toFixed(3)}%"></div>`;
+  return `<div class="card ${cls}" data-cid="${c.id}" role="img" aria-label="${lbl}">${cardSVG(c)}</div>`;
 }
 
 // modo pruebas: cartas de los bots boca arriba en formato compacto
@@ -1986,6 +2006,59 @@ function slotHTML(sl, inner) {
   return `<div class="slot" style="left:${x + sl.dx}%;top:${y + sl.dy}%;--rot:${sl.rot}deg">${inner}</div>`;
 }
 const stacked = cards => cards.map((h, k) => k === 0 ? h : `<div class="stk" style="left:${k * 26}%;top:${k * 20}%">${h}</div>`).join('');
+// Cau: montón boca abajo de cada pareja con las cartas que lleva recogidas (20 nov). Cada carta lo hace un poco más
+// grueso (PILE_MM px), con una transición suave; el número va encima. El vuestro junto a tus cartas, el de ellos junto
+// a Toni (asiento de la derecha). También en el invitado online, que recibe S.cap en la vista.
+const PILE_MM = 0.8;
+let pileHold = [0, 0];   // Coto: cartas de la baza que aún están volando (el montón crece cuando llegan)
+function placePiles() {
+  const h = bcr($('hand')), s1 = bcr($('seat1')), p0 = $('pile0'), p1 = $('pile1');
+  if (isCoto()) {   // en el Coto la mano ocupa todo el ancho: el vuestro va en la esquina del tapete de vuestro lado (abajo a la izquierda, siempre libre)
+    const f = bcr($('table')); if (f.width) { p0.style.left = (f.left + 4) + 'px'; p0.style.top = (f.bottom - 88) + 'px'; }
+  } else if (h.width) { p0.style.left = (h.left + 6) + 'px'; p0.style.top = (h.top + h.height / 2 - 42) + 'px'; }
+  if (s1.width) { p1.style.left = (s1.left + s1.width / 2 - 17) + 'px'; p1.style.top = (s1.bottom - 92) + 'px'; }
+}
+function renderPiles() {
+  const box = $('piles'); if (!box) return;
+  // Coto: las cartas de las bazas ganadas (4 por baza), sin número: los puntos ya salen en el marcador
+  const co = isCoto(), on = co ? !!(G && Array.isArray(G.won)) : !!(S && Array.isArray(S.cap));
+  box.hidden = !on; if (!on) return;
+  placePiles();
+  for (const t of [0, 1]) {
+    const el = $('pile' + t), n = co ? Math.max(0, (G.won[t] || 0) * 4 - pileHold[t]) : (S.cap[t] || 0);
+    el.classList.toggle('nonum', co);
+    if (!el.firstChild) el.innerHTML = '<div class="stack"><span class="edge"></span><span class="back top"></span></div><b class="n"></b>';
+    if (el.dataset.n === String(n) && el.dataset.g === String(co)) continue;
+    if (el.dataset.g !== String(co)) { delete el.dataset.n; el.dataset.g = String(co); }
+    const prev = el.dataset.n == null ? null : +el.dataset.n;
+    const th = Math.max(0, n - 1) * PILE_MM;   // grosor: una rayita por carta debajo de la de arriba
+    el.querySelector('.stack').classList.toggle('none', !n);
+    el.querySelector('.edge').style.height = th + 'px';
+    el.querySelector('.top').style.bottom = (4 + th) + 'px';
+    const nb = el.querySelector('.n'); nb.textContent = n; nb.style.bottom = (16 + th) + 'px';
+    el.title = co ? '' : (t === 0 ? L('Cartas que lleváis', 'Cartes que porteu') : L('Cartas que llevan', 'Cartes que porten')) + `: ${n}`;
+    el.dataset.n = String(n);
+    if (prev != null && n > prev) { el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
+  }
+}
+// las cartas recogidas vuelan de la mesa al montón de su pareja
+async function flyToPile(ids, t) {
+  const pile = $('pile' + t); if (reduce || !pile || $('piles').hidden) return;
+  const pr = bcr(pile.querySelector('.top') || pile), tx = pr.left + pr.width / 2, ty = pr.top + pr.height / 2;
+  const els = [...$('table').querySelectorAll('.card[data-cid]')].filter(e => ids.includes(+e.dataset.cid));
+  const go = els.map((e, k) => {
+    const r = bcr(e), f = document.createElement('div'); f.className = 'fly';
+    const c = e.cloneNode(true); c.classList.remove('taking', 'incoming', 'last'); c.style.width = r.width + 'px'; c.style.height = r.height + 'px'; c.style.position = 'static';
+    f.appendChild(c); document.body.appendChild(f); e.style.visibility = 'hidden';
+    const sc = 30 / r.width;
+    const a = f.animate([{ transform: `translate(${r.left}px,${r.top}px) scale(1)`, opacity: 1 },
+      { transform: `translate(${tx - r.width / 2}px,${ty - r.height / 2}px) scale(${sc}) rotate(${(k % 2 ? 1 : -1) * 8}deg)`, opacity: .9 }],
+      { duration: 430, delay: k * 55, easing: 'cubic-bezier(.4,0,.6,1)', fill: 'forwards' });
+    return a.finished.catch(() => {}).then(() => f.remove());
+  });
+  await Promise.all(go);
+}
+
 function renderTable() {
   if (isCoto()) return;
   // el tamaño de las cartas se ajusta al tapete para que quepan 3 columnas y 4 filas sin pisarse
@@ -2128,6 +2201,7 @@ function render() {
   if (!TUTG && $('coach') && !netBannerHTML()) $('coach').hidden = true;
   if (NET && NET.role === 'host' && NET.started) netSchedule();
   const bl = $('btnLast'); if (bl) { const co = isCoto(); bl.hidden = co ? !(G && G.lastTrick) : !(S && S.lastCap && S.phase !== 'handEnd'); bl.textContent = co ? L('Última baza', 'Última basa') : L('Última recogida', 'Última arreplegada'); }
+  renderPiles();
   if (isCoto() && G) return renderCoto();
   $('hand').classList.remove('co-hand');
   document.body.classList.toggle('deck-clasica', SETTINGS.deck === 'clasica');
@@ -2252,6 +2326,7 @@ async function doPlay(p, cid) {
     if (special) await callout(special.txt,`${NAMES[who]} · +${special.pts}`);
     else await sleep(1100);
   } else await sleep(300);
+  if (res.take.length) await flyToPile(res.take, team(sim.lastCapturer ?? p));   // vuelan a su montón (20 nov)
   fx = null; if (res.take.length) sfxNet('rec');   // se lleva las cartas de la mesa
   sim.bubbles[p] = cap ? cap.txt : '';
   if (special) sim.bubbles[special.p] = special.txt.replace(/[¡!]/g, '');
@@ -2430,9 +2505,9 @@ function showRules(tab) {
   <h3>Jugades especials</h3>
   <div class="pts"><div><b>Bac · 2</b><span>Mates la carta que acaba de deixar el jugador anterior.</span></div><div><b>Rebac · 3</b><span>El següent mata el bac: el bac perd els seus 2 punts.</span></div><div><b>Sant Vicent · 5</b><span>La quarta carta mata el rebac: el rebac perd els seus 3.</span></div><div><b>Limpia · 1</b><span>Deixes el tapet buit.</span></div></div>
   <p>El bac queda pendent al tapet fins que juga el següent. Si fa rebac, l'escala és per a ell. Si el bac deixa el tapet buit també és limpia (3 punts), i si li fan rebac la limpia passa al que el fa. L'última jugada de la mà no fa limpia.</p>
-  <h3>De nit</h3><ul><li>Amb parella a la mà, cantes «de nit» en el teu torn, abans de jugar. Has de prémer el botó; si jugues sense cantar, el perds.</li><li>Amb rondí (trio), si ningú et discuteix el de nit, tornes a cantar quan et queden dues cartes: un altre punt.</li><li>Quan algú canta, els altres que també en tenen ho diuen en eixe moment. En l'últim repartiment canten tots al principi.</li><li>Si només canta una parella, s'apunta 1 per cada cant (tu i el teu company, 2).</li><li>Si canten les dues parelles, els punts dels cants es perden i només parlen els que han cantat, començant per la dreta del que reparteix: <b>xic</b> (1), <b>xac</b> (l'acceptes), <b>envide</b> (2), <b>torne a envidar</b> (2 més, només una vegada) o <b>la partida</b>. Es cobra només el que s'aposta.</li><li>Si el primer que parla passa, l'altra parella guanya 1. Si no es vol una aposta (o es passa a un xic), el que ha apostat cobra el que ja estava acceptat, com a mínim 1. Mai poden passar els dos.</li><li>Qui guanya el de nit parlat no se sap fins que acaba eixe repartiment.</li><li>Guanya la jugada més alta: rondí a parella, i entre iguals la més alta (rei > cavall > sota > 7 … > as). Si empaten, guanya qui és mà.</li></ul>
+  <h3>De nit</h3><ul><li>Amb parella a la mà, cantes «de nit» en el teu torn, abans de jugar. Has de prémer el botó; si jugues sense cantar, el perds.</li><li>Amb rondí (trio), si ningú et discuteix el de nit, tornes a cantar quan et queden dues cartes: un altre punt.</li><li>Quan algú canta, els altres que també en tenen ho diuen en eixe moment. En l'últim repartiment canten tots al principi.</li><li>Si només canta una parella, s'apunta 1 per cada cant (tu i el teu company, 2).</li><li>Si canten les dues parelles, els punts dels cants es perden i només parlen els que han cantat, començant per la dreta del que reparteix: <b>xic</b> (1), <b>xac</b> (l'acceptes), <b>envide</b> (2), <b>torne a envidar</b> (2 més, només una vegada) o <b>la partida</b>. Es cobra només el que s'aposta.</li><li>Si el primer que parla passa, l'altra parella guanya 1. Si no es vol una aposta (o es passa a un xic), el que ha apostat cobra el que ja estava acceptat o, si és més, una per cada de nit de la seua parella; com a mínim 1. Mai poden passar els dos.</li><li>Qui guanya el de nit parlat no se sap fins que acaba eixe repartiment.</li><li>Guanya la jugada més alta: rondí a parella, i entre iguals la més alta (rei > cavall > sota > 7 … > as). Si empaten, guanya qui és mà.</li></ul>
   <h3>Punts</h3><ul><li>Es juga a 40: els primers 20 són «males» i els 20 següents, «bones». Guanya qui arriba a 40, en el moment en què hi arriba.</li><li>Al final de cada mà, qui arreplega l'últim s'endú el que queda al tapet (no és limpia), i cada parella suma un punt per cada carta que passe de 20.</li><li>Sóc socarrat (opcional): cada vegada que s'ha pixat, la parella que no reparteix s'apunta un punt.</li></ul>
-  ${PRUEBAS ? `<h3>Dubtes pendents</h3><ul><li>Si dos de nit són iguals (per exemple, parella de cincs contra parella de cincs), ara guanya qui és mà.</li><li>Si us jugueu la partida en el de nit i una parella arriba a 40 abans d'acabar la mà, ara guanya eixa parella i el de nit no es mira.</li></ul>` : ''}
+  ${PRUEBAS ? `<h3>Dubtes pendents</h3><ul><li>Si dos de nit són iguals (per exemple, parella de cincs contra parella de cincs), ara guanya qui és mà.</li><li>Si us jugueu la partida en el de nit i una parella arriba a 40 abans d'acabar la mà, ara guanya eixa parella i el de nit no es mira.</li><li>Xic, envide, torne a envidar i no es vol: la parella del xic cobra 2 (el que estava acceptat). Si eixa parella té dos de nit, falta saber si són 2 o 3.</li><li>Passar: ara, si el primer que parla passa, l'altra parella guanya 1. Falta saber si es pot passar i que parle el company amb la seua mà i se les jugue ell.</li><li>Sant Vicent: ara val 5 punts i el rebac perd els seus 3. Falta confirmar quant val.</li></ul>` : ''}
   ` : `<h2>Reglas del Cau</h2>
   <p>Cuatro jugadores en dos parejas, baraja española de 40 cartas. Se juega hacia la derecha. Solo cuenta el número, nunca el palo.</p>
   <h3>Reparto</h3><ul><li>Una carta al centro, una a cada jugador, otra al centro… hasta tener 4 en el tapete y 3 cada uno.</li><li>Si en el tapete se repite un número, «s'ha pixat»: la repetida se aparta, sale otra y, al acabar de repartir, la repetida entra en el mazo en una posición al azar.</li><li>Cuando nadie tiene cartas se reparten otras 3. Hay 3 repartos por mano y cada reparto empieza jugada nueva.</li></ul>
@@ -2440,9 +2515,9 @@ function showRules(tab) {
   <h3>Jugadas especiales</h3>
   <div class="pts"><div><b>Bac · 2</b><span>Matas la carta que acaba de dejar el jugador anterior.</span></div><div><b>Rebac · 3</b><span>El siguiente mata el bac: el bac pierde sus 2 puntos.</span></div><div><b>Sant Vicent · 5</b><span>La cuarta carta mata el rebac: el rebac pierde sus 3.</span></div><div><b>Limpia · 1</b><span>Dejas la mesa vacía.</span></div></div>
   <p>El bac queda pendiente en la mesa hasta que juega el siguiente. Si hace rebac, la escala es para él. Si el bac deja la mesa vacía también es limpia (3 puntos), y si le hacen rebac la limpia pasa al que lo hace. La última jugada de la mano no hace limpia.</p>
-  <h3>De nit</h3><ul><li>Con pareja en la mano, cantas «de nit» en tu turno, antes de jugar. Tienes que pulsar el botón; si juegas sin cantar, lo pierdes.</li><li>Con rondín (trío), si nadie te discute el de nit, vuelves a cantar cuando te quedan dos cartas: otro punto.</li><li>Cuando alguien canta, los demás que también tienen lo dicen en ese momento. En el último reparto cantan todos al principio.</li><li>Si solo canta una pareja, se apunta 1 por cada canto (tú y tu compañero, 2).</li><li>Si cantan las dos parejas, los puntos de los cantos se pierden y solo hablan los que han cantado, empezando por la derecha de quien reparte: <b>xic</b> (1), <b>xac</b> (lo aceptas), <b>envide</b> (2), <b>torne a envidar</b> (2 más, solo una vez) o <b>la partida</b>. Se cobra solo lo apostado.</li><li>Si el primero que habla pasa, la otra pareja gana 1. Si no se quiere una apuesta (o se pasa a un xic), el que apostó cobra lo que ya estaba aceptado, como mínimo 1. Nunca pueden pasar los dos.</li><li>Quién gana el de nit hablado no se sabe hasta que acaba ese reparto.</li><li>Gana la jugada más alta: rondín a pareja, y entre iguales la más alta (rey > caballo > sota > 7 … > as). Si empatan, gana quien es mano.</li></ul>
+  <h3>De nit</h3><ul><li>Con pareja en la mano, cantas «de nit» en tu turno, antes de jugar. Tienes que pulsar el botón; si juegas sin cantar, lo pierdes.</li><li>Con rondín (trío), si nadie te discute el de nit, vuelves a cantar cuando te quedan dos cartas: otro punto.</li><li>Cuando alguien canta, los demás que también tienen lo dicen en ese momento. En el último reparto cantan todos al principio.</li><li>Si solo canta una pareja, se apunta 1 por cada canto (tú y tu compañero, 2).</li><li>Si cantan las dos parejas, los puntos de los cantos se pierden y solo hablan los que han cantado, empezando por la derecha de quien reparte: <b>xic</b> (1), <b>xac</b> (lo aceptas), <b>envide</b> (2), <b>torne a envidar</b> (2 más, solo una vez) o <b>la partida</b>. Se cobra solo lo apostado.</li><li>Si el primero que habla pasa, la otra pareja gana 1. Si no se quiere una apuesta (o se pasa a un xic), el que apostó cobra lo que ya estaba aceptado o, si es más, una por cada de nit de su pareja; como mínimo 1. Nunca pueden pasar los dos.</li><li>Quién gana el de nit hablado no se sabe hasta que acaba ese reparto.</li><li>Gana la jugada más alta: rondín a pareja, y entre iguales la más alta (rey > caballo > sota > 7 … > as). Si empatan, gana quien es mano.</li></ul>
   <h3>Puntos</h3><ul><li>Se juega a 40: los primeros 20 son «malas» y los siguientes 20, «buenas». Gana quien llega a 40, en el momento en que llega.</li><li>Al final de cada mano, quien captura el último se lleva lo que queda en la mesa (no es limpia), y cada pareja suma un punto por cada carta que pase de 20.</li><li>Sóc socarrat (opcional): cada vez que s'ha pixat, la pareja que no reparte se apunta un punto.</li></ul>
-  ${PRUEBAS ? `<h3>Dudas pendientes</h3><ul><li>Si dos de nit son iguales (por ejemplo, pareja de cincos contra pareja de cincos), ahora gana quien es mano.</li><li>Si os jugáis la partida en el de nit y una pareja llega a 40 antes de acabar la mano, ahora gana esa pareja y el de nit no se mira.</li></ul>` : ''}
+  ${PRUEBAS ? `<h3>Dudas pendientes</h3><ul><li>Si dos de nit son iguales (por ejemplo, pareja de cincos contra pareja de cincos), ahora gana quien es mano.</li><li>Si os jugáis la partida en el de nit y una pareja llega a 40 antes de acabar la mano, ahora gana esa pareja y el de nit no se mira.</li><li>Xic, envide, torne a envidar y no se quiere: la pareja del xic cobra 2 (lo aceptado). Si esa pareja tiene dos de nit, falta saber si son 2 o 3.</li><li>Pasar: ahora, si el primero que habla pasa, la otra pareja gana 1. Falta saber si se puede pasar y que hable el compañero con su mano y se las juegue él.</li><li>Sant Vicent: ahora vale 5 puntos y el rebac pierde sus 3. Falta confirmar cuánto vale.</li></ul>` : ''}
   `) + close);
 }
 
@@ -3933,7 +4008,8 @@ function coRenderTable() {
   // montón con la pinta debajo
   if (coDealView ? coDealView.stock : G.stock.length + coPend) {
     const n = coDealView ? 16 : G.stock.length + coPend;
-    h += `<div class="co-stock" id="costock"><div class="co-pinta" id="copinta">${cardHTML(G.pinta)}</div>${n > 1 ? `<span class="back big"></span><span class="co-count">${n}</span>` : ''}</div>`;
+    const th = Math.max(0, n - 2) * 1.1;   // grosor: el montón adelgaza a medida que se roba
+    h += `<div class="co-stock" id="costock"><div class="co-pinta" id="copinta">${cardHTML(G.pinta)}</div>${n > 1 ? `${th ? `<span class="co-edge" style="top:calc(var(--cw)*1.5 - ${th}px);height:${th}px"></span>` : ''}<span class="back big" style="top:-${th}px"></span><span class="co-count" style="margin-top:-${th}px">${n}</span>` : ''}</div>`;
   } else if (!coDealView) h += `<div class="co-trump">${L('Pintan', 'Pinten')} <b>${SUITN[G.trump]}</b></div>`;
   const trick = coShowLast && G.lastTrick ? G.lastTrick.cards : G.trick;
   const win = coShowLast && G.lastTrick ? G.lastTrick.winner : null;
@@ -4040,10 +4116,13 @@ async function coDoPlay(p, id) {
   narr = `<b>${NAMES[p]}</b> ${p === 0 ? L('juegas', 'jugues') : L('juega', 'juga')} ${cardName(c)}.`;
   sfxTap();
   if (!r.done) { render(); await sleep(520); if (TUTG && !TUTG.cau && p !== 0 && k < 3 && G.turn !== 0) await tutPause(tutCotoCard(k, p, c)); coFx = null; return; }
+  pileHold = [0, 0]; pileHold[team(r.winner)] = 4;
   coShowLast = true; render(); await sleep(750);
   narr = `<b>${NAMES[r.winner]}</b> ${r.winner === 0 ? L('ganas la baza', 'guanyes la basa') : L('gana la baza', 'guanya la basa')}: ${r.pts} ${L('puntos', 'punts')}${r.last ? L(' (con las 10 de últimas)', " (amb les 10 d'últimes)") : ''}.`;
   render(); await callout(r.pts >= 10 ? `+${r.pts}` : L('Baza', 'Basa'), NAMES[r.winner]);
   if (TUTG && !TUTG.cau) await tutPause(tutCotoTrick(k, p, c, r));
+  if (G.lastTrick) await flyToPile(G.lastTrick.cards.map(x => x.c.id), team(G.lastTrick.winner));   // la baza vuela a su montón (20 nov)
+  pileHold = [0, 0];
   coShowLast = false; coFx = null; sfxNet('rec');   // se lleva la baza
   if (G.phase !== 'play' && G.hands.some(h => h.length)) {   // se han salido a mitad de mano: se destapan las cartas
     coHide = new Set(); coPend = 0; G.lastDraw = []; coReveal = true; render(); await coDrain(); await sleep(2600); coReveal = false; render(); return;
