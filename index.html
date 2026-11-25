@@ -2,7 +2,7 @@
 <html lang="es" data-color="verde">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-MF4jjhlWcMObCRfVldNSjljrKu4H+l1owGT6ywWV84Y=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-77z+2GGf1zVA2P3TbJUPKsYkN6ZgAOWMxqCitM0oPc0=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#07170e">
 <meta name="description" content="CotoCau: el Coto y el Cau, los juegos de cartas de las filaes de Alcoy. Juega con tu compañera contra dos rivales.">
@@ -80,6 +80,16 @@ button{font:inherit;color:inherit}
 .pile .n{position:absolute;left:17px;bottom:0;transform:translateX(-50%);min-width:22px;padding:0 5px;border-radius:10px;background:var(--gold);color:var(--gold-ink);font:800 13px/18px system-ui,sans-serif;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.6);transition:bottom .45s ease-out}
 .pile.them .n{background:var(--rival)}
 .pile.nonum .n{display:none}
+/* cantes de 20 marcados sobre el montón de bazas (25 nov): carta del palo boca arriba, inclinada */
+.pile .pmarks{position:absolute;left:0;width:34px;height:0;pointer-events:none}
+.pile .pm{position:absolute;left:3px;bottom:0;width:26px;height:39px;transform-origin:50% 100%;filter:drop-shadow(0 1px 2px rgba(0,0,0,.6))}
+.pile .pm .card{--cw:26px;box-shadow:0 0 0 1px rgba(0,0,0,.35)}
+.pile .pm0{transform:rotate(-34deg) translateX(-3px)}
+.pile .pm1{transform:rotate(22deg) translateX(5px)}
+.pile .pm2{transform:rotate(-8deg) translateX(1px)}
+.pile .pm.prov{opacity:.9}
+.pile .pm .back{width:26px;height:39px;display:block}
+.pile .pm b{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);min-width:15px;height:15px;border-radius:8px;background:var(--gold);color:var(--gold-ink);font:800 10px/15px system-ui,sans-serif;text-align:center}
 .pile.pop .stack{animation:pilePop .38s ease-out}
 @keyframes pilePop{0%{transform:scale(1)}45%{transform:scale(1.12)}100%{transform:scale(1)}}
 .row{flex:1;min-height:0;display:grid;grid-template-columns:72px minmax(0,1fr) 72px;gap:6px}
@@ -235,6 +245,14 @@ button{font:inherit;color:inherit}
 .pw{display:flex;gap:8px}
 .pw input{flex:1;min-width:0;font:600 16px var(--f-body);color:var(--ink);background:rgba(0,0,0,.25);border:1px solid var(--line);border-radius:10px;padding:9px 11px}
 .pwerr{color:var(--rival);font-weight:700}
+.rk{width:100%;border-collapse:collapse;font-size:14px}
+.rk th,.rk td{padding:6px 5px;border-bottom:1px solid var(--line);text-align:right}
+.rk th:nth-child(2),.rk td:nth-child(2){text-align:left}
+.rk thead th{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft)}
+.rk tr.me td{background:rgba(227,178,79,.2);color:var(--gold);font-weight:800}
+.rk small{opacity:.6}
+.rkbox{max-height:calc(var(--vh,1vh)*42);overflow:auto;margin:10px 0 6px}
+.rkcode b{font-family:ui-monospace,Menlo,monospace;letter-spacing:.06em;margin-right:8px}
 .tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;border:1px solid var(--line);border-radius:999px;padding:3px;background:rgba(0,0,0,.2)}
 .tabs button{border:0;background:none;border-radius:999px;padding:7px 4px;font-weight:700;cursor:pointer;color:var(--ink-soft)}
 .tabs button[aria-pressed="true"]{background:var(--gold);color:var(--gold-ink)}
@@ -866,7 +884,7 @@ const ordOn = () => SETTINGS.ordenar === 'mano' && !TUTG;
 const ordKey = () => isCoto() ? `co-${G.partidaNo}-${G.handNo}` : `cau-${S.handNo}-${S.round}`;
 const ordSave = () => { try { localStorage.setItem(ORDK, JSON.stringify(HORD)); } catch (e) {} };
 let NET = null;    // partida online (anfitrión o invitado)
-let SETTINGS = { partner: 'experto', rivals: 'experto', hints: false, labels: false, socarrat: false, speed: 1, deck: 'clasica', lang: 'es', names: ['Toni','Maria','Vicent'], cotoBest: 5, unlocked: false, showAll: false, share: null, alias: '', voces: true, voz: 1, sonidos: true, ordenar: 'auto', color: 'verde' };
+let SETTINGS = { partner: 'experto', rivals: 'experto', hints: false, labels: false, socarrat: false, speed: 1, deck: 'clasica', lang: 'es', names: ['Toni','Maria','Vicent'], cotoBest: 5, unlocked: false, showAll: false, share: null, alias: '', rank: false, rankAsked: false, voces: true, voz: 1, sonidos: true, ordenar: 'auto', color: 'verde' };
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('cau.settings') || '{}')); } catch (e) {}
 applyLang(SETTINGS.lang, SETTINGS.names);
 const levelOf = p => p === 2 ? SETTINGS.partner : SETTINGS.rivals;
@@ -1156,7 +1174,7 @@ function cotoNewHand(G) {
   G.hands.forEach(h => coSort(G, h));
   G.leader = (G.dealer + 1) % 4; G.turn = G.leader;
   G.trick = []; G.lastTrick = null; G.lastTrickT = [null, null]; G.won = [0, 0]; G.pts = [0, 0]; G.cantes = [0, 0]; G.ultimas = [0, 0];
-  G.sung = []; G.canSing = null; G.lastWinner = null; G.trickNo = 0;
+  G.sung = []; G.sungT = [null, null, null, null]; G.wonCards = [[], []]; G.canSing = null; G.lastWinner = null; G.trickNo = 0;
   G.played = []; G.disc = [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]; G.voids = [[], [], [], []]; G.noTrumpOver = [[], [], [], []]; G.noHi = null;
   G.revealed = [[], [], [], []]; G.pintaHolder = null; G.swapped = false;
   G.phase = 'play'; G.handSummary = null;
@@ -1206,7 +1224,7 @@ function coCantesFor(G, p) {
 }
 function coSing(G, p, s) {
   const t = team(p), v = s === G.trump ? 40 : 20;
-  G.sung.push(s); G.cantes[t] += v; G.score[t] += v; if (G.marked) G.marked[p] = false;
+  G.sung.push(s); (G.sungT || (G.sungT = [null, null, null, null]))[s] = t; G.cantes[t] += v; G.score[t] += v; if (G.marked) G.marked[p] = false;
   if (G.rec) G.rec.ev.push(`  canta: ${SEATC[p]} ${v === 40 ? 'las 40' : '20 en ' + SUITN[s]} | marcador ${G.score[0]}-${G.score[1]}`);
   for (const id of [s * 10 + C_REY, s * 10 + C_SOTA]) if (!G.revealed[p].includes(id)) G.revealed[p].push(id);
   const who = p === 0 ? L('Cantas', 'Cantes') : `${NAMES[p]} canta`;
@@ -1269,6 +1287,7 @@ function coPlay(G, p, cid) {
   const last = G.hands.every(x => x.length === 0) && G.stock.length === 0;
   if (last) { pts += 10; G.ultimas[t] = 10; }
   G.pts[t] += pts; G.score[t] += pts; G.won[t]++; G.trickNo++;
+  (G.wonCards || (G.wonCards = [[], []]))[t].push(...G.trick.map(x => ({ id: x.c.id, r: x.c.r, s: x.c.s })));   // las cartas que lleva cada pareja (para marcar los cantes en su montón)
   G.lastWinner = w.p; G.lastTrick = { cards: G.trick, winner: w.p, pts, last };
   (G.lastTrickT || (G.lastTrickT = [null, null]))[t] = G.lastTrick;   // la última baza de cada pareja (se ve tocando su montón)
   G.trick = []; G.leader = w.p; G.turn = w.p; G.canSing = t;
@@ -1914,9 +1933,9 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-25-6';
+const APP_VER = 'cau-2026-11-25-13';
 // Número que se ve en el menú de la oficial: la versión de la app de Android (1.2.4) y detrás un contador que sube con cada publicación en la oficial (1.2.4.1, 1.2.4.2…). Al subir la app de Android, se cambia el principio y el contador vuelve a 1.
-const APP_REL = '1.2.4.2';
+const APP_REL = '1.2.4.3';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
 // sus partidas llevan «-pruebas» en la versión y su online usa salas aparte (canales cc-p…), para no mezclarse con la oficial.
 const PRUEBAS = false;
@@ -1983,6 +2002,139 @@ function shareRec(rec, juego, result) {
   shareFlush();
 }
 window.addEventListener('online', () => shareFlush());
+
+/* ---------------- Clasificación (25 nov 2026; diseño y reglas en manos/clasificacion.md) ----------------
+   Al acabar una partida OFFLINE contra bots «muy difícil» (compañero y rivales) se manda el resultado (G ganada, P perdida)
+   a la tabla «resultados» de Supabase, solo si la persona activó «Aparecer en la clasificación». Una partida que se deja
+   sin acabar cuenta como derrota al empezar otra o a los 7 días. El código del móvil NUNCA sale en pantalla pública:
+   la tabla pública solo lleva alias y puntos (función «clasificacion» del servidor). */
+const RK_BASE = SUPA.url.replace(/\/rest\/v1\/.*$/, '');   // https://….supabase.co (sin /rest/v1)
+const RK_STALE_MS = 7 * 24 * 3600 * 1000;
+function rkGet(k, d) { try { const v = JSON.parse(localStorage.getItem(k) || 'null'); return v == null ? d : v; } catch (e) { return d; } }
+function rkSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+const rkId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const rkLevelsOk = () => SETTINGS.partner === 'experto' && SETTINGS.rivals === 'experto';
+let rkBusy = false;
+async function rkFlush() {
+  if (rkBusy || typeof fetch !== 'function') return;
+  if (!SETTINGS.rank) { rkSet('cau.rkq', []); return; }
+  const q = rkGet('cau.rkq', []); if (!q.length) return;
+  rkBusy = true;
+  try {
+    const batch = q.slice(0, 20);
+    const r = await fetch(RK_BASE + '/rest/v1/resultados', { method: 'POST', headers: { apikey: SUPA.key, 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify(batch) });
+    try { const tx = r.ok ? '' : (await r.clone().text()).slice(0, 160); rkSet('cau.rkl', { t: Date.now(), st: r.status, n: batch.length, tx }); } catch (e) {}
+    // éxito, o error que no se arregla reintentando (datos rechazados): se quita; sin red, límite de envíos, fallo del servidor o tabla aún sin crear (404): se reintenta
+    if (r.ok || (r.status >= 400 && r.status < 500 && ![404, 408, 429].includes(r.status))) {
+      const q2 = rkGet('cau.rkq', []); rkSet('cau.rkq', q2.slice(batch.length));
+      if (q2.length > batch.length) setTimeout(rkFlush, 1000);
+    }
+  } catch (e) {} finally { rkBusy = false; }
+}
+function rkPush(p, res) {
+  if (!SETTINGS.rank || !p) return;
+  const q = rkGet('cau.rkq', []);
+  q.push({ jugador: deviceId(), alias: cleanName(SETTINGS.alias || '', 20) || null, juego: p.juego, modo: p.modo || 'offline', resultado: res, partida: p.id, version: APP_VER_FULL });
+  rkSet('cau.rkq', q.slice(-300));
+  rkFlush();
+}
+// una partida que se deja sin acabar cuenta como derrota (aquí no hay «retirada» doble: decisión del 25 nov)
+function rkAbandon() { const p = rkGet('cau.rkp', null); if (!p) return; rkSet('cau.rkp', null); rkPush(p, 'P'); }
+function rkStale() { const p = rkGet('cau.rkp', null); if (p && Date.now() - p.t > RK_STALE_MS) rkAbandon(); }
+function rkStart(juego) {
+  if (TUTG || NET) return;
+  rkAbandon();
+  if (!SETTINGS.rank || !rkLevelsOk()) return;
+  rkSet('cau.rkp', { id: rkId(), juego, t: Date.now() });
+}
+function rkEnd(juego, ganada) {
+  if (TUTG || NET) return;
+  const p = rkGet('cau.rkp', null); if (!p || p.juego !== juego) return;
+  rkSet('cau.rkp', null);
+  if (!rkLevelsOk()) return;   // si cambió el nivel de los bots a mitad de partida, no cuenta
+  rkPush(p, ganada ? 'G' : 'P');
+}
+window.addEventListener('online', () => rkFlush());
+/* Online: cada móvil manda su propio resultado de una mesa que EMPEZÓ con 4 personas (el anfitrión decide el id y si cuenta).
+   G ganada · P perdida · R retirada voluntaria (Menú o cierre de la app que alcanza a avisar; pesa el doble) ·
+   D desconexión sin vuelta (una derrota normal). Si se va el anfitrión o te echa, no se penaliza a nadie más. */
+const RK_ID = /^[A-Z]{4,6}-[a-z0-9]{4,12}-(coto|cau)$/;
+function rkNetBegin(juego) {   // anfitrión: empieza una partida online
+  if (!NET || NET.role !== 'host') return;
+  const ok = [1, 2, 3].every(q => NET.seats[q] && NET.seats[q].kind === 'human');
+  NET.rk = { id: NET.code + '-' + Date.now().toString(36) + '-' + juego, juego, ok };
+  rkNetOpen(NET.rk);
+}
+function rkNetClose(r, res) {   // da la partida por resuelta y manda el resultado
+  const d = rkGet('cau.rkd', []); if (!d.includes(r.id)) { d.push(r.id); rkSet('cau.rkd', d.slice(-30)); }
+  const cur = rkGet('cau.rkn', null); if (cur && cur.id === r.id) rkSet('cau.rkn', null);
+  rkPush({ id: r.id, juego: r.juego, modo: 'online' }, res);
+}
+function rkNetOpen(r) {
+  if (!r || r.ok !== true || !RK_ID.test(String(r.id)) || !/^(coto|cau)$/.test(r.juego) || !SETTINGS.rank) return;
+  if (rkGet('cau.rkd', []).includes(r.id)) return;
+  const cur = rkGet('cau.rkn', null);
+  if (cur && cur.id === r.id) return;
+  if (cur) rkNetClose(cur, 'D');   // la anterior se quedó sin acabar y sin aviso
+  rkSet('cau.rkn', { id: r.id, juego: r.juego, t: Date.now() });
+}
+function rkNetEnd(juego, ganada) {
+  if (!NET || !NET.rk || NET.rk.juego !== juego) return;
+  const cur = rkGet('cau.rkn', null); if (!cur || cur.id !== NET.rk.id) return;
+  rkNetClose(cur, ganada ? 'G' : 'P');
+}
+function rkNetQuit(res) { const cur = rkGet('cau.rkn', null); if (cur) rkNetClose(cur, res); }   // sale a mitad de partida
+function rkNetDiscard() { rkSet('cau.rkn', null); }   // se fue el anfitrión o te echó: no cuenta
+function rkNetStale() { if (!NET && !netRoomGet()) { const cur = rkGet('cau.rkn', null); if (cur) rkNetClose(cur, 'D'); } }
+function rkCopyCode() { const c = deviceId(); try { navigator.clipboard.writeText(c); } catch (e) {} }
+function rkRestoreCode(v) {
+  v = String(v || '').trim().toLowerCase();
+  if (!/^[a-z0-9]{8,16}$/.test(v)) return false;
+  try { localStorage.setItem('cau.uid', v); } catch (e) { return false; }
+  rkSet('cau.rkq', []); rkSet('cau.rkp', null);
+  return true;
+}
+function showRankAsk() {
+  showPanel(`<h2>${L('Nueva: la clasificación', 'Nova: la classificació')}</h2>
+  <p>${L('Ahora puedes aparecer en una clasificación individual, con tu alias: una tabla para el Coto, otra para el Cau y una combinada, jugando contra bots «muy difíciles» (y, más adelante, en mesas online de cuatro personas).', 'Ara pots aparéixer en una classificació individual, amb el teu àlies: una taula per al Coto, una altra per al Cau i una de combinada, jugant contra bots «molt difícils» (i, més endavant, en taules en línia de quatre persones).')}</p>
+  <p class="desc">${L('Es opcional y está apagado. Solo se envía el resultado de cada partida. Se activa en Ajustes → Perfil, donde también está tu código de recuperación.', 'És opcional i està apagat. Només s’envia el resultat de cada partida. S’activa en Ajusts → Perfil, on també està el teu codi de recuperació.')}</p>
+  <div class="acts"><button class="btn" type="button" data-act="rank-no">${L('Ahora no', 'Ara no')}</button><button class="btn primary" type="button" data-act="rank-go">${L('Ir a Ajustes', 'Anar a Ajusts')}</button></div>`); cover();
+}
+let RK = { modo: 'offline', juego: 'coto', data: null, state: 'idle' };
+async function rkLoad() {
+  RK.state = 'loading'; showRank();
+  try {
+    const r = await fetch(RK_BASE + '/rest/v1/rpc/clasificacion', { method: 'POST', headers: { apikey: SUPA.key, 'Content-Type': 'application/json' }, body: JSON.stringify({ p_codigo: deviceId(), p_pruebas: PRUEBAS }) });
+    if (!r.ok) throw new Error('http ' + r.status);
+    RK.data = await r.json(); RK.state = 'ok';
+  } catch (e) { RK.state = 'err'; }
+  if ($('panel').querySelector('[data-rk]')) showRank();
+}
+function showRank() {
+  panelBack = 'menu';
+  const J = [['coto', 'Coto'], ['cau', 'Cau'], ['combinada', L('Combinada', 'Combinada')]];
+  const M = [['offline', L('Contra bots', 'Contra bots')], ['online', L('Online', 'En línia')]];
+  const tab = (k, arr, cur, cols) => `<div class="tabs" style="grid-template-columns:repeat(${cols},1fr);margin-bottom:8px" role="group">${arr.map(([v, l]) => `<button type="button" data-act="rk-tab" data-k="${k}" data-v="${v}" aria-pressed="${v === cur}">${l}</button>`).join('')}</div>`;
+  const rows = (RK.data || []).filter(x => x.modo === RK.modo && x.juego === RK.juego);
+  const tabla = rows.filter(x => x.en_tabla), mine = rows.find(x => x.soy_yo);
+  let body;
+  if (RK.state === 'loading' || RK.state === 'idle') body = `<p class="desc" style="text-align:center">${L('Cargando…', 'Carregant…')}</p>`;
+  else if (RK.state === 'err') body = `<p class="desc" style="text-align:center">${L('No se ha podido cargar la clasificación. Comprueba la conexión.', 'No s’ha pogut carregar la classificació. Comprova la connexió.')}</p><div class="acts"><button class="btn" type="button" data-act="rank">${L('Reintentar', 'Reintentar')}</button></div>`;
+  else {
+    body = tabla.length ? `<div class="rkbox"><table class="rk"><thead><tr><th>#</th><th>${L('Jugador', 'Jugador')}</th><th>${L('Puntos', 'Punts')}</th><th>${L('Partidas', 'Partides')}</th></tr></thead><tbody>${tabla.map(x => `<tr class="${x.soy_yo ? 'me' : ''}"><td>${x.puesto}</td><td>${esc(x.alias)}${x.marca ? ` <small>·${esc(x.marca)}</small>` : ''}</td><td>${x.puntos}</td><td>${x.partidas}</td></tr>`).join('')}</tbody></table></div>`
+      : `<p class="desc" style="text-align:center">${L('Aún no hay nadie en esta tabla.', 'Encara no hi ha ningú en esta taula.')}</p>`;
+    if (mine && !mine.en_tabla) body += `<p class="big-result" style="font-size:15px">${L(`Te faltan ${Math.max(1, 10 - mine.partidas)} partidas para entrar (llevas ${mine.partidas}).`, `Et falten ${Math.max(1, 10 - mine.partidas)} partides per a entrar (en portes ${mine.partidas}).`)}</p>`;
+    else if (!mine && SETTINGS.rank && RK.juego === 'combinada') body += `<p class="desc">${L('Para salir en la combinada hace falta estar en la tabla del Coto y en la del Cau.', 'Per a eixir en la combinada cal estar en la taula del Coto i en la del Cau.')}</p>`;
+    if (!SETTINGS.rank) body += `<p class="desc">${L('Para salir en la clasificación, actívalo en Ajustes → Perfil.', 'Per a eixir en la classificació, activa-ho en Ajusts → Perfil.')} <button class="linkbtn" type="button" data-act="rank-go">${L('Ir a Ajustes', 'Anar a Ajusts')}</button></p>`;
+  }
+  const nota = RK.modo === 'offline'
+    ? L('Solo cuentan partidas contra bots de nivel «muy difícil», tus últimas 50 por juego. Hace falta un mínimo de 10 partidas para salir en la tabla. Si pasas más de 7 días sin jugar, bajas un poco cada semana.', 'Només compten partides contra bots de nivell «molt difícil», les últimes 50 per joc. Cal un mínim de 10 partides per a eixir en la taula. Si passes més de 7 dies sense jugar, baixes un poc cada setmana.')
+    : L('Solo cuentan mesas que empiezan con 4 personas. Hace falta un mínimo de 10 partidas para salir en la tabla. Abandonar una partida pesa el doble que perderla.', 'Només compten taules que comencen amb 4 persones. Cal un mínim de 10 partides per a eixir en la taula. Abandonar una partida pesa el doble que perdre-la.');
+  showPanel(`<h2 data-rk>${L('Clasificación', 'Classificació')}</h2>${tab('modo', M, RK.modo, 2)}${tab('juego', J, RK.juego, 3)}${body}<p class="desc rknote">${nota}</p>${PRUEBAS ? `<p class="desc" style="font-size:11px;opacity:.7">diag: interruptor ${SETTINGS.rank ? 'sí' : 'NO'} · compañero ${SETTINGS.partner} · rivales ${SETTINGS.rivals} · en curso ${JSON.stringify(rkGet('cau.rkp', null))} · por enviar ${rkGet('cau.rkq', []).length} · último envío ${JSON.stringify(rkGet('cau.rkl', null))}</p>` : ''}
+  <div class="acts"><button class="btn primary" type="button" data-act="close">${L('Volver', 'Tornar')}</button></div>`); cover();
+  const box = $('panel').querySelector('.rkbox'), me = box && box.querySelector('tr.me');
+  if (me) box.scrollTop = Math.max(0, me.offsetTop - box.clientHeight / 2);
+}
 function showShareAsk() {
   showPanel(`<h2>${L('Ayuda a mejorar los bots', 'Ajuda a millorar els bots')}</h2>
   <p>${L('Si quieres, la app envía cada mano que juegas (las cartas, las jugadas y el marcador) para estudiar cómo se juega y mejorar los bots. No se envía nada más: ni tu nombre ni tu correo, solo el alias que pongas aquí.', 'Si vols, l’app envia cada mà que jugues (les cartes, les jugades i el marcador) per a estudiar com es juga i millorar els bots. No s’envia res més: ni el teu nom ni el teu correu, només l’àlies que poses ací.')}</p>
@@ -2038,6 +2190,22 @@ function placePiles() {
   } else if (h.width) { p0.style.left = (h.left + 6) + 'px'; p0.style.top = (h.top + h.height / 2 - 42) + 'px'; }
   if (s1.width) { p1.style.left = (s1.left + s1.width / 2 - 17) + 'px'; p1.style.top = (s1.bottom - 92) + 'px'; }
 }
+// Marca de los cantes de 20 (25 nov): en el montón de bazas de la pareja que cantó se deja boca arriba, un poco inclinada, una carta del palo
+// cantado (las 40 no se marcan). Si aún no tiene ninguna de ese palo, se marca con una provisional y cuando llegue se cambia.
+function coMarks(G) {
+  const out = [[], []]; if (!G || !G.sungT) return out;
+  for (let s = 0; s < 4; s++) { const t = G.sungT[s]; if (t == null || s === G.trump) continue;
+    const c = ((G.wonCards || [])[t] || []).find(x => x.s === s); out[t].push({ s, c: c ? { id: c.id, r: c.r, s: c.s } : null }); }
+  return out;
+}
+function renderPileMarks(el, t, th) {
+  let box = el.querySelector('.pmarks'); if (!box) { box = document.createElement('div'); box.className = 'pmarks'; el.appendChild(box); }
+  const M = (G && G.marks ? G.marks[t] : coMarks(G)[t]) || [];
+  const sig = M.map(m => m.s + ':' + (m.c ? m.c.id : '-')).join(',') + '|' + th + '|' + SETTINGS.deck;
+  if (box.dataset.sig === sig) return; box.dataset.sig = sig;
+  box.style.bottom = (4 + th + 4) + 'px';
+  box.innerHTML = M.map((m, k) => `<span class="pm pm${k}${m.c ? '' : ' prov'}">${m.c ? cardHTML(m.c) : `<span class="back"></span><b class="s${m.s}">${'OCEB'[m.s]}</b>`}</span>`).join('');
+}
 function renderPiles() {
   const box = $('piles'); if (!box) return;
   // Coto: las cartas de las bazas ganadas (4 por baza), sin número: los puntos ya salen en el marcador
@@ -2048,6 +2216,7 @@ function renderPiles() {
     const el = $('pile' + t), n = co ? Math.max(0, (G.won[t] || 0) * 4 - pileHold[t]) : (S.cap[t] || 0);
     el.classList.toggle('nonum', co);
     if (!el.firstChild) el.innerHTML = '<div class="stack"><span class="edge"></span><span class="back top"></span></div><b class="n"></b>';
+    if (co) renderPileMarks(el, t, Math.max(0, n - 1) * PILE_MM); else { const mk = el.querySelector('.pmarks'); if (mk) mk.remove(); }
     if (el.dataset.n === String(n) && el.dataset.g === String(co)) continue;
     if (el.dataset.g !== String(co)) { delete el.dataset.n; el.dataset.g = String(co); }
     const prev = el.dataset.n == null ? null : +el.dataset.n;
@@ -2464,6 +2633,7 @@ function showSummary() {
   const guest = NET && NET.role === 'guest';
   const gwait = netGuestWait(), gacts = '';
   shareRec(S.rec, 'cau', { score: S.score.slice(), over: !!S.over, winner: S.over ? S.winner : null, falta: !!S.endFalta, mid: !!S.endMid });
+  if (S.over) { if (guest || NET) rkNetEnd('cau', S.winner === 0); else rkEnd('cau', S.winner === 0); }
   if (S.phase === 'gameEnd') {
     if (!guest && !S.caueSaid) { S.caueSaid = true; voz('caues', S.winner === 0 ? 0 : 1); }   // «El cau és nostre!»
     const why = S.endFalta ? L('Se la han jugado en el de nit.', "S'ho han jugat en el de nit.") : L('Han llegado a 40 durante la mano.', 'Han arribat a 40 durant la mà.');
@@ -2615,12 +2785,14 @@ function showMenu() {
   panelBack = null;
   if (TUTG) exitGuided();
   if (SETTINGS.share == null) return showShareAsk();
+  rkStale(); rkNetStale(); rkFlush();
+  if (!SETTINGS.rankAsked && !netLink) return showRankAsk();
   const firstMenu = !netAutoTried; netAutoTried = true;   // volver sola a la partida online solo al abrir la app, no al salir de ella
   if (netLink && !NET) { const c = netLink; netLink = null; return showInvite(c); }
   if (!NET && firstMenu) { const r = netRoomGet(); if (r) return netJoin(r.code, r.name, false, true); }   // al abrir la app: vuelve sola a su partida online
   const cont = hasSaved && savedActive() ? `<button class="btn primary" type="button" data-act="continue">${L('Continuar', 'Continuar')}<small class="contlbl">${esc(continueLabel())}</small></button>` : '';
   const fan = [[0, -24], [10, -8], [20, 8], [30, 24]].map(([id, a]) => `<div class="fc" style="transform:translateX(-50%) rotate(${a}deg)">${cardHTML(coCard(id))}</div>`).join('');
-  showPanel(`<div class="menu" style="display:flex;flex-direction:column;gap:14px"><div class="fan" aria-hidden="true">${fan}</div><div class="logo">CotoCau</div><p class="tag">Els jocs de cartes de les filaes d'Alcoi</p><p class="desc" style="text-align:center;opacity:.6;margin:0">v. ${APP_REL}${PRUEBAS ? ' · ' + APP_VER.replace('cau-', '') + ' · PRUEBAS' : ''} · <button class="linkbtn" type="button" data-act="credits">${L('Créditos', 'Crèdits')}</button></p><div class="stack">${!NET && netRoomGet() ? `<button class="btn primary" type="button" data-act="net-rejoin">${L('Volver a la partida online', 'Tornar a la partida online')}<small class="contlbl">${L('Sala', 'Sala')} ${netRoomGet().code}</small></button>` : ''}${cont}<button class="btn ${cont ? '' : 'primary'}" type="button" data-act="play">${L('Jugar', 'Jugar')}</button><button class="btn" type="button" data-act="settings">${L('Ajustes', 'Ajusts')}</button><button class="btn" type="button" data-act="tutorial">Tutorial</button><button class="btn" type="button" data-act="rules">${L('Reglas', 'Regles')}</button></div></div>`);
+  showPanel(`<div class="menu" style="display:flex;flex-direction:column;gap:14px"><div class="fan" aria-hidden="true">${fan}</div><div class="logo">CotoCau</div><p class="tag">Els jocs de cartes de les filaes d'Alcoi</p><p class="desc" style="text-align:center;opacity:.6;margin:0">v. ${APP_REL}${PRUEBAS ? ' · ' + APP_VER.replace('cau-', '') + ' · PRUEBAS' : ''} · <button class="linkbtn" type="button" data-act="credits">${L('Créditos', 'Crèdits')}</button></p><div class="stack">${!NET && netRoomGet() ? `<button class="btn primary" type="button" data-act="net-rejoin">${L('Volver a la partida online', 'Tornar a la partida online')}<small class="contlbl">${L('Sala', 'Sala')} ${netRoomGet().code}</small></button>` : ''}${cont}<button class="btn ${cont ? '' : 'primary'}" type="button" data-act="play">${L('Jugar', 'Jugar')}</button><button class="btn" type="button" data-act="rank">${L('Clasificación', 'Classificació')}</button><button class="btn" type="button" data-act="settings">${L('Ajustes', 'Ajusts')}</button><button class="btn" type="button" data-act="tutorial">Tutorial</button><button class="btn" type="button" data-act="rules">${L('Reglas', 'Regles')}</button></div></div>`);
   $('panel').classList.add('menu'); cover();
 }
 
@@ -3172,6 +3344,7 @@ function netStart() {
   netSend({ t: 'start' }); netPresenceTrack(true);
   if (first) showPanel(`<h2>${L('¡Empieza la partida!', 'Comença la partida!')}</h2>${netWarnHost()}<div class="acts"><button class="btn primary" type="button" data-act="net-stay">${L('Entendido', 'Entesos')}</button></div>`);
   else closePanel();
+  rkNetBegin(md === 'cau' ? 'cau' : 'coto');
   if (md === 'cau') { S = newGame(); S.feed = []; narr = L(`Mano 1. Reparte ${NAMES[S.dealer]}.`, `Mà 1. Dona ${NAMES[S.dealer]}.`); beginHand(); }
   else { G = cotoNewMatch(cotoBestNow()); G.remotePass = {}; beginCoto(); }
 }
@@ -3269,7 +3442,7 @@ function netPushViews() {
   if (!NET || !(isCoto() ? G : S)) return;
   const coto = isCoto();
   for (const q of [1, 2, 3]) { const st = NET.seats[q]; if (st.kind !== 'human' || !NET.priv[st.id]) continue;
-    try { NET.priv[st.id].send(coto ? { t: 'view', v: netView(q), hp: NET.hpanel || null, match: netMatchView(q), who: netWho(q) } : { t: 'cview', v: netCauView(q), hp: NET.hpanel || null, match: netMatchView(q), who: netWho(q) }); } catch (e) {} }
+    try { NET.priv[st.id].send(coto ? { t: 'view', v: netView(q), hp: NET.hpanel || null, match: netMatchView(q), who: netWho(q), rk: NET.rk || null } : { t: 'cview', v: netCauView(q), hp: NET.hpanel || null, match: netMatchView(q), who: netWho(q), rk: NET.rk || null }); } catch (e) {} }
 }
 // Lo que ve el jugador del asiento g: girado para que él quede abajo y sin las cartas de los demás
 function netView(g) {
@@ -3280,7 +3453,7 @@ function netView(g) {
     phase: G.phase, partidaNo: G.partidaNo, handNo: G.handNo, vueltas: G.vueltas, need: G.need, bestOf: G.bestOf, over: G.over, endMid: G.endMid,
     wins: tm(G.wins), score: tm(G.score), won: tm(G.won), pts: tm(G.pts), cantes: tm(G.cantes), ultimas: tm(G.ultimas), handSummary: tm(G.handSummary),
     canSing: tt(G.canSing), partidaWinner: tt(G.partidaWinner), winner: tt(G.winner),
-    dealer: rot(G.dealer), turn: rot(G.turn), leader: rot(G.leader), trickNo: G.trickNo, swapped: G.swapped, sung: G.sung.slice(), trump: G.trump, pinta: G.pinta,
+    dealer: rot(G.dealer), turn: rot(G.turn), leader: rot(G.leader), trickNo: G.trickNo, swapped: G.swapped, sung: G.sung.slice(), trump: G.trump, pinta: G.pinta, marks: tm(coMarks(G)),
     trick: G.trick.map(x => ({ p: rot(x.p), c: x.c })), lastTrick: G.lastTrick ? { ...G.lastTrick, cards: G.lastTrick.cards.map(x => ({ p: rot(x.p), c: x.c })), winner: rot(G.lastTrick.winner) } : null,
     lastTrickT: tm((G.lastTrickT || [null, null]).map(x => x ? { ...x, cards: x.cards.map(y => ({ p: rot(y.p), c: y.c })), winner: rot(x.winner) } : null)),
     stock: G.stock.map((c, k) => k === G.stock.length - 1 ? c : { id: -100 - k, r: 0, s: 0 }), hands, names, dealOrder: G.dealOrders ? G.dealOrders[g] : null, cantePass: (G.remotePass || {})[g] ?? null, away: !!NET.seats[g].away,
@@ -3386,13 +3559,14 @@ function netGuestMsg(m) {
     NET.vote = { st, left: Math.max(0, Math.min(60, +m.left || 0)) }; netVoteRender(); return;
   }
   if (m.t === 'out') { netRoomClear(); netLeave(true); showPanel(`<h2>${L('La mesa sigue sin ti', 'La taula continua sense tu')}</h2><p>${L('No contestaste a tiempo si querías otra partida, así que tu sitio ha quedado libre.', 'No vas contestar a temps si volies una altra partida, així que el teu lloc ha quedat lliure.')}</p><div class="acts"><button class="btn primary" type="button" data-act="menu">${L('Menú', 'Menú')}</button></div>`); return; }
-  if (m.t === 'kick') { netRoomClear(); const n = NET.host || L('El anfitrión', 'L\'amfitrió'); netLeave(true); showPanel(`<h2>${L('Fuera de la sala', 'Fora de la sala')}</h2><p>${L(`${esc(n)} te ha sacado de la sala.`, `${esc(n)} t'ha tret de la sala.`)}</p><div class="acts"><button class="btn primary" type="button" data-act="menu">${L('Menú', 'Menú')}</button></div>`); return; }
+  if (m.t === 'kick') { rkNetDiscard(); netRoomClear(); const n = NET.host || L('El anfitrión', 'L\'amfitrió'); netLeave(true); showPanel(`<h2>${L('Fuera de la sala', 'Fora de la sala')}</h2><p>${L(`${esc(n)} te ha sacado de la sala.`, `${esc(n)} t'ha tret de la sala.`)}</p><div class="acts"><button class="btn primary" type="button" data-act="menu">${L('Menú', 'Menú')}</button></div>`); return; }
   if (m.t === 'rxs') return netRxShow(cleanName(m.n), m.k);
   if (m.t === 'ev') return netGuestEv(m.e);
-  if (m.t === 'bye') { netRoomClear(); const n = NET.host || L('El anfitrión', 'L\'amfitrió'); netLeave(true); showPanel(`<h2>${L('Partida cerrada', 'Partida tancada')}</h2><p>${L(`${esc(n)} ha cerrado la sala.`, `${esc(n)} ha tancat la sala.`)}</p><div class="acts"><button class="btn primary" type="button" data-act="menu">${L('Menú', 'Menú')}</button></div>`); return; }
+  if (m.t === 'bye') { rkNetDiscard(); netRoomClear(); const n = NET.host || L('El anfitrión', 'L\'amfitrió'); netLeave(true); showPanel(`<h2>${L('Partida cerrada', 'Partida tancada')}</h2><p>${L(`${esc(n)} ha cerrado la sala.`, `${esc(n)} ha tancat la sala.`)}</p><div class="acts"><button class="btn primary" type="button" data-act="menu">${L('Menú', 'Menú')}</button></div>`); return; }
   if (m.t === 'cview') {
     netRoomSave();
     const v = m.v; NET.started = true; NET.hp = m.hp; NET.match = m.match; NET.who = m.who || null;
+    if (m.rk && m.rk.id) { NET.rk = { id: String(m.rk.id), juego: m.rk.juego, ok: m.rk.ok === true }; rkNetOpen(NET.rk); }
     for (let i = 0; i < 4; i++) NAMES[i] = cleanName((v.names || [])[i]) || '?';
     APP.mode = 'cau'; APP.M = null; G = null;
     S = Object.assign({ log: [], feed: [], inf: null, public: [], rec: null }, v);
@@ -3406,6 +3580,7 @@ function netGuestMsg(m) {
   if (m.t === 'view') {
     netRoomSave();
     const v = m.v; NET.started = true; NET.hp = m.hp; NET.match = m.match; NET.who = m.who || null;
+    if (m.rk && m.rk.id) { NET.rk = { id: String(m.rk.id), juego: m.rk.juego, ok: m.rk.ok === true }; rkNetOpen(NET.rk); }
     for (let i = 0; i < 4; i++) NAMES[i] = cleanName((v.names || [])[i]) || '?';
     coDealView = v.ui.dv; coShowLast = v.ui.showLast; coReveal = v.ui.reveal; coPend = v.ui.pend; coHide = new Set(v.ui.hide); coFx = null; busy = v.ui.busy;
     const prev = G && NET.started ? G : null;
@@ -3444,6 +3619,7 @@ function netAskLeave() {
 }
 function netLeave(quiet) {
   if (!NET) return;
+  if (NET.started) rkNetQuit('R');   // salir a mitad de una partida cuenta como retirada (si se fue el anfitrión o te echó, ya se descartó antes)
   if (NET.role === 'host') { netSend({ t: 'bye' }); netPresenceTrack(false).then(netPresenceClose, netPresenceClose); }
   else { if (!NET.started && !quiet) netRoomClear(); netSend({ t: 'leave' }); }   // salir de la sala antes de empezar: ya no hay partida que recuperar
   clearInterval(NET.timer); clearTimeout(NET.sched); if (NET.fast) clearInterval(NET.fast);
@@ -3458,7 +3634,8 @@ function netLeave(quiet) {
 }
 // El invitado cierra la página o la app: avisa al anfitrión para que su sitio quede libre al momento (en la sala) o salga
 // «sin conexión» (en partida). Por si el canal no llega a enviarlo, también por el servidor con una petición que sobrevive al cierre.
-window.addEventListener('pagehide', () => {
+window.addEventListener('pagehide', e => {
+  if (NET && NET.started && !(e && e.persisted)) rkNetQuit('R');   // cierre de verdad a mitad de partida online
   if (!NET || NET.role !== 'guest' || !NET.priv) return;
   const m = { t: 'leave' }; NET.autoSit = true;
   try { NET.priv.send(m); } catch (e) {}
@@ -3778,6 +3955,8 @@ function showSettings() {
   if (tab === 'perfil') body = [
     `<div class="opt"><label>${L('Alias', 'Àlies')}</label><div class="names" style="grid-template-columns:1fr"><span><input id="aliasset" type="text" maxlength="20" value="${esc(SETTINGS.alias || '')}" aria-label="${L('Alias', 'Àlies')}"></span></div></div>`,
     setOpt(L('Compartir mis partidas', 'Compartir les meues partides'), seg('share', off.map(([v]) => [v, v ? L('Sí', 'Sí') : 'No']), !!SETTINGS.share, true), L('Envía tus manos (cartas, jugadas y marcador, sin datos personales) para mejorar los bots.', 'Envia les teues mans (cartes, jugades i marcador, sense dades personals) per a millorar els bots.')),
+    setOpt(L('Aparecer en la clasificación', 'Aparéixer en la classificació'), seg('rank', off.map(([v]) => [v, v ? L('Sí', 'Sí') : 'No']), !!SETTINGS.rank, true), L('Tus partidas contra bots «muy difícil» cuentan en la clasificación, con tu alias. Solo se envía el resultado de cada partida (ganada o perdida). Si lo quitas, dejas de aparecer y no se envía nada más.', 'Les teues partides contra bots «molt difícil» compten en la classificació, amb el teu àlies. Només s’envia el resultat de cada partida (guanyada o perduda). Si ho lleves, deixes d’aparéixer i no s’envia res més.')),
+    `<div class="opt"><label>${L('Tu código de recuperación', 'El teu codi de recuperació')}</label><p class="desc">${L('Guárdalo: si cambias de móvil o reinstalas la app, escríbelo aquí abajo y recuperas tu puntuación. No lo compartas: quien lo tenga puede jugar como tú.', 'Guarda’l: si canvies de mòbil o reinstal·les l’app, escriu-lo ací baix i recuperes la teua puntuació. No el compartisques: qui el tinga pot jugar com tu.')}</p><p class="rkcode"><b id="rkmine">${esc(deviceId())}</b> <button class="btn" type="button" data-act="rk-copy">${L('Copiar', 'Copiar')}</button></p><div class="names" style="grid-template-columns:1fr"><span><input id="rkcode" type="text" maxlength="16" placeholder="${L('Código de otro móvil', 'Codi d’un altre mòbil')}" aria-label="${L('Código de recuperación', 'Codi de recuperació')}" autocomplete="off" autocapitalize="off"></span></div><div class="acts"><button class="btn" type="button" data-act="rk-restore">${L('Recuperar', 'Recuperar')}</button></div><p class="desc" id="rkmsg"></p></div>`,
     `<div class="opt"><button class="btn" type="button" data-act="credits-set">${L('Créditos', 'Crèdits')}</button></div>`
   ].join('');
   showPanel(`<h2>${L('Ajustes', 'Ajusts')}</h2>${tabs}<div class="setbody">${body}</div>
@@ -3910,7 +4089,7 @@ $('panel').addEventListener('click', e => {
   const sb = e.target.closest('[data-set]');
   if (sb) {
     const k = sb.dataset.set, v = sb.dataset.val;
-    if (k === 'hints' || k === 'labels' || k === 'socarrat' || k === 'showAll' || k === 'share' || k === 'voces' || k === 'sonidos') SETTINGS[k] = v === 'true';
+    if (k === 'hints' || k === 'labels' || k === 'socarrat' || k === 'showAll' || k === 'share' || k === 'rank' || k === 'voces' || k === 'sonidos') SETTINGS[k] = v === 'true';
     else if (k === 'speed') speedIx = +v;
     else if (k === 'cotoBest') SETTINGS.cotoBest = +v;
     else if (k === 'voz') { SETTINGS.voz = vozNum(v); const sv = SETTINGS.voces; SETTINGS.voces = true; vozPlay('denit', SETTINGS.voz); SETTINGS.voces = sv; }
@@ -3925,13 +4104,13 @@ $('panel').addEventListener('click', e => {
   if (a === 'exp' || a === 'expPrev') return doExport(a === 'expPrev');
   if (a === 'lasttrick') { panelBack = null; return showLastTrick(+b.dataset.t); }
   if (a === 'close') { if (panelBack === 'menu') showMenu(); else closePanel(); }
-  if (a === 'newgame') { if (NET && NET.role === 'host') { S = newGame(); S.feed = []; narr = L(`Mano 1. Reparte ${NAMES[S.dealer]}.`, `Mà 1. Dona ${NAMES[S.dealer]}.`); closePanel(); beginHand(); } else startGame('cau'); }
+  if (a === 'newgame') { if (NET && NET.role === 'host') { rkNetBegin('cau'); S = newGame(); S.feed = []; narr = L(`Mano 1. Reparte ${NAMES[S.dealer]}.`, `Mà 1. Dona ${NAMES[S.dealer]}.`); closePanel(); beginHand(); } else startGame('cau'); }
   if (a === 'continue') { closePanel(); render(); if (APP.mode === 'cotocau' && APP.M.stage === 'draw') return showDraw(); loop(); }
   if (a === 'play') showPlay();
   if (a === 'play-cau') startGame('cau');
   if (a === 'play-coto' || a === 'play-cotocau') { const t = a.slice(5); startGame(t); }
   if (a === 'co-next') { coNext(G); closePanel(); beginCoto(); }
-  if (a === 'newcoto') { if (NET && NET.role === 'host') { G = cotoNewMatch(cotoBestNow()); G.remotePass = {}; closePanel(); beginCoto(); } else startGame('coto'); }
+  if (a === 'newcoto') { if (NET && NET.role === 'host') { rkNetBegin('coto'); G = cotoNewMatch(cotoBestNow()); G.remotePass = {}; closePanel(); beginCoto(); } else startGame('coto'); }
   if (a === 'match') matchNext();
   if (a === 'match-go') matchGo();
   if (a === 'match-tb') matchTiebreak();
@@ -3942,6 +4121,12 @@ $('panel').addEventListener('click', e => {
   if (a === 'tutorial') showTutMenu();
   if (a === 'credits') { CRED_FROM_SET = false; panelBack = 'menu'; showCredits(); }
   if (a === 'credits-set') { CRED_FROM_SET = true; panelBack = 'menu'; showCredits(); }
+  if (a === 'rk-copy') { rkCopyCode(); const m = $('rkmsg'); if (m) m.textContent = L('Código copiado.', 'Codi copiat.'); return; }
+  if (a === 'rk-restore') { const el = $('rkcode'); const ok = el && rkRestoreCode(el.value); if (ok) return showSettings(); const m = $('rkmsg'); if (m) m.textContent = L('Ese código no es válido (8 a 16 letras y números).', 'Eixe codi no és vàlid (8 a 16 lletres i números).'); return; }
+  if (a === 'rank') { rkLoad(); return; }
+  if (a === 'rk-tab') { RK[b.dataset.k] = b.dataset.v; showRank(); return; }
+  if (a === 'rank-go') { SETTINGS.rankAsked = true; SETTINGS.setTab = 'perfil'; saveSettings(); return showSettings(); }
+  if (a === 'rank-no') { SETTINGS.rankAsked = true; saveSettings(); return showMenu(); }
   if (a === 'settab') { SETTINGS.setTab = b.dataset.t; saveSettings(); showSettings(); }
   if (a === 'learn') showTutorial('coto', 0);
   if (a === 'tut') showTutorial(b.dataset.g, +b.dataset.i);
@@ -3966,7 +4151,7 @@ $('panel').addEventListener('click', e => {
   if (a === 'net-again') netStart();
   if (a === 'net-vote') netVoteCast(+b.dataset.v);
   if (a === 'net-rejoin') { const r = netRoomGet(); if (r && !NET) netJoin(r.code, r.name, false, true); else showMenu(); }
-  if (a === 'net-forget') { netRoomClear(); showMenu(); }
+  if (a === 'net-forget') { rkNetQuit('R'); netRoomClear(); showMenu(); }
   if (a === 'net-lobby') netBackLobby();
   if (a === 'back') { if (CRED_FROM_SET) { CRED_FROM_SET = false; showSettings(); } else showMenu(); }
   if (a === 'nexthand') { S.dealer = (S.dealer + 1) % 4; newHand(S); S.feed = []; narr = L(`Mano ${S.handNo}. Reparte ${NAMES[S.dealer]}.`, `Mà ${S.handNo}. Dona ${NAMES[S.dealer]}.`); closePanel(); beginHand(); }
@@ -4255,9 +4440,11 @@ async function beginCoto() {
 }
 function showCotoSummary() {
   if (TUTG) return showGuidedEnd();
+  if (NET && G.phase === 'cotoEnd') rkNetEnd('coto', G.winner === 0);
   if (NET && NET.role === 'guest') return netGuestSummary();
   if (G.phase === 'cotoEnd' && !G.cotoSaid) { G.cotoSaid = true; setTimeout(() => voz('cotoes', G.winner === 0 ? 0 : 1), 900); }   // «El coto és nostre!»
   shareRec(G.rec, 'coto', { score: G.score.slice(), phase: G.phase, partidaWinner: G.partidaWinner ?? null, wins: G.wins.slice(), mid: !!G.endMid, summary: G.handSummary || null });
+  if (G.phase === 'cotoEnd') rkEnd('coto', G.winner === 0);
   const H = G.handSummary || [{ pts: 0, cantes: 0, ultimas: 0, total: 0 }, { pts: 0, cantes: 0, ultimas: 0, total: 0 }];
   const row = (l, k) => `<tr><td>${l}</td><td>${H[0][k]}</td><td>${H[1][k]}</td></tr>`;
   const sc = i => { const [n, w] = coScoreTxt(G.score[i]); return `${n} ${w}`; };
@@ -4323,7 +4510,7 @@ function showDraw() {
 }
 function matchGo() {
   closePanel(); if (NET) NET.hpanel = null;
-  if (APP.M.stage === 'cau') { narr = L(`Mano 1. Reparte ${NAMES[S.dealer]}.`, `Mà 1. Dona ${NAMES[S.dealer]}.`); beginHand(); }
+  if (APP.M.stage === 'cau') { rkStart('cau'); rkNetBegin('cau'); narr = L(`Mano 1. Reparte ${NAMES[S.dealer]}.`, `Mà 1. Dona ${NAMES[S.dealer]}.`); beginHand(); }
 }
 function matchTiebreak() {
   const M = APP.M; M.stage = 'tb'; M.cur = M.tb; closePanel(); if (NET) NET.hpanel = null;
@@ -4338,6 +4525,7 @@ function startGame(mode) {
   TUTG = null; GEN++; busy = false; coDealView = null; dealView = null; fx = null; coFx = null; coShowLast = false; coHide = new Set(); coPend = 0; coReveal = false;
   APP.mode = mode; APP.M = mode === 'cotocau' ? { stage: 'coto', cur: 'coto', res: {} } : null;
   hasSaved = true; closePanel();
+  rkStart(mode === 'cau' ? 'cau' : 'coto');   // clasificación (offline)
   if (mode === 'cau') { S = newGame(); S.feed = []; narr = L(`Mano 1. Reparte ${NAMES[S.dealer]}.`, `Mà 1. Dona ${NAMES[S.dealer]}.`); beginHand(); return; }
   G = cotoNewMatch(SETTINGS.cotoBest || 5); beginCoto();
 }
@@ -4365,7 +4553,7 @@ function showPlay() {
   $('panel').classList.add('menu'); cover();
 }
 
-if (PRUEBAS || /net=local/.test(location.search + location.hash)) window.CAU = { APP, get ZOOM() { return { zoom: ZOOM, factorMedido: ZK }; }, seatVoices, cotoNewMatch, coNext, exportText, coSwap, coCanSwap, coBotChoose, coPlay, coLegal, get G() { return G; }, set G(v) { G = v; }, set S(v) { S = v; }, render, matchNext, newGame, newHand, applyPlay, afterPlay, INFER, SMART, holdProb, determinize, botChoose, botChooseHard, botChooseNormal, botChooseEasy, botChooseDificil, botChooseExperto, botBet, botSing, SETTINGS, betAct, betOptions, sing, startSing, resolveNit, canFirst, canSecond, cardSVG, get S() { return S; } };
+if (PRUEBAS || /net=local/.test(location.search + location.hash)) window.CAU = { APP, rk: { net: { open: rkNetOpen, end: rkNetEnd, quit: rkNetQuit, discard: rkNetDiscard, begin: rkNetBegin }, start: rkStart, end: rkEnd, abandon: rkAbandon, stale: rkStale, flush: rkFlush, restore: rkRestoreCode }, get ZOOM() { return { zoom: ZOOM, factorMedido: ZK }; }, seatVoices, cotoNewMatch, coNext, exportText, coSwap, coCanSwap, coBotChoose, coPlay, coLegal, get G() { return G; }, set G(v) { G = v; }, set S(v) { S = v; }, render, matchNext, newGame, newHand, applyPlay, afterPlay, INFER, SMART, holdProb, determinize, botChoose, botChooseHard, botChooseNormal, botChooseEasy, botChooseDificil, botChooseExperto, botBet, botSing, SETTINGS, betAct, betOptions, sing, startSing, resolveNit, canFirst, canSecond, cardSVG, get S() { return S; } };
 
 function start(data) {
   if (data && data.app) { Object.assign(APP, data.app); S = data.S; G = data.G; if (S) S.feed = []; if (G) G.feed = []; hasSaved = true; render(); loop(); return; }
