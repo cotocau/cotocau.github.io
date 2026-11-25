@@ -2,7 +2,7 @@
 <html lang="es" data-color="verde">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-2I2Sg+K1HSlKqvUMXceXNRgnVu1OinU70unSSuW5xO4=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-xrx13atnCIGUUq0OVMXcKCnZYRVuvHplan/gnh0OhSs=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script>(()=>{try{const P='pr.',S=Storage.prototype,g=S.getItem,s=S.setItem,r=S.removeItem;S.getItem=function(k){return g.call(this,P+k)};S.setItem=function(k,v){return s.call(this,P+k,v)};S.removeItem=function(k){return r.call(this,P+k)};}catch(e){}})();</script>
 <meta name="theme-color" content="#07170e">
@@ -1913,7 +1913,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-23-1';
+const APP_VER = 'cau-2026-11-25-1';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
 // sus partidas llevan «-pruebas» en la versión y su online usa salas aparte (canales cc-p…), para no mezclarse con la oficial.
 const PRUEBAS = true;
@@ -2241,7 +2241,7 @@ const VOZ_N = 4;
 // 6 nov: vinga/accepte (se acepta un envide, se alternan), limpia, baclimpia, jotambe/jotambe2 (el segundo que canta de nit), bones (una pareja pasa a buenas)
 const VOZ_KEYS = ['bac', 'rebac', 'sv', 'denit', 'xic', 'xac', 'envit', 'torne', 'falta', 'acabat', 'vinga', 'accepte', 'limpia', 'baclimpia', 'jotambe', 'jotambe2', 'bones', 'novull', 'pertu', 'passe', 'lavull', 'juguem', 'caues',
   // Coto (9 nov): cantes (c = empieza, y = «i vint en…» si canta otro más seguido), cambio del 7, últimas, vueltas, salir y coto
-  'c40', 'c20o', 'c20c', 'c20e', 'c20b', 'y20o', 'y20c', 'y20e', 'y20b', 'canvie', 'ultimes', 'torna', 'fora', 'ixit', 'cotoes'];   // novull/pertu: se rechaza (se alternan); passe; lavull/juguem: se acepta «la partida»
+  'c40', 'c20o', 'c20c', 'c20e', 'c20b', 'y20o', 'y20c', 'y20e', 'y20b', 'canvie', 'ultimes', 'ultimes0', 'torna', 'fora', 'ixit', 'cotoes'];   // novull/pertu: se rechaza (se alternan); passe; lavull/juguem: se acepta «la partida»
 const vozAlt = (a, b) => Math.random() < 0.5 ? a : b;
 const vozNum = x => { x = Math.floor(+x); return x >= 1 && x <= VOZ_N ? x : 1; };
 function seatVoices() {
@@ -4163,6 +4163,8 @@ async function cotoLoop() {
       let sang = false;
       for (let i = 0; i < 4; i++) { const q = (G.turn + i) % 4; if (humanSeat(q)) continue; const ss = coCantesFor(G, q); if (ss.length) { for (const s of ss) coSing(G, q, s); sang = true; } }
       if (sang) { render(); await coDrain(); continue; }
+      // 25 nov: antes de la última baza con montón, quien reparte avisa «Últimes!»
+      if (!G.trick.length && G.stock.length === 4 && !G.ult0 && !TUTG) { G.ult0 = true; voz('ultimes0', G.dealer); }
       if ((coCantesFor(G, 0).length || coCanSwap(G, 0)) && G.cantePass !== G.trickNo && G.turn !== 0) break;
       if (TUTG && G.trickNo === 1 && !G.trick.length && coCanSwap(G, 0)) break;
       if (NET && netCanteWait()) break;
@@ -4225,8 +4227,8 @@ async function beginCoto() {
   busy = true; const gen = GEN;
   const tut = TUTG && !TUTG.cau && !TUTG.intro;
   try {
-    G.feed = [];
-    if (G.vueltas && !tut) voz('torna', G.dealer);   // «Anem de tornà!» (lo dice quien reparte)
+    G.feed = []; G.ult0 = false;
+    if (G.vueltas && !tut) voz('torna', G.dealer);   // «Anem de voltes!» (lo dice quien reparte; 25 nov: antes decía «Anem de tornà», mal)
     if (tut) { TUTG.intro = true; for (const t of tutCotoIntro(0)) await tutPause(t); if (gen !== GEN) return; }
     await animateCotoDeal();
     if (tut && gen === GEN) for (const t of tutCotoIntro(1)) await tutPause(t);
