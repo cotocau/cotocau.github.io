@@ -2,7 +2,7 @@
 <html lang="es" data-color="verde">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-AcsErv7ZM0XQE/5aG8mTCilsa87nanLgmQCddEvTnF8=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-OurVOuz7Px5dl7Wox6Hly70WKMoK2ZZat2EmHRLo/U8=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script>(()=>{try{const P='pr.',S=Storage.prototype,g=S.getItem,s=S.setItem,r=S.removeItem;S.getItem=function(k){return g.call(this,P+k)};S.setItem=function(k,v){return s.call(this,P+k,v)};S.removeItem=function(k){return r.call(this,P+k)};}catch(e){}})();</script>
 <meta name="theme-color" content="#07170e">
@@ -72,7 +72,7 @@ button{font:inherit;color:inherit}
 .board{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px;position:relative}
 /* Cau: montones de cartas recogidas (20 nov): el vuestro junto a tus cartas, el de ellos junto a Toni. Se colocan por medidas (placePiles) */
 .piles{position:absolute;left:0;top:0;width:0;height:0;pointer-events:none;z-index:4}
-.pile{position:fixed;left:0;top:0;width:34px;height:84px}
+.pile{position:fixed;left:0;top:0;width:34px;height:84px;pointer-events:auto;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .pile .stack{position:absolute;left:2px;bottom:0;width:30px;height:84px;transform-origin:50% 100%}
 .pile .edge{position:absolute;left:0;bottom:4px;width:30px;height:0;border-radius:3px;background:repeating-linear-gradient(to top,#efe5cf 0 1px,#a99b80 1px 1.6px);box-shadow:0 1px 2px rgba(0,0,0,.55);transition:height .45s ease-out}
 .pile .top{position:absolute;left:0;bottom:4px;width:30px;height:44px;margin:0;border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,.55);transition:bottom .45s ease-out}
@@ -378,7 +378,6 @@ html.wide .hand{grid-column:2;grid-row:6;padding-bottom:4px}
     <button class="btn" id="btnMenu" type="button">Menú</button>
     <button class="btn" id="btnRules" type="button" hidden>Reglas</button>
     <button class="btn" id="btnLog" type="button">Historial</button>
-    <button class="btn" id="btnLast" type="button" hidden>Última baza</button>
   </nav>
   <section class="board" aria-label="Mesa">
     <div class="seat top" id="seat2"></div>
@@ -494,7 +493,7 @@ function newHand(S) {
   S.handNo++;
   S.deck = shuffle(ALL.map(c => ({ ...c })));
   S.table = []; S.slots = {}; S.hands = [[],[],[],[]]; S.chain = null; S.lastPlay = null;
-  S.cap = [0,0]; S.bon = [emptyBon(), emptyBon()]; S.public = []; S.lastCapturer = null; S.lastCap = null;
+  S.cap = [0,0]; S.bon = [emptyBon(), emptyBon()]; S.public = []; S.lastCapturer = null; S.lastCap = null; S.lastCapT = [null, null];
   S.round = 0; S.bet = null; S.summary = null; S.duels = []; S.duelNotes = []; S.endMid = false; S.bubbles = ['','','',''];
   S.turn = (S.dealer + 1) % 4;
   S.prevRec = S.rec || null;
@@ -701,6 +700,7 @@ function resolveChain(S, ev, noLimpia) {
   const got = ch.cards.concat(takeEscala(S, ch.r)); const t = team(ch.owner);
   S.cap[t] += got.length; S.lastCapturer = ch.owner;
   S.lastCap = { p: ch.owner, cards: got.map(c => ({ id: c.id, r: c.r, s: c.s })) };   // «Última recogida»
+  (S.lastCapT || (S.lastCapT = [null, null]))[t] = S.lastCap;   // la última de cada pareja (se ve tocando su montón)
   ev.push({ k:'cobra', p: ch.owner, txt: ch.owner === 0 ? L(`Te llevas ${got.length} cartas`, `T'endús ${got.length} cartes`) : L(`${NAMES[ch.owner]} se lleva ${got.length} cartas`, `${NAMES[ch.owner]} s'endú ${got.length} cartes`) });
   if (!ch.limpia && !noLimpia && S.table.length === 0) { ev.push({ k:'limpia', p: ch.owner, txt: L('¡Limpia!', 'Limpia!'), pts:1 }); addPts(S, t, 'limpia', 1); }
   checkWin(S);
@@ -762,6 +762,7 @@ function applyPlay(S, p, cid) {
     got.push(...takeEscala(S, card.r));
     S.cap[t] += got.length; S.lastCapturer = p;
     S.lastCap = { p, cards: got.map(c => ({ id: c.id, r: c.r, s: c.s })) };   // «Última recogida»
+    (S.lastCapT || (S.lastCapT = [null, null]))[t] = S.lastCap;
     take = take.concat(got.map(c => c.id));
     S.lastPlay = { p, id: card.id, r: card.r, cap: true };
     ev.push({ k:'cap', p, txt: L(`Captura ${got.length}`, `Arreplega ${got.length}`), n: got.length });
@@ -1155,7 +1156,7 @@ function cotoNewHand(G) {
   G.dealOrders = G.hands.map(h => h.map(c => c.id));   // lo mismo para cada asiento (el online lo manda a cada invitado)
   G.hands.forEach(h => coSort(G, h));
   G.leader = (G.dealer + 1) % 4; G.turn = G.leader;
-  G.trick = []; G.lastTrick = null; G.won = [0, 0]; G.pts = [0, 0]; G.cantes = [0, 0]; G.ultimas = [0, 0];
+  G.trick = []; G.lastTrick = null; G.lastTrickT = [null, null]; G.won = [0, 0]; G.pts = [0, 0]; G.cantes = [0, 0]; G.ultimas = [0, 0];
   G.sung = []; G.canSing = null; G.lastWinner = null; G.trickNo = 0;
   G.played = []; G.disc = [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]; G.voids = [[], [], [], []]; G.noTrumpOver = [[], [], [], []]; G.noHi = null;
   G.revealed = [[], [], [], []]; G.pintaHolder = null; G.swapped = false;
@@ -1270,6 +1271,7 @@ function coPlay(G, p, cid) {
   if (last) { pts += 10; G.ultimas[t] = 10; }
   G.pts[t] += pts; G.score[t] += pts; G.won[t]++; G.trickNo++;
   G.lastWinner = w.p; G.lastTrick = { cards: G.trick, winner: w.p, pts, last };
+  (G.lastTrickT || (G.lastTrickT = [null, null]))[t] = G.lastTrick;   // la última baza de cada pareja (se ve tocando su montón)
   G.trick = []; G.leader = w.p; G.turn = w.p; G.canSing = t;
   // robar: empieza el que gana la baza
   G.lastDraw = []; G.autoSwap = null;
@@ -1913,7 +1915,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-25-4';
+const APP_VER = 'cau-2026-11-25-5';
 // Número que se ve en el menú de la oficial: la versión de la app de Android (1.2.4) y detrás un contador que sube con cada publicación en la oficial (1.2.4.1, 1.2.4.2…). Al subir la app de Android, se cambia el principio y el contador vuelve a 1.
 const APP_REL = '1.2.4.1';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
@@ -2055,7 +2057,7 @@ function renderPiles() {
     el.querySelector('.edge').style.height = th + 'px';
     el.querySelector('.top').style.bottom = (4 + th) + 'px';
     const nb = el.querySelector('.n'); nb.textContent = n; nb.style.bottom = (16 + th) + 'px';
-    el.title = co ? '' : (t === 0 ? L('Cartas que lleváis', 'Cartes que porteu') : L('Cartas que llevan', 'Cartes que porten')) + `: ${n}`;
+    el.title = (co ? '' : (t === 0 ? L('Cartas que lleváis', 'Cartes que porteu') : L('Cartas que llevan', 'Cartes que porten')) + `: ${n}. `) + L('Toca para ver la última baza', 'Toca per a vore la darrera basa');
     el.dataset.n = String(n);
     if (prev != null && n > prev) { el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
   }
@@ -2218,7 +2220,6 @@ function setScore(i, val, fmt, game) {
 function render() {
   if (!TUTG && $('coach') && !netBannerHTML()) $('coach').hidden = true;
   if (NET && NET.role === 'host' && NET.started) netSchedule();
-  const bl = $('btnLast'); if (bl) { const co = isCoto(); bl.hidden = co ? !(G && G.lastTrick) : !(S && S.lastCap && S.phase !== 'handEnd'); bl.textContent = co ? L('Última baza', 'Última basa') : L('Última recogida', 'Última arreplegada'); }
   renderPiles();
   if (isCoto() && G) return renderCoto();
   $('hand').classList.remove('co-hand');
@@ -2587,17 +2588,24 @@ async function doExport(prev) {
   box.innerHTML = `<p class="desc">${ok ? L('Copiado. Pégalo en el chat.', 'Copiat. Apega-ho en el xat.') : L('Mantén pulsado el texto para copiarlo.', 'Mantín polsat el text per a copiar-lo.')}</p><textarea class="exp" readonly>${esc(txt)}</textarea>`;
   const ta = box.querySelector('textarea'); if (!ok && ta) { ta.focus(); ta.select(); }
 }
-function showLastTrick() {
-  if (!isCoto()) {   // Cau: solo se puede ver lo último que se ha llevado alguien
-    const lc = S && S.lastCap; if (!lc) return;
-    const who = lc.p === 0 ? L('Te lo has llevado tú', "T'ho has endut tu") : L(`Se lo ha llevado ${NAMES[lc.p]}`, `S'ho ha endut ${NAMES[lc.p]}`);
-    showPanel(`<h2>${L('Última recogida', 'Última arreplegada')}</h2><div class="lastcap">${lc.cards.map(c => cardHTML(c)).join('')}</div><p class="lastinfo">${who}: ${lc.cards.length} ${L('cartas', 'cartes')}</p><div class="acts"><button class="btn primary" type="button" data-act="close">${L('Cerrar', 'Tancar')}</button></div>`);
+function showLastTrick(t) {
+  const co = isCoto(), T = t === 1 ? 1 : 0, O = 1 - T;
+  // lo último de cada pareja; en partidas guardadas antes de este cambio, solo se sabe lo último de todos
+  const get = k => { const a = co ? (G && G.lastTrickT) : (S && S.lastCapT); if (a && a[k]) return a[k];
+    if (co) return G && G.lastTrick && team(G.lastTrick.winner) === k ? G.lastTrick : null;
+    return S && S.lastCap && team(S.lastCap.p) === k ? S.lastCap : null; };
+  const x = get(T); if (!x) return;
+  const who = T === 0 ? L('Vosotros', 'Vosaltres') : L('Ellos', 'Ells');
+  const other = get(O) ? `<button class="btn" type="button" data-act="lasttrick" data-t="${O}">${O === 0 ? L('Ver la vuestra', 'Vore la vostra') : L('Ver la de ellos', "Vore la d'ells")}</button>` : '';
+  const acts = `<div class="acts">${other}<button class="btn primary" type="button" data-act="close">${L('Cerrar', 'Tancar')}</button></div>`;
+  if (!co) {   // Cau: lo último que se ha llevado la pareja
+    const w = x.p === 0 ? L('Te lo has llevado tú', "T'ho has endut tu") : L(`Se lo ha llevado ${NAMES[x.p]}`, `S'ho ha endut ${NAMES[x.p]}`);
+    showPanel(`<h2>${L('Última recogida', 'Última arreplegada')} · ${who}</h2><div class="lastcap">${x.cards.map(c => cardHTML(c)).join('')}</div><p class="lastinfo">${w}: ${x.cards.length} ${L('cartas', 'cartes')}</p>${acts}`);
     return;
   }
-  if (!G.lastTrick) return;
-  const t = G.lastTrick, POS = [[50, 78], [82, 50], [50, 22], [18, 50]];
-  const cards = t.cards.map((x, k) => { const [l, tp] = POS[x.p]; return `<div class="ls ${x.p === t.winner ? 'win' : ''}" style="left:${l}%;top:${tp}%;animation-delay:${k * 0.12}s">${cardHTML(x.c)}<small>${k + 1}. ${NAMES[x.p]}</small></div>`; }).join('');
-  showPanel(`<h2>${L('Última baza', 'Última basa')}</h2><div class="lastfelt">${cards}</div><p class="lastinfo">${L(`Se la lleva ${NAMES[t.winner]}: ${t.pts} puntos`, `Se l'emporta ${NAMES[t.winner]}: ${t.pts} punts`)}${t.last ? L(' (con las 10 de últimas)', ' (amb les 10 d’últimes)') : ''}</p><div class="acts"><button class="btn primary" type="button" data-act="close">${L('Cerrar', 'Tancar')}</button></div>`);
+  const POS = [[50, 78], [82, 50], [50, 22], [18, 50]];
+  const cards = x.cards.map((y, k) => { const [l, tp] = POS[y.p]; return `<div class="ls ${y.p === x.winner ? 'win' : ''}" style="left:${l}%;top:${tp}%;animation-delay:${k * 0.12}s">${cardHTML(y.c)}<small>${k + 1}. ${NAMES[y.p]}</small></div>`; }).join('');
+  showPanel(`<h2>${L('Última baza', 'Última basa')} · ${who}</h2><div class="lastfelt">${cards}</div><p class="lastinfo">${L(`Se la lleva ${NAMES[x.winner]}: ${x.pts} puntos`, `Se l'emporta ${NAMES[x.winner]}: ${x.pts} punts`)}${x.last ? L(' (con las 10 de últimas)', ' (amb les 10 d’últimes)') : ''}</p>${acts}`);
 }
 
 let hasSaved = false, panelBack = null;
@@ -2836,6 +2844,7 @@ function netCauView(g) {
     table: S.table.map(cc), slots: S.slots, chain: S.chain ? { ...S.chain, cards: S.chain.cards.map(cc), owner: rot(S.chain.owner) } : null,
     lastPlay: S.lastPlay ? { ...S.lastPlay, p: rot(S.lastPlay.p) } : null, lastCapturer: rot(S.lastCapturer),
     lastCap: S.lastCap ? { p: rot(S.lastCap.p), cards: S.lastCap.cards.map(cc) } : null,
+    lastCapT: tm((S.lastCapT || [null, null]).map(x => x ? { p: rot(x.p), cards: x.cards.map(cc) } : null)),
     netHold: (h => ({ pts: tm(h.pts), n: h.n }))(duelHold()),
     deck: S.deck.map((c, k) => ({ id: -200 - k, r: 0, s: 0 })), hands, names, myDeal: (S.dealSeq || []).filter(x => x.to === g && x.id != null).map(x => x.id),
     bubbles: seatArr(S.bubbles || ['', '', '', '']).map(x => netNarr(x || '', g)),
@@ -3274,6 +3283,7 @@ function netView(g) {
     canSing: tt(G.canSing), partidaWinner: tt(G.partidaWinner), winner: tt(G.winner),
     dealer: rot(G.dealer), turn: rot(G.turn), leader: rot(G.leader), trickNo: G.trickNo, swapped: G.swapped, sung: G.sung.slice(), trump: G.trump, pinta: G.pinta,
     trick: G.trick.map(x => ({ p: rot(x.p), c: x.c })), lastTrick: G.lastTrick ? { ...G.lastTrick, cards: G.lastTrick.cards.map(x => ({ p: rot(x.p), c: x.c })), winner: rot(G.lastTrick.winner) } : null,
+    lastTrickT: tm((G.lastTrickT || [null, null]).map(x => x ? { ...x, cards: x.cards.map(y => ({ p: rot(y.p), c: y.c })), winner: rot(x.winner) } : null)),
     stock: G.stock.map((c, k) => k === G.stock.length - 1 ? c : { id: -100 - k, r: 0, s: 0 }), hands, names, dealOrder: G.dealOrders ? G.dealOrders[g] : null, cantePass: (G.remotePass || {})[g] ?? null, away: !!NET.seats[g].away,
     ui: { dv: coDealView ? { n: [0, 1, 2, 3].map(v => coDealView.n[(v + g) % 4]), stock: coDealView.stock } : null, showLast: coShowLast, reveal: coReveal, pend: coPend, hide: [...coHide].filter(id => G.hands[g].some(c => c.id === id)), busy: busy || !!coFx }
   };
@@ -3914,6 +3924,7 @@ $('panel').addEventListener('click', e => {
   const a = b.dataset.act;
   if (a === 'share-yes' || a === 'share-no') { const al = $('alias'); if (al) SETTINGS.alias = cleanName(al.value, 20); SETTINGS.share = a === 'share-yes'; saveSettings(); if (SETTINGS.share) shareFlush(); return showMenu(); }
   if (a === 'exp' || a === 'expPrev') return doExport(a === 'expPrev');
+  if (a === 'lasttrick') { panelBack = null; return showLastTrick(+b.dataset.t); }
   if (a === 'close') { if (panelBack === 'menu') showMenu(); else closePanel(); }
   if (a === 'newgame') { if (NET && NET.role === 'host') { S = newGame(); S.feed = []; narr = L(`Mano 1. Reparte ${NAMES[S.dealer]}.`, `Mà 1. Dona ${NAMES[S.dealer]}.`); closePanel(); beginHand(); } else startGame('cau'); }
   if (a === 'continue') { closePanel(); render(); if (APP.mode === 'cotocau' && APP.M.stage === 'draw') return showDraw(); loop(); }
@@ -3980,7 +3991,8 @@ $('coach').addEventListener('click', e => {
 });
 $('btnRules').addEventListener('click', () => { panelBack = null; showRules(); });
 $('btnLog').addEventListener('click', () => { panelBack = null; showLog(); });
-$('btnLast').addEventListener('click', () => { panelBack = null; showLastTrick(); });
+// Última baza (Coto) / última recogida (Cau) de cada pareja: se toca su montón (desde el 25 nov ya no hay botón)
+for (const t of [0, 1]) $('pile' + t).addEventListener('click', () => { panelBack = null; showLastTrick(t); });
 $('btnMenu').addEventListener('click', () => NET ? netAskLeave() : showMenu());
 
 /* ---------------- Coto y CotoCau: interfaz ---------------- */
