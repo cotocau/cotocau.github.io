@@ -2,7 +2,7 @@
 <html lang="es" data-color="verde">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-JthBBptnZXptg2m7g93mr01ADaxcGy6MobpOL6INaY0=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-l33SLRAT18h3Dt1B4HYYHNV+63EHgLK8TS5zIXSmbaE=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#07170e">
 <meta name="description" content="CotoCau: el Coto y el Cau, los juegos de cartas de las filaes de Alcoy. Juega con tu compañera contra dos rivales.">
@@ -1912,7 +1912,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-25-2';
+const APP_VER = 'cau-2026-11-25-3';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
 // sus partidas llevan «-pruebas» en la versión y su online usa salas aparte (canales cc-p…), para no mezclarse con la oficial.
 const PRUEBAS = false;
@@ -4076,6 +4076,8 @@ const coTeamOf = txt => txt.startsWith(TEAMN[1] + ' ') ? 1 : 0;
 async function coDrain() {
   const items = G.feed.splice(0);
   let lastCante = -1, saidOut = false, vc = null;
+  // 25 nov: si en esta tanda de avisos una pareja se sale o gana la partida, solo suena «Estem fora!/S'hem ixit!» (no «Les últimes pa mosatros!», que se pisaban)
+  const outNow = items.some(i => i.k === 'pts' && /llegan a 101|arriben a 101|ganan la partida|guanyen la partida/.test(i.txt));
   for (const i of items) {
     const who = /^(Cantas|Cantes|Cambias|Canvies)/.test(i.txt) ? NAMES[0] : i.txt.split(' ')[0];
     // voces del Coto (9 nov)
@@ -4084,7 +4086,7 @@ async function coDrain() {
       vc = [/40/.test(i.txt) || su < 0 ? 'c40' : (lastCante === q ? 'y20' : 'c20') + 'oceb'[su], q]; lastCante = q;   // suena con su aviso
     } else lastCante = -1;
     if (i.k === 'swap') vc = ['canvie', coSeatOf(i.txt)];
-    if (i.k === 'baza' && /10 de últimas|10 d'últimes/.test(i.txt)) voz('ultimes', coSeatOf(i.txt));
+    if (i.k === 'baza' && /10 de últimas|10 d'últimes/.test(i.txt) && !outNow) voz('ultimes', coSeatOf(i.txt));
     if (i.k === 'pts' && (/llegan a 101|arriben a 101/.test(i.txt) || (/ganan la partida|guanyen la partida/.test(i.txt) && !saidOut))) { saidOut = true; voz(vozAlt('fora', 'ixit'), coTeamOf(i.txt)); }
     if (i.k === 'cante') { narr = i.txt; render(); if (vc) voz(vc[0], vc[1]); vc = null; await callout(/40/.test(i.txt) ? L('Las 40', 'Les 40') : '20 en ' + (i.txt.match(/20 en (\S+?)\./) || [, ''])[1], who); }
     else if (i.k === 'swap') { narr = i.txt; render(); if (vc) voz(vc[0], vc[1]); vc = null; await callout(L('Cambia el 7', 'Canvia el 7'), who); }
