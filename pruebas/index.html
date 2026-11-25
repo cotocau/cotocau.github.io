@@ -2,7 +2,7 @@
 <html lang="es" data-color="verde">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-wRqxaCOlAKDYaFJmh09O4bDChLNv+vn5tIH2cOnthQM=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-Fdp4SKSx7LUaAfwjybKQ8y60cTpIRH/ie/yclGU14Qg=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script>(()=>{try{const P='pr.',S=Storage.prototype,g=S.getItem,s=S.setItem,r=S.removeItem;S.getItem=function(k){return g.call(this,P+k)};S.setItem=function(k,v){return s.call(this,P+k,v)};S.removeItem=function(k){return r.call(this,P+k)};}catch(e){}})();</script>
 <meta name="theme-color" content="#07170e">
@@ -1934,7 +1934,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-25-10';
+const APP_VER = 'cau-2026-11-25-11';
 // Número que se ve en el menú de la oficial: la versión de la app de Android (1.2.4) y detrás un contador que sube con cada publicación en la oficial (1.2.4.1, 1.2.4.2…). Al subir la app de Android, se cambia el principio y el contador vuelve a 1.
 const APP_REL = '1.2.4.2';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
@@ -2024,6 +2024,7 @@ async function rkFlush() {
   try {
     const batch = q.slice(0, 20);
     const r = await fetch(RK_BASE + '/rest/v1/resultados?on_conflict=jugador,partida', { method: 'POST', headers: { apikey: SUPA.key, 'Content-Type': 'application/json', Prefer: 'return=minimal,resolution=ignore-duplicates' }, body: JSON.stringify(batch) });
+    try { const tx = r.ok ? '' : (await r.clone().text()).slice(0, 160); rkSet('cau.rkl', { t: Date.now(), st: r.status, n: batch.length, tx }); } catch (e) {}
     // éxito, o error que no se arregla reintentando (datos rechazados): se quita; sin red, límite de envíos, fallo del servidor o tabla aún sin crear (404): se reintenta
     if (r.ok || (r.status >= 400 && r.status < 500 && ![404, 408, 429].includes(r.status))) {
       const q2 = rkGet('cau.rkq', []); rkSet('cau.rkq', q2.slice(batch.length));
@@ -2130,7 +2131,7 @@ function showRank() {
   const nota = RK.modo === 'offline'
     ? L('Solo cuentan partidas contra bots de nivel «muy difícil», tus últimas 50 por juego. Hace falta un mínimo de 10 partidas para salir en la tabla. Si pasas más de 7 días sin jugar, bajas un poco cada semana.', 'Només compten partides contra bots de nivell «molt difícil», les últimes 50 per joc. Cal un mínim de 10 partides per a eixir en la taula. Si passes més de 7 dies sense jugar, baixes un poc cada setmana.')
     : L('Solo cuentan mesas que empiezan con 4 personas. Hace falta un mínimo de 10 partidas para salir en la tabla. Abandonar una partida pesa el doble que perderla.', 'Només compten taules que comencen amb 4 persones. Cal un mínim de 10 partides per a eixir en la taula. Abandonar una partida pesa el doble que perdre-la.');
-  showPanel(`<h2 data-rk>${L('Clasificación', 'Classificació')}</h2>${tab('modo', M, RK.modo, 2)}${tab('juego', J, RK.juego, 3)}${body}<p class="desc rknote">${nota}</p>${PRUEBAS ? `<p class="desc" style="font-size:11px;opacity:.7">diag: interruptor ${SETTINGS.rank ? 'sí' : 'NO'} · compañero ${SETTINGS.partner} · rivales ${SETTINGS.rivals} · en curso ${JSON.stringify(rkGet('cau.rkp', null))} · por enviar ${rkGet('cau.rkq', []).length}</p>` : ''}
+  showPanel(`<h2 data-rk>${L('Clasificación', 'Classificació')}</h2>${tab('modo', M, RK.modo, 2)}${tab('juego', J, RK.juego, 3)}${body}<p class="desc rknote">${nota}</p>${PRUEBAS ? `<p class="desc" style="font-size:11px;opacity:.7">diag: interruptor ${SETTINGS.rank ? 'sí' : 'NO'} · compañero ${SETTINGS.partner} · rivales ${SETTINGS.rivals} · en curso ${JSON.stringify(rkGet('cau.rkp', null))} · por enviar ${rkGet('cau.rkq', []).length} · último envío ${JSON.stringify(rkGet('cau.rkl', null))}</p>` : ''}
   <div class="acts"><button class="btn primary" type="button" data-act="close">${L('Volver', 'Tornar')}</button></div>`); cover();
   const box = $('panel').querySelector('.rkbox'), me = box && box.querySelector('tr.me');
   if (me) box.scrollTop = Math.max(0, me.offsetTop - box.clientHeight / 2);
