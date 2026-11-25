@@ -2,7 +2,7 @@
 <html lang="es" data-color="verde">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-LqmFUc/DVCnbKPJBWPQ4r+XzM0ZMbzUVscC341L/bLU=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-JthBBptnZXptg2m7g93mr01ADaxcGy6MobpOL6INaY0=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#07170e">
 <meta name="description" content="CotoCau: el Coto y el Cau, los juegos de cartas de las filaes de Alcoy. Juega con tu compañera contra dos rivales.">
@@ -1912,7 +1912,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-25-1';
+const APP_VER = 'cau-2026-11-25-2';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
 // sus partidas llevan «-pruebas» en la versión y su online usa salas aparte (canales cc-p…), para no mezclarse con la oficial.
 const PRUEBAS = false;
@@ -2267,7 +2267,9 @@ function voz(k, p) {
 // Sonidos de cartas (6 nov), hechos con ruido filtrado: tapete = echar carta; recoger = llevarse cartas (Cau) o la baza (Coto);
 // roce + toque = repartir y robar
 // (el roce mientras vuela la carta y el toque al llegar). Cada golpe cambia un poco de tono y fuerza.
-const DEAL_MS = 368;   // el reparto va siempre al ritmo del modo lento (el del sonido)
+// 25 nov: el reparto vuelve a seguir el ajuste «Ritmo» (lento 368 ms por carta, normal 230, rápido 127) y el sonido lo acompaña
+// (antes, del 6 al 25 nov, iba siempre al ritmo lento)
+const dealMs = () => Math.round(230 * SPEEDS[speedIx][1]);
 let sctx = null; const sbuf = {};
 function sfxInit() {
   if (sctx) { if (sctx.state === 'suspended') sctx.resume().catch(() => {}); return; }
@@ -2378,8 +2380,8 @@ async function animateDeal(withTable) {
     if (reduce) return;
     const f = document.createElement('div'); f.className = 'fly'; f.innerHTML = '<span class="back"></span>'; document.body.appendChild(f);
     const w = f.offsetWidth / 2, h = f.offsetHeight / 2;
-    const a = f.animate([{ transform: `translate(${from[0] - w}px,${from[1] - h}px) scale(.75)` }, { transform: `translate(${to[0] - w}px,${to[1] - h}px) scale(1)` }], { duration: DEAL_MS, easing: 'cubic-bezier(.3,.7,.3,1)' });
-    sfxDeal(DEAL_MS);
+    const a = f.animate([{ transform: `translate(${from[0] - w}px,${from[1] - h}px) scale(.75)` }, { transform: `translate(${to[0] - w}px,${to[1] - h}px) scale(1)` }], { duration: dealMs(), easing: 'cubic-bezier(.3,.7,.3,1)' });
+    sfxDeal(dealMs());
     await a.finished.catch(() => {}); f.remove();
   };
   const gen = GEN;
@@ -2787,14 +2789,14 @@ function netGuestEv(e) {
       const seatEl = (p, av) => p === 0 ? $('hand') : ($('seat' + p) && ($('seat' + p).querySelector(av ? '.av' : '.backs') || $('seat' + p)));
       const a = e.from === 'T' ? slotXY(e.slot) : seatEl(e.from, true), z = e.p === 'T' ? slotXY(e.slot) : seatEl(e.p, false);
       if (!a || !z) return;
-      return coFly(Array.isArray(a) ? a : center(a), Array.isArray(z) ? z : center(z), '<span class="back"></span>', DEAL_MS, { fixed: true, deal: true });
+      return coFly(Array.isArray(a) ? a : center(a), Array.isArray(z) ? z : center(z), '<span class="back"></span>', dealMs(), { fixed: true, deal: true });
     }
     const stockC = () => $('costock') ? coCenter($('costock')) : coCenter($('table'));
     const seatC = p => coCenter(coSeatTarget(p));
     const card = (id, w) => `<div style="--cw:${w}px">${cardHTML(coCard(id))}</div>`;
     if (e.k === 'draw') await coFly(stockC(), seatC(e.p), e.pinta || e.p === 0 ? card(e.id, 46) : '<span class="back"></span>', 240, { deal: true });
     else if (e.k === 'deal') { const src = e.from === 0 ? $('hand') : ($('seat' + e.from).querySelector('.av') || $('seat' + e.from)); const tb = bcr($('table'));
-      await coFly(coCenter(src), e.p === 'T' ? [tb.left + tb.width / 2, tb.top + tb.height / 2] : seatC(e.p), '<span class="back"></span>'.repeat(e.n || 1), DEAL_MS, { fixed: true, deal: true }); }
+      await coFly(coCenter(src), e.p === 'T' ? [tb.left + tb.width / 2, tb.top + tb.height / 2] : seatC(e.p), '<span class="back"></span>'.repeat(e.n || 1), dealMs(), { fixed: true, deal: true }); }
     else if (e.k === 'swap') { const pc = $('copinta') ? coCenter($('copinta')) : coCenter($('table')); await coFly(seatC(e.p), pc, card(e.seven, 50), 420); await coFly(pc, seatC(e.p), card(e.pinta, 50), 420); }
     else if (e.k === 'callout') callout(e.txt, e.sub, false);
     else if (e.k === 'voz') vozPlay(e.v, e.n);
@@ -3740,7 +3742,7 @@ function showSettings() {
     setOpt(L('Idioma', 'Idioma'), seg('lang', [['es','Castellano'],['va','Valencià']], LANG, true)),
     setOpt(L('Color', 'Color'), seg('color', [['granate', L('Granate', 'Granat')], ['verde', L('Verde', 'Verd')]], SETTINGS.color === 'granate' ? 'granate' : 'verde', true), L('Verde: el tapete de siempre en la mesa y en toda la interfaz. Granate: el color de las primeras versiones.', 'Verd: el tapet de sempre a la taula i en tota la interfície. Granat: el color de les primeres versions.')),
     setOpt(L('Baraja', 'Baralla'), seg('deck', [['moderna','Moderna'],['clasica', L('Clásica', 'Clàssica')]], SETTINGS.deck, true), L('La clásica es la «Baraja española» de Basquetteur (Wikimedia Commons, licencia CC BY-SA). Más en Créditos.', 'La clàssica és la «Baraja española» de Basquetteur (Wikimedia Commons, llicència CC BY-SA). Més en Crèdits.')),
-    setOpt(L('Ritmo', 'Ritme'), seg('speed', [[0, L('Lento', 'Lent')], [1, 'Normal'], [2, L('Rápido', 'Ràpid')]], speedIx)),
+    setOpt(L('Ritmo', 'Ritme'), seg('speed', [[0, L('Lento', 'Lent')], [1, 'Normal'], [2, L('Rápido', 'Ràpid')]], speedIx), L('Lo que tardan los bots en jugar, las pausas y también el reparto de las cartas (su sonido va al mismo ritmo).', 'El que tarden els bots a jugar, les pauses i també el repartiment de les cartes (el seu so va al mateix ritme).')),
     setOpt(L('Coto al mejor de', 'Coto al millor de'), seg('cotoBest', [[3, L('3 partidas', '3 partides')], [5, L('5 partidas', '5 partides')]], SETTINGS.cotoBest || 5, true)),
     setOpt(L(`Tu compañero (${esc(NAMES[2])})`, `El teu company (${esc(NAMES[2])})`), seg('partner', LVL(), SETTINGS.partner)),
     setOpt(L(`Rivales (${esc(NAMES[1])} y ${esc(NAMES[3])})`, `Rivals (${esc(NAMES[1])} i ${esc(NAMES[3])})`), seg('rivals', LVL(), SETTINGS.rivals)),
@@ -4187,8 +4189,8 @@ async function animateCotoDeal() {
     if (reduce) return;
     const f = document.createElement('div'); f.className = 'fly'; f.innerHTML = '<span class="back"></span>'.repeat(n); document.body.appendChild(f);
     const w = f.offsetWidth / 2, h = f.offsetHeight / 2;
-    const a = f.animate([{ transform: `translate(${ox - w}px,${oy - h}px) scale(.75)` }, { transform: `translate(${to[0] - w}px,${to[1] - h}px) scale(1)` }], { duration: DEAL_MS, easing: 'cubic-bezier(.3,.7,.3,1)' });
-    sfxDeal(DEAL_MS);
+    const a = f.animate([{ transform: `translate(${ox - w}px,${oy - h}px) scale(.75)` }, { transform: `translate(${to[0] - w}px,${to[1] - h}px) scale(1)` }], { duration: dealMs(), easing: 'cubic-bezier(.3,.7,.3,1)' });
+    sfxDeal(dealMs());
     await a.finished.catch(() => {}); f.remove();
   };
   const gen = GEN;
