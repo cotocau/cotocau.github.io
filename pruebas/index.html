@@ -2,7 +2,7 @@
 <html lang="es" data-color="verde">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-beOdjWUiwRw65gODH7E4b5rNTyChxFLPvVrgEMdsbGU=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-/uQCVu3cBB6tPQaF/mf97DPomrvnUUcQQw6mwgRvQ7Q=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script>(()=>{try{const P='pr.',S=Storage.prototype,g=S.getItem,s=S.setItem,r=S.removeItem;S.getItem=function(k){return g.call(this,P+k)};S.setItem=function(k,v){return s.call(this,P+k,v)};S.removeItem=function(k){return r.call(this,P+k)};}catch(e){}})();</script>
 <meta name="theme-color" content="#07170e">
@@ -136,7 +136,7 @@ button{font:inherit;color:inherit}
 .card.incoming{animation:drop .45s ease-out}
 .card.taking{transform:translateY(-6px) scale(1.05);box-shadow:0 0 0 3px var(--gold),0 10px 20px rgba(0,0,0,.45)}
 .card.reserved{box-shadow:0 0 0 2px var(--felt-deep),0 0 0 4px var(--gold)}
-.card.last{box-shadow:0 0 0 2px rgba(244,234,216,.6),0 6px 14px rgba(0,0,0,.38)}
+.card.last{box-shadow:0 0 0 3px #ffe14d,0 0 14px 3px rgba(255,225,77,.6),0 6px 14px rgba(0,0,0,.38)}   /* última carta jugada: amarillo vivo que se ve sobre el tapete (25 nov) */
 .chain{display:flex;align-items:center;padding:12px 10px 8px;border:1.5px solid var(--gold);border-radius:12px;background:rgba(0,0,0,.22);position:relative}
 .chain .card+.card{margin-left:calc(var(--cw)*-.55)}
 .chain-lbl{position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--gold);color:var(--gold-ink);font-weight:800;font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:2px 7px;border-radius:999px;white-space:nowrap}
@@ -1934,7 +1934,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-25-13';
+const APP_VER = 'cau-2026-11-25-14';
 // Número que se ve en el menú de la oficial: la versión de la app de Android (1.2.4) y detrás un contador que sube con cada publicación en la oficial (1.2.4.1, 1.2.4.2…). Al subir la app de Android, se cambia el principio y el contador vuelve a 1.
 const APP_REL = '1.2.4.3';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
