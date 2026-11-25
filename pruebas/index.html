@@ -2,7 +2,7 @@
 <html lang="es" data-color="verde">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-z2kEdTxmw8OnZlJHRUZUlksBYyhrL1HfQzqKI03WDH0=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-YMKzc0rcWqp8zbQasP5/UhcngZew0wzYK7nHRM12Mi8=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script>(()=>{try{const P='pr.',S=Storage.prototype,g=S.getItem,s=S.setItem,r=S.removeItem;S.getItem=function(k){return g.call(this,P+k)};S.setItem=function(k,v){return s.call(this,P+k,v)};S.removeItem=function(k){return r.call(this,P+k)};}catch(e){}})();</script>
 <meta name="theme-color" content="#07170e">
@@ -81,6 +81,16 @@ button{font:inherit;color:inherit}
 .pile .n{position:absolute;left:17px;bottom:0;transform:translateX(-50%);min-width:22px;padding:0 5px;border-radius:10px;background:var(--gold);color:var(--gold-ink);font:800 13px/18px system-ui,sans-serif;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.6);transition:bottom .45s ease-out}
 .pile.them .n{background:var(--rival)}
 .pile.nonum .n{display:none}
+/* cantes de 20 marcados sobre el montón de bazas (25 nov): carta del palo boca arriba, inclinada */
+.pile .pmarks{position:absolute;left:0;width:34px;height:0;pointer-events:none}
+.pile .pm{position:absolute;left:3px;bottom:0;width:26px;height:39px;transform-origin:50% 100%;filter:drop-shadow(0 1px 2px rgba(0,0,0,.6))}
+.pile .pm .card{--cw:26px;box-shadow:0 0 0 1px rgba(0,0,0,.35)}
+.pile .pm0{transform:rotate(-34deg) translateX(-3px)}
+.pile .pm1{transform:rotate(22deg) translateX(5px)}
+.pile .pm2{transform:rotate(-8deg) translateX(1px)}
+.pile .pm.prov{opacity:.9}
+.pile .pm .back{width:26px;height:39px;display:block}
+.pile .pm b{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);min-width:15px;height:15px;border-radius:8px;background:var(--gold);color:var(--gold-ink);font:800 10px/15px system-ui,sans-serif;text-align:center}
 .pile.pop .stack{animation:pilePop .38s ease-out}
 @keyframes pilePop{0%{transform:scale(1)}45%{transform:scale(1.12)}100%{transform:scale(1)}}
 .row{flex:1;min-height:0;display:grid;grid-template-columns:72px minmax(0,1fr) 72px;gap:6px}
@@ -1157,7 +1167,7 @@ function cotoNewHand(G) {
   G.hands.forEach(h => coSort(G, h));
   G.leader = (G.dealer + 1) % 4; G.turn = G.leader;
   G.trick = []; G.lastTrick = null; G.lastTrickT = [null, null]; G.won = [0, 0]; G.pts = [0, 0]; G.cantes = [0, 0]; G.ultimas = [0, 0];
-  G.sung = []; G.canSing = null; G.lastWinner = null; G.trickNo = 0;
+  G.sung = []; G.sungT = [null, null, null, null]; G.wonCards = [[], []]; G.canSing = null; G.lastWinner = null; G.trickNo = 0;
   G.played = []; G.disc = [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]; G.voids = [[], [], [], []]; G.noTrumpOver = [[], [], [], []]; G.noHi = null;
   G.revealed = [[], [], [], []]; G.pintaHolder = null; G.swapped = false;
   G.phase = 'play'; G.handSummary = null;
@@ -1207,7 +1217,7 @@ function coCantesFor(G, p) {
 }
 function coSing(G, p, s) {
   const t = team(p), v = s === G.trump ? 40 : 20;
-  G.sung.push(s); G.cantes[t] += v; G.score[t] += v; if (G.marked) G.marked[p] = false;
+  G.sung.push(s); (G.sungT || (G.sungT = [null, null, null, null]))[s] = t; G.cantes[t] += v; G.score[t] += v; if (G.marked) G.marked[p] = false;
   if (G.rec) G.rec.ev.push(`  canta: ${SEATC[p]} ${v === 40 ? 'las 40' : '20 en ' + SUITN[s]} | marcador ${G.score[0]}-${G.score[1]}`);
   for (const id of [s * 10 + C_REY, s * 10 + C_SOTA]) if (!G.revealed[p].includes(id)) G.revealed[p].push(id);
   const who = p === 0 ? L('Cantas', 'Cantes') : `${NAMES[p]} canta`;
@@ -1270,6 +1280,7 @@ function coPlay(G, p, cid) {
   const last = G.hands.every(x => x.length === 0) && G.stock.length === 0;
   if (last) { pts += 10; G.ultimas[t] = 10; }
   G.pts[t] += pts; G.score[t] += pts; G.won[t]++; G.trickNo++;
+  (G.wonCards || (G.wonCards = [[], []]))[t].push(...G.trick.map(x => ({ id: x.c.id, r: x.c.r, s: x.c.s })));   // las cartas que lleva cada pareja (para marcar los cantes en su montón)
   G.lastWinner = w.p; G.lastTrick = { cards: G.trick, winner: w.p, pts, last };
   (G.lastTrickT || (G.lastTrickT = [null, null]))[t] = G.lastTrick;   // la última baza de cada pareja (se ve tocando su montón)
   G.trick = []; G.leader = w.p; G.turn = w.p; G.canSing = t;
@@ -1915,7 +1926,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-25-6';
+const APP_VER = 'cau-2026-11-25-7';
 // Número que se ve en el menú de la oficial: la versión de la app de Android (1.2.4) y detrás un contador que sube con cada publicación en la oficial (1.2.4.1, 1.2.4.2…). Al subir la app de Android, se cambia el principio y el contador vuelve a 1.
 const APP_REL = '1.2.4.2';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
@@ -2039,6 +2050,22 @@ function placePiles() {
   } else if (h.width) { p0.style.left = (h.left + 6) + 'px'; p0.style.top = (h.top + h.height / 2 - 42) + 'px'; }
   if (s1.width) { p1.style.left = (s1.left + s1.width / 2 - 17) + 'px'; p1.style.top = (s1.bottom - 92) + 'px'; }
 }
+// Marca de los cantes de 20 (25 nov): en el montón de bazas de la pareja que cantó se deja boca arriba, un poco inclinada, una carta del palo
+// cantado (las 40 no se marcan). Si aún no tiene ninguna de ese palo, se marca con una provisional y cuando llegue se cambia.
+function coMarks(G) {
+  const out = [[], []]; if (!G || !G.sungT) return out;
+  for (let s = 0; s < 4; s++) { const t = G.sungT[s]; if (t == null || s === G.trump) continue;
+    const c = ((G.wonCards || [])[t] || []).find(x => x.s === s); out[t].push({ s, c: c ? { id: c.id, r: c.r, s: c.s } : null }); }
+  return out;
+}
+function renderPileMarks(el, t, th) {
+  let box = el.querySelector('.pmarks'); if (!box) { box = document.createElement('div'); box.className = 'pmarks'; el.appendChild(box); }
+  const M = (G && G.marks ? G.marks[t] : coMarks(G)[t]) || [];
+  const sig = M.map(m => m.s + ':' + (m.c ? m.c.id : '-')).join(',') + '|' + th + '|' + SETTINGS.deck;
+  if (box.dataset.sig === sig) return; box.dataset.sig = sig;
+  box.style.bottom = (4 + th + 4) + 'px';
+  box.innerHTML = M.map((m, k) => `<span class="pm pm${k}${m.c ? '' : ' prov'}">${m.c ? cardHTML(m.c) : `<span class="back"></span><b class="s${m.s}">${'OCEB'[m.s]}</b>`}</span>`).join('');
+}
 function renderPiles() {
   const box = $('piles'); if (!box) return;
   // Coto: las cartas de las bazas ganadas (4 por baza), sin número: los puntos ya salen en el marcador
@@ -2049,6 +2076,7 @@ function renderPiles() {
     const el = $('pile' + t), n = co ? Math.max(0, (G.won[t] || 0) * 4 - pileHold[t]) : (S.cap[t] || 0);
     el.classList.toggle('nonum', co);
     if (!el.firstChild) el.innerHTML = '<div class="stack"><span class="edge"></span><span class="back top"></span></div><b class="n"></b>';
+    if (co) renderPileMarks(el, t, Math.max(0, n - 1) * PILE_MM); else { const mk = el.querySelector('.pmarks'); if (mk) mk.remove(); }
     if (el.dataset.n === String(n) && el.dataset.g === String(co)) continue;
     if (el.dataset.g !== String(co)) { delete el.dataset.n; el.dataset.g = String(co); }
     const prev = el.dataset.n == null ? null : +el.dataset.n;
@@ -3281,7 +3309,7 @@ function netView(g) {
     phase: G.phase, partidaNo: G.partidaNo, handNo: G.handNo, vueltas: G.vueltas, need: G.need, bestOf: G.bestOf, over: G.over, endMid: G.endMid,
     wins: tm(G.wins), score: tm(G.score), won: tm(G.won), pts: tm(G.pts), cantes: tm(G.cantes), ultimas: tm(G.ultimas), handSummary: tm(G.handSummary),
     canSing: tt(G.canSing), partidaWinner: tt(G.partidaWinner), winner: tt(G.winner),
-    dealer: rot(G.dealer), turn: rot(G.turn), leader: rot(G.leader), trickNo: G.trickNo, swapped: G.swapped, sung: G.sung.slice(), trump: G.trump, pinta: G.pinta,
+    dealer: rot(G.dealer), turn: rot(G.turn), leader: rot(G.leader), trickNo: G.trickNo, swapped: G.swapped, sung: G.sung.slice(), trump: G.trump, pinta: G.pinta, marks: tm(coMarks(G)),
     trick: G.trick.map(x => ({ p: rot(x.p), c: x.c })), lastTrick: G.lastTrick ? { ...G.lastTrick, cards: G.lastTrick.cards.map(x => ({ p: rot(x.p), c: x.c })), winner: rot(G.lastTrick.winner) } : null,
     lastTrickT: tm((G.lastTrickT || [null, null]).map(x => x ? { ...x, cards: x.cards.map(y => ({ p: rot(y.p), c: y.c })), winner: rot(x.winner) } : null)),
     stock: G.stock.map((c, k) => k === G.stock.length - 1 ? c : { id: -100 - k, r: 0, s: 0 }), hands, names, dealOrder: G.dealOrders ? G.dealOrders[g] : null, cantePass: (G.remotePass || {})[g] ?? null, away: !!NET.seats[g].away,
