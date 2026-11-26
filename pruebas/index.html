@@ -2,7 +2,7 @@
 <html lang="es" data-color="verde">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-Q8Dk4BkuhEmHtTuGap9P75nb4i4M/Cjcp95JQ434md0=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-wsFyphAQdVfc+MrrLvTqVeL3oayFTGJIDh5IIb7L0Eg=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script>(()=>{try{const P='pr.',S=Storage.prototype,g=S.getItem,s=S.setItem,r=S.removeItem;S.getItem=function(k){return g.call(this,P+k)};S.setItem=function(k,v){return s.call(this,P+k,v)};S.removeItem=function(k){return r.call(this,P+k)};}catch(e){}})();</script>
 <meta name="theme-color" content="#07170e">
@@ -246,6 +246,7 @@ button{font:inherit;color:inherit}
 .pw{display:flex;gap:8px}
 .pw input{flex:1;min-width:0;font:600 16px var(--f-body);color:var(--ink);background:rgba(0,0,0,.25);border:1px solid var(--line);border-radius:10px;padding:9px 11px}
 .pwerr{color:var(--rival);font-weight:700}
+.obras{text-align:center}.obras svg{display:block;width:min(80%,260px);height:auto;margin:0 auto 6px}.obras h3{margin:4px 0 6px;color:#e3b24f}.obras p{margin:4px 0}.obras small{opacity:.7}
 .rk{width:100%;border-collapse:collapse;font-size:14px}
 .rk th,.rk td{padding:6px 5px;border-bottom:1px solid var(--line);text-align:right}
 .rk th:nth-child(2),.rk td:nth-child(2){text-align:left}
@@ -1954,7 +1955,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-26-20';
+const APP_VER = 'cau-2026-11-26-21';
 // Número que se ve en el menú de la oficial: la versión de la app de Android (1.2.4) y detrás un contador que sube con cada publicación en la oficial (1.2.4.1, 1.2.4.2…). Al subir la app de Android, se cambia el principio y el contador vuelve a 1.
 const APP_REL = '1.2.4.6';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
@@ -2860,6 +2861,22 @@ function loadSupabase() {
 // Activado para todos el 2 nov (en Supabase, «Allow public access» de Realtime apagado y reglas en manos/seguridad-supabase.sql).
 const NET_PRIVATE = true;
 const NET_PKEY = 'm' + Math.random().toString(36).slice(2, 10);   // clave del contador de mesas (una por apertura de la app)
+/* ---------------- «En obras» (26 nov): si el servidor del online no contesta ---------------- */
+// Dibujo de tres cartas (oros, bastos, copas) detrás de una valla de obras con conos y una señal de aviso.
+const OBRAS_SVG = '<svg viewBox="0 0 260 170" role="img" aria-label="Obras"><defs><pattern id="obrasBanda" width="20" height="20" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="10" height="20" fill="#e8742a"/><rect x="10" width="10" height="20" fill="#f4ead8"/></pattern></defs><g transform="translate(130 122)"><g transform="translate(-26 4) rotate(-26)"><rect x="-28" y="-86" width="56" height="84" rx="6" fill="#f4ead8" stroke="#1b080d" stroke-width="2"/><circle cx="0" cy="-44" r="15" fill="#e3b24f" stroke="#8a6a1f" stroke-width="2"/><circle cx="0" cy="-44" r="7" fill="none" stroke="#8a6a1f" stroke-width="2"/></g><g transform="translate(26 4) rotate(26)"><rect x="-28" y="-86" width="56" height="84" rx="6" fill="#f4ead8" stroke="#1b080d" stroke-width="2"/><rect x="-4" y="-70" width="8" height="52" rx="4" fill="#3f8a4a" stroke="#1f4a27" stroke-width="2"/><circle cx="0" cy="-70" r="6" fill="#3f8a4a" stroke="#1f4a27" stroke-width="2"/></g><g><rect x="-28" y="-90" width="56" height="84" rx="6" fill="#f4ead8" stroke="#1b080d" stroke-width="2"/><path d="M-14 -70 h28 c0 18 -8 28 -14 28 s-14 -10 -14 -28 z M0 -42 v14 M-9 -27 h18" fill="#c8342f" stroke="#7a1b18" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/></g></g><rect x="58" y="134" width="7" height="26" fill="#6a5a4a"/><rect x="195" y="134" width="7" height="26" fill="#6a5a4a"/><rect x="36" y="122" width="188" height="22" rx="4" fill="url(#obrasBanda)" stroke="#1b080d" stroke-width="2"/><path d="M12 160 L26 128 L40 160 Z" fill="#e8742a" stroke="#1b080d" stroke-width="2" stroke-linejoin="round"/><path d="M17 148 h18" stroke="#f4ead8" stroke-width="4"/><path d="M220 160 L234 128 L248 160 Z" fill="#e8742a" stroke="#1b080d" stroke-width="2" stroke-linejoin="round"/><path d="M225 148 h18" stroke="#f4ead8" stroke-width="4"/><path d="M214 10 L242 58 H186 Z" fill="#f2c230" stroke="#1b080d" stroke-width="3" stroke-linejoin="round"/><path d="M214 26 v18" stroke="#1b080d" stroke-width="4" stroke-linecap="round"/><circle cx="214" cy="51" r="2.6" fill="#1b080d"/></svg>';
+// Si no se puede conectar con el online: ¿es que no hay internet o es que el servidor de las partidas no contesta?
+// Se pregunta a nuestra propia web con HEAD (el service worker no toca las peticiones que no son GET, así que va a la red de verdad).
+async function netFailMsg(e) {
+  let own = false; const ac = new AbortController(), to = setTimeout(() => ac.abort(), 6000);
+  try { await fetch('./manifest.webmanifest', { method: 'HEAD', cache: 'no-store', signal: ac.signal }); own = true; } catch (x) {}
+  clearTimeout(to);
+  const why = esc((e && e.message) || '');
+  if (own && navigator.onLine !== false) return { obras: true, why };
+  return L('No se ha podido conectar. Comprueba la conexión a internet.', 'No s\'ha pogut connectar. Comprova la connexió a internet.') + (why ? ' (' + why + ')' : '');
+}
+const netObrasHTML = why => `<div class="obras">${OBRAS_SVG}<h3>${L('El online está en obras', 'L\'online està en obres')}</h3>
+  <p>${L('No conseguimos conectar con el servidor de las partidas online. Suele arreglarse solo en un rato: vuelve a probar más tarde.', 'No aconseguim connectar amb el servidor de les partides online. Sol arreglar-se sol en una estona: torna a provar més tard.')}</p>
+  <p>${L('Mientras tanto puedes jugar contra los bots, que no necesita internet.', 'Mentrestant pots jugar contra els bots, que no necessita internet.')}</p>${why ? `<p><small>(${why})</small></p>` : ''}</div>`;
 async function netClient() {
   await loadSupabase();
   if (!netOpen.client) netOpen.client = window.supabase.createClient(SUPA_BASE, SUPA.key);
@@ -3157,6 +3174,10 @@ const seatName = p => [L('Tú (anfitrión)', 'Tu (amfitrió)'), L('Rival de la d
 function showOnline(err) {
   if (!NET && hostRoomGet()) return netHostResume();
   if (!NET && netRoomGet()) return showRejoinBlock();
+  if (err && typeof err === 'object' && err.obras) {
+    showPanel(`<h2>Online</h2>${netObrasHTML(err.why)}<div class="acts"><button class="btn" type="button" data-act="play">${L('Volver', 'Tornar')}</button><button class="btn primary" type="button" data-act="online">${L('Reintentar', 'Tornar-ho a provar')}</button></div>`);
+    panelBack = 'menu'; cover(); return;
+  }
   const nm = esc(SETTINGS.alias || '');
   showPanel(`<h2>Online</h2>
   <p>${L('Coto, Cau o CotoCau con amigos, cada uno desde su móvil. Uno crea la sala (el anfitrión) y los demás se unen con el código.', 'Coto, Cau o CotoCau amb amics, cadascú des del seu mòbil. Un crea la sala (l\'amfitrió) i els altres s\'hi uneixen amb el codi.')}</p>
@@ -3234,7 +3255,7 @@ async function netHost(name, mode, open) {
   NET = { role: 'host', code: netCode(), name, mode, open: !!open, best: mode === 'coto3' ? 3 : mode === 'coto5' ? 5 : (SETTINGS.cotoBest || 5), started: false, priv: {}, seats: [{ kind: 'host', name }, { kind: 'free' }, { kind: 'free' }, { kind: 'free' }] };
   showPanel(`<h2>${L('Creando sala…', 'Creant sala…')}</h2>`); cover();
   try { NET.keys = await netKeys(false); NET.fp = (await netIdOf(NET.keys.raw)).slice(1, 13); try { NET.keyJwk = await crypto.subtle.exportKey('jwk', NET.keys.priv); } catch (e) {} NET.pub = await netOpen(NETNS + NET.code, netHostPub); }
-  catch (e) { NET = null; return showOnline(L('No se ha podido conectar. Comprueba la conexión a internet.', 'No s\'ha pogut connectar. Comprova la connexió a internet.') + ' (' + esc(e.message) + ')'); }
+  catch (e) { NET = null; return showOnline(await netFailMsg(e)); }
   NET.timer = setInterval(netHostTick, 3000);
   netPresenceTrack(true);
   netLobby();
@@ -3404,7 +3425,8 @@ async function netHostResume(rec, ghost) {
     }
   } catch (e) {
     NET = null;
-    return showPanel(`<h2>${L('No se ha podido volver a la mesa', 'No s\'ha pogut tornar a la taula')}</h2><p>${L('Comprueba la conexión a internet.', 'Comprova la connexió a internet.')} (${esc(e.message)})</p><div class="acts"><button class="btn" type="button" data-act="net-hforget">${L('Olvidar esta mesa', 'Oblidar esta taula')}</button><button class="btn primary" type="button" data-act="net-hresume">${L('Reintentar', 'Tornar-ho a provar')}</button></div>`);
+    const fm = await netFailMsg(e);
+    return showPanel(`<h2>${L('No se ha podido volver a la mesa', 'No s\'ha pogut tornar a la taula')}</h2>${typeof fm === 'object' ? netObrasHTML(fm.why) : `<p>${fm}</p>`}<div class="acts"><button class="btn" type="button" data-act="net-hforget">${L('Olvidar esta mesa', 'Oblidar esta taula')}</button><button class="btn primary" type="button" data-act="net-hresume">${L('Reintentar', 'Tornar-ho a provar')}</button></div>`);
   }
   NET.timer = setInterval(netHostTick, 3000);
   if (!ghost) netPresenceTrack(true);
@@ -3669,7 +3691,7 @@ async function netJoin(code, name, autoSit, rejoin, pin) {
   if (rejoin) netRelayLoad();   // al volver a una sala, se sienta solo si su sitio se liberó
   showPanel(`<h2>${L('Conectando…', 'Connectant…')}</h2>`); cover();
   try { NET.keys = await netKeys(true); NET.id = await netIdOf(NET.keys.raw); NET.pub = await netOpen(NETNS + code, netGuestPub); }
-  catch (e) { NET = null; return showOnline(L('No se ha podido conectar. Comprueba la conexión a internet.', 'No s\'ha pogut connectar. Comprova la connexió a internet.') + ' (' + esc(e.message) + ')'); }
+  catch (e) { NET = null; return showOnline(await netFailMsg(e)); }
   NET.timer = setInterval(netGuestTick, 3000);
   // al entrar, cada segundo: saludo hasta que conteste el anfitrión y «hi» hasta recibir la sala (un mensaje perdido ya no cuesta 3 s)
   NET.fast = setInterval(() => {
