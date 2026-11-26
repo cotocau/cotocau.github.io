@@ -2,7 +2,7 @@
 <html lang="es" data-color="verde">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-EJ4c7UgenalPW8gQoM1qH1pz7crRiA85aFA6VvLto2w=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-xACxax1aGZ5dWxz1zHb/4iUg1cJD4phx06mRuKX2vTE=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#07170e">
 <meta name="description" content="CotoCau: el Coto y el Cau, los juegos de cartas de las filaes de Alcoy. Juega con tu compañera contra dos rivales.">
@@ -245,6 +245,8 @@ button{font:inherit;color:inherit}
 .pw{display:flex;gap:8px}
 .pw input{flex:1;min-width:0;font:600 16px var(--f-body);color:var(--ink);background:rgba(0,0,0,.25);border:1px solid var(--line);border-radius:10px;padding:9px 11px}
 .pwerr{color:var(--rival);font-weight:700}
+.rkaviso{border:1px solid rgba(227,178,79,.7);background:rgba(227,178,79,.12);border-radius:12px;padding:9px 12px;margin:0 0 10px;font-size:13px;line-height:1.45;text-align:center}.rkaviso .btn{display:block;margin:8px auto 0;padding:6px 16px;font-size:13px}
+.obras{text-align:center}.obras svg{display:block;width:min(80%,260px);height:auto;margin:0 auto 6px}.obras h3{margin:4px 0 6px;color:#e3b24f}.obras p{margin:4px 0}.obras small{opacity:.7}
 .rk{width:100%;border-collapse:collapse;font-size:14px}
 .rk th,.rk td{padding:6px 5px;border-bottom:1px solid var(--line);text-align:right}
 .rk th:nth-child(2),.rk td:nth-child(2){text-align:left}
@@ -438,9 +440,11 @@ html.wide .hand{grid-column:2;grid-row:6;padding-bottom:4px}
   // el código del móvil tampoco se importa: cada móvil crea el suyo
 } catch (e) {} })();
 // 13 nov (auditoría, M4): la app no funciona incrustada dentro de otra página (evita que otra web engañe con los toques)
-if (window.top !== window.self) { document.documentElement.style.display = 'none'; try { window.top.location = window.self.location.href; } catch (e) {} throw new Error('incrustada'); }
+// 26 nov (relevo): la única excepción es la copia invisible de la propia app que hace de árbitro (?arbitro=1) dentro de la misma app
+if (window.top !== window.self) { let propia = false; if (/[?&]arbitro=1/.test(location.search)) { try { propia = window.parent.location.origin === location.origin && !!window.parent.document; } catch (e) {} } if (!propia) { document.documentElement.style.display = 'none'; try { window.top.location = window.self.location.href; } catch (e) {} throw new Error('incrustada'); } }
 (() => {
 'use strict';
+const ARBITRO = /[?&]arbitro=1/.test(location.search) && window.top !== window.self;   // esta copia es el árbitro invisible de un relevo
 /* ---------------- Motor del Cau ---------------- */
 const RV = [1,2,3,4,5,6,7,10,11,12];
 // Idioma: castellano (es) o valenciano (va). Los textos se escriben con L('castellano', 'valencià')
@@ -1951,9 +1955,9 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-26-11';
+const APP_VER = 'cau-2026-11-27-1';
 // Número que se ve en el menú de la oficial: la versión de la app de Android (1.2.4) y detrás un contador que sube con cada publicación en la oficial (1.2.4.1, 1.2.4.2…). Al subir la app de Android, se cambia el principio y el contador vuelve a 1.
-const APP_REL = '1.2.4.6';
+const APP_REL = '1.2.4.7';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
 // sus partidas llevan «-pruebas» en la versión y su online usa salas aparte (canales cc-p…), para no mezclarse con la oficial.
 const PRUEBAS = false;
@@ -2009,6 +2013,7 @@ async function shareFlush() {
   } catch (e) {} finally { shareBusy = false; }
 }
 function shareRec(rec, juego, result) {
+  if (ARBITRO) return;
   if (!rec || rec.sent || !SETTINGS.share || TUTG || (NET && NET.role === 'guest')) return;
   rec.sent = true; save();   // que no se vuelva a enviar si se reabre la app en el resumen
   const datos = JSON.parse(JSON.stringify(rec)); delete datos.sent; delete datos.cur; datos.result = result;
@@ -2078,17 +2083,19 @@ window.addEventListener('online', () => rkFlush());
    D desconexión sin vuelta (una derrota normal). Si se va el anfitrión o te echa, no se penaliza a nadie más. */
 const RK_ID = /^[A-Z]{4,6}-[a-z0-9]{4,12}-(coto|cau)$/;
 function rkNetBegin(juego) {   // anfitrión: empieza una partida online
-  if (!NET || NET.role !== 'host') return;
+  if (ARBITRO || !NET || NET.role !== 'host') return;
   const ok = [1, 2, 3].every(q => NET.seats[q] && NET.seats[q].kind === 'human');
   NET.rk = { id: NET.code + '-' + Date.now().toString(36) + '-' + juego, juego, ok };
   rkNetOpen(NET.rk);
 }
 function rkNetClose(r, res) {   // da la partida por resuelta y manda el resultado
+  if (ARBITRO) return;
   const d = rkGet('cau.rkd', []); if (!d.includes(r.id)) { d.push(r.id); rkSet('cau.rkd', d.slice(-30)); }
   const cur = rkGet('cau.rkn', null); if (cur && cur.id === r.id) rkSet('cau.rkn', null);
   rkPush({ id: r.id, juego: r.juego, modo: 'online' }, res);
 }
 function rkNetOpen(r) {
+  if (ARBITRO) return;
   if (!r || r.ok !== true || !RK_ID.test(String(r.id)) || !/^(coto|cau)$/.test(r.juego) || !SETTINGS.rank) return;
   if (rkGet('cau.rkd', []).includes(r.id)) return;
   const cur = rkGet('cau.rkn', null);
@@ -2097,12 +2104,13 @@ function rkNetOpen(r) {
   rkSet('cau.rkn', { id: r.id, juego: r.juego, t: Date.now() });
 }
 function rkNetEnd(juego, ganada) {
+  if (ARBITRO) return;
   if (!NET || !NET.rk || NET.rk.juego !== juego) return;
   const cur = rkGet('cau.rkn', null); if (!cur || cur.id !== NET.rk.id) return;
   rkNetClose(cur, ganada ? 'G' : 'P');
 }
-function rkNetQuit(res) { const cur = rkGet('cau.rkn', null); if (cur) rkNetClose(cur, res); }   // sale a mitad de partida
-function rkNetDiscard() { rkSet('cau.rkn', null); }   // se fue el anfitrión o te echó: no cuenta
+function rkNetQuit(res) { if (ARBITRO) return; const cur = rkGet('cau.rkn', null); if (cur) rkNetClose(cur, res); }   // sale a mitad de partida
+function rkNetDiscard() { if (ARBITRO) return; rkSet('cau.rkn', null); }   // se fue el anfitrión o te echó: no cuenta
 function rkNetStale() { if (!NET && !netRoomGet() && !hostRoomGet()) { const cur = rkGet('cau.rkn', null); if (cur) rkNetClose(cur, 'D'); } }
 function rkCopyCode() { const c = deviceId(); try { navigator.clipboard.writeText(c); } catch (e) {} }
 function rkRestoreCode(v) {
@@ -2143,12 +2151,13 @@ function showRank() {
       : `<p class="desc" style="text-align:center">${L('Aún no hay nadie en esta tabla.', 'Encara no hi ha ningú en esta taula.')}</p>`;
     if (mine && !mine.en_tabla) body += `<p class="big-result" style="font-size:15px">${L(`Te faltan ${Math.max(1, 10 - mine.partidas)} partidas para entrar (llevas ${mine.partidas}).`, `Et falten ${Math.max(1, 10 - mine.partidas)} partides per a entrar (en portes ${mine.partidas}).`)}</p>`;
     else if (!mine && SETTINGS.rank && RK.juego === 'combinada') body += `<p class="desc">${L('Para salir en la combinada hace falta estar en la tabla del Coto y en la del Cau.', 'Per a eixir en la combinada cal estar en la taula del Coto i en la del Cau.')}</p>`;
-    if (!SETTINGS.rank) body += `<p class="desc">${L('Para salir en la clasificación, actívalo en Ajustes → Perfil.', 'Per a eixir en la classificació, activa-ho en Ajusts → Perfil.')} <button class="linkbtn" type="button" data-act="rank-go">${L('Ir a Ajustes', 'Anar a Ajusts')}</button></p>`;
   }
   const nota = RK.modo === 'offline'
     ? L('Solo cuentan partidas contra bots de nivel «muy difícil», tus últimas 50 por juego. Hace falta un mínimo de 10 partidas para salir en la tabla. Si pasas más de 7 días sin jugar, bajas un poco cada semana.', 'Només compten partides contra bots de nivell «molt difícil», les últimes 50 per joc. Cal un mínim de 10 partides per a eixir en la taula. Si passes més de 7 dies sense jugar, baixes un poc cada setmana.')
     : L('Solo cuentan mesas que empiezan con 4 personas. Hace falta un mínimo de 10 partidas para salir en la tabla. Abandonar una partida pesa el doble que perderla.', 'Només compten taules que comencen amb 4 persones. Cal un mínim de 10 partides per a eixir en la taula. Abandonar una partida pesa el doble que perdre-la.');
-  showPanel(`<h2 data-rk>${L('Clasificación', 'Classificació')}</h2>${tab('modo', M, RK.modo, 2)}${tab('juego', J, RK.juego, 3)}${body}<p class="desc rknote">${nota}</p>${PRUEBAS ? `<p class="desc" style="font-size:11px;opacity:.7">diag: interruptor ${SETTINGS.rank ? 'sí' : 'NO'} · compañero ${SETTINGS.partner} · rivales ${SETTINGS.rivals} · en curso ${JSON.stringify(rkGet('cau.rkp', null))} · por enviar ${rkGet('cau.rkq', []).length} · último envío ${JSON.stringify(rkGet('cau.rkl', null))}</p>` : ''}
+  // 27 nov: recordatorio bien visible arriba (antes era una línea pequeña debajo de la tabla) para quien no tiene activado «Aparecer en la clasificación»
+  const aviso = SETTINGS.rank ? '' : `<div class="rkaviso">🔔 <b>${L('Tú no sales en la clasificación.', 'Tu no eixes en la classificació.')}</b> ${L('Para aparecer, activa «Aparecer en la clasificación» en Ajustes → Perfil.', 'Per a aparéixer, activa «Aparéixer en la classificació» en Ajusts → Perfil.')} <button class="btn" type="button" data-act="rank-go">${L('Ir a Ajustes', 'Anar a Ajusts')}</button></div>`;
+  showPanel(`<h2 data-rk>${L('Clasificación', 'Classificació')}</h2>${aviso}${tab('modo', M, RK.modo, 2)}${tab('juego', J, RK.juego, 3)}${body}<p class="desc rknote">${nota}</p>${PRUEBAS ? `<p class="desc" style="font-size:11px;opacity:.7">diag: interruptor ${SETTINGS.rank ? 'sí' : 'NO'} · compañero ${SETTINGS.partner} · rivales ${SETTINGS.rivals} · en curso ${JSON.stringify(rkGet('cau.rkp', null))} · por enviar ${rkGet('cau.rkq', []).length} · último envío ${JSON.stringify(rkGet('cau.rkl', null))}</p>` : ''}
   <div class="acts"><button class="btn primary" type="button" data-act="close">${L('Volver', 'Tornar')}</button></div>`); cover();
   const box = $('panel').querySelector('.rkbox'), me = box && box.querySelector('tr.me');
   if (me) box.scrollTop = Math.max(0, me.offsetTop - box.clientHeight / 2);
@@ -2163,7 +2172,7 @@ function showShareAsk() {
 // verde por defecto (21 nov); solo «granate» lo quita
 function applyColor() { const c = SETTINGS.color === 'granate' ? '' : 'verde'; if (c) document.documentElement.dataset.color = c; else delete document.documentElement.dataset.color; const m = document.querySelector('meta[name=theme-color]'); if (m) m.content = c === 'verde' ? '#07170e' : '#1b080d'; }
 try { applyColor(); } catch (e) {}
-function saveSettings() { SETTINGS.speed = speedIx; try { localStorage.setItem('cau.settings', JSON.stringify(SETTINGS)); } catch (e) {} }
+function saveSettings() { if (ARBITRO) return; SETTINGS.speed = speedIx; try { localStorage.setItem('cau.settings', JSON.stringify(SETTINGS)); } catch (e) {} }
 const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 const sleep = ms => new Promise(r => setTimeout(r, ms * SPEEDS[speedIx][1]));
 
@@ -2302,13 +2311,13 @@ function hintFor(cid) {
   return [L('Se queda', 'Es queda'), ''];
 }
 
-function humanSpeaks(S) { if (S.netSpk !== undefined) return S.phase === 'nit' && !!S.bet && S.netSpk === 0; return S.phase === 'nit' && S.bet && S.bet.turnTeam === 0 && spkOf(S, 0) === 0; }
+function humanSpeaks(S) { if (GHOST()) return false; if (S.netSpk !== undefined) return S.phase === 'nit' && !!S.bet && S.netSpk === 0; return S.phase === 'nit' && S.bet && S.bet.turnTeam === 0 && spkOf(S, 0) === 0; }
 // Online: quién habla el de nit por la pareja a la que le toca (el anfitrión, una persona conectada o, si no, un bot = null)
 function cauSpeaker(S) {
   if (!S || S.phase !== 'nit' || !S.bet) return null;
   const t = S.bet.turnTeam;
   const sp = spkOf(S, t);
-  return sp === 0 || (sp != null && humanSeat(sp)) ? sp : null;
+  return (sp != null && humanSeat(sp)) ? sp : null;
 }
 function speakerName(S) { return NAMES[spkOf(S, S.bet.turnTeam)]; }
 function myTurn() { return S.phase === 'play' && S.turn === 0 && !busy && !fx && !S.over; }
@@ -2853,6 +2862,22 @@ function loadSupabase() {
 // Activado para todos el 2 nov (en Supabase, «Allow public access» de Realtime apagado y reglas en manos/seguridad-supabase.sql).
 const NET_PRIVATE = true;
 const NET_PKEY = 'm' + Math.random().toString(36).slice(2, 10);   // clave del contador de mesas (una por apertura de la app)
+/* ---------------- «En obras» (26 nov): si el servidor del online no contesta ---------------- */
+// Dibujo de tres cartas (oros, bastos, copas) detrás de una valla de obras con conos y una señal de aviso.
+const OBRAS_SVG = '<svg viewBox="0 0 260 170" role="img" aria-label="Obras"><defs><pattern id="obrasBanda" width="20" height="20" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="10" height="20" fill="#e8742a"/><rect x="10" width="10" height="20" fill="#f4ead8"/></pattern></defs><g transform="translate(130 122)"><g transform="translate(-26 4) rotate(-26)"><rect x="-28" y="-86" width="56" height="84" rx="6" fill="#f4ead8" stroke="#1b080d" stroke-width="2"/><circle cx="0" cy="-44" r="15" fill="#e3b24f" stroke="#8a6a1f" stroke-width="2"/><circle cx="0" cy="-44" r="7" fill="none" stroke="#8a6a1f" stroke-width="2"/></g><g transform="translate(26 4) rotate(26)"><rect x="-28" y="-86" width="56" height="84" rx="6" fill="#f4ead8" stroke="#1b080d" stroke-width="2"/><rect x="-4" y="-70" width="8" height="52" rx="4" fill="#3f8a4a" stroke="#1f4a27" stroke-width="2"/><circle cx="0" cy="-70" r="6" fill="#3f8a4a" stroke="#1f4a27" stroke-width="2"/></g><g><rect x="-28" y="-90" width="56" height="84" rx="6" fill="#f4ead8" stroke="#1b080d" stroke-width="2"/><path d="M-14 -70 h28 c0 18 -8 28 -14 28 s-14 -10 -14 -28 z M0 -42 v14 M-9 -27 h18" fill="#c8342f" stroke="#7a1b18" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/></g></g><rect x="58" y="134" width="7" height="26" fill="#6a5a4a"/><rect x="195" y="134" width="7" height="26" fill="#6a5a4a"/><rect x="36" y="122" width="188" height="22" rx="4" fill="url(#obrasBanda)" stroke="#1b080d" stroke-width="2"/><path d="M12 160 L26 128 L40 160 Z" fill="#e8742a" stroke="#1b080d" stroke-width="2" stroke-linejoin="round"/><path d="M17 148 h18" stroke="#f4ead8" stroke-width="4"/><path d="M220 160 L234 128 L248 160 Z" fill="#e8742a" stroke="#1b080d" stroke-width="2" stroke-linejoin="round"/><path d="M225 148 h18" stroke="#f4ead8" stroke-width="4"/><path d="M214 10 L242 58 H186 Z" fill="#f2c230" stroke="#1b080d" stroke-width="3" stroke-linejoin="round"/><path d="M214 26 v18" stroke="#1b080d" stroke-width="4" stroke-linecap="round"/><circle cx="214" cy="51" r="2.6" fill="#1b080d"/></svg>';
+// Si no se puede conectar con el online: ¿es que no hay internet o es que el servidor de las partidas no contesta?
+// Se pregunta a nuestra propia web con HEAD (el service worker no toca las peticiones que no son GET, así que va a la red de verdad).
+async function netFailMsg(e) {
+  let own = false; const ac = new AbortController(), to = setTimeout(() => ac.abort(), 6000);
+  try { await fetch('./manifest.webmanifest', { method: 'HEAD', cache: 'no-store', signal: ac.signal }); own = true; } catch (x) {}
+  clearTimeout(to);
+  const why = esc((e && e.message) || '');
+  if (own && navigator.onLine !== false) return { obras: true, why };
+  return L('No se ha podido conectar. Comprueba la conexión a internet.', 'No s\'ha pogut connectar. Comprova la connexió a internet.') + (why ? ' (' + why + ')' : '');
+}
+const netObrasHTML = why => `<div class="obras">${OBRAS_SVG}<h3>${L('El online está en obras', 'L\'online està en obres')}</h3>
+  <p>${L('No conseguimos conectar con el servidor de las partidas online. Suele arreglarse solo en un rato: vuelve a probar más tarde.', 'No aconseguim connectar amb el servidor de les partides online. Sol arreglar-se sol en una estona: torna a provar més tard.')}</p>
+  <p>${L('Mientras tanto puedes jugar contra los bots, que no necesita internet.', 'Mentrestant pots jugar contra els bots, que no necessita internet.')}</p>${why ? `<p><small>(${why})</small></p>` : ''}</div>`;
 async function netClient() {
   await loadSupabase();
   if (!netOpen.client) netOpen.client = window.supabase.createClient(SUPA_BASE, SUPA.key);
@@ -2968,7 +2993,7 @@ const netCode = () => Array.from(crypto.getRandomValues(new Uint32Array(6)), v =
 function netSend(m) {
   try {
     if (!NET) return;
-    if (NET.role === 'host') { for (const ch of Object.values(NET.priv || {})) ch.send(m); }
+    if (NET.role === 'host') { if (NET.ep) m = Object.assign({}, m, { ep: NET.ep }); for (const ch of Object.values(NET.priv || {})) ch.send(m); }
     else if (NET.priv) NET.priv.send(m);
   } catch (e) {}
 }
@@ -2990,6 +3015,46 @@ async function netSecret(myPriv, otherRaw, code) {
   const bits = new Uint8Array(await crypto.subtle.deriveBits({ name: 'ECDH', public: pub }, myPriv, 256));
   return hexOf(await crypto.subtle.digest('SHA-256', new Uint8Array([...bits, ...new TextEncoder().encode('cotocau-' + code)]))).slice(0, 32);
 }
+// ---- Relevo del anfitrión (26 nov): reparto de una clave en trozos (2 de n) y copia cifrada de la partida ----
+// Shamir sobre GF(256): con dos trozos se recupera la clave; con uno solo no se sabe nada. Un solo invitado recibe la clave entera.
+const GF_EXP = new Uint8Array(512), GF_LOG = new Uint8Array(256);
+(() => { let x = 1; for (let i = 0; i < 255; i++) { GF_EXP[i] = x; GF_LOG[x] = i; x = (x ^ ((x << 1) ^ (x & 0x80 ? 0x1b : 0))) & 0xff; } for (let i = 255; i < 512; i++) GF_EXP[i] = GF_EXP[i - 255]; })();
+const gfMul = (a, b) => a && b ? GF_EXP[GF_LOG[a] + GF_LOG[b]] : 0;
+const gfInv = a => GF_EXP[255 - GF_LOG[a]];
+// secret: Uint8Array; t: cuántos trozos hacen falta (1 o 2); xs: números de trozo distintos y no nulos (1..255)
+function shamirSplit(secret, t, xs) {
+  const out = {};
+  for (const x of xs) out[x] = new Uint8Array(secret.length);
+  for (let i = 0; i < secret.length; i++) {
+    const co = [secret[i]]; for (let k = 1; k < t; k++) co.push(crypto.getRandomValues(new Uint8Array(1))[0]);
+    for (const x of xs) { let y = 0, p = 1; for (const c of co) { y ^= gfMul(c, p); p = gfMul(p, x); } out[x][i] = y; }
+  }
+  return out;
+}
+// pts: [{x, y: Uint8Array}] (con t puntos distintos); devuelve el secreto
+function shamirJoin(pts) {
+  const n = pts[0].y.length, s = new Uint8Array(n);
+  for (let a = 0; a < pts.length; a++) {
+    let l = 1; for (let b = 0; b < pts.length; b++) if (b !== a) l = gfMul(l, gfMul(pts[b].x, gfInv(pts[a].x ^ pts[b].x)));
+    for (let i = 0; i < n; i++) s[i] ^= gfMul(pts[a].y[i], l);
+  }
+  return s;
+}
+async function relayZip(txt) { try { if (typeof CompressionStream === 'function') { const s = new Blob([txt]).stream().pipeThrough(new CompressionStream('gzip')); return new Uint8Array(await new Response(s).arrayBuffer()); } } catch (e) {} return new TextEncoder().encode(txt); }
+async function relayUnzip(buf) { try { if (buf[0] === 0x1f && buf[1] === 0x8b && typeof DecompressionStream === 'function') { const s = new Blob([buf]).stream().pipeThrough(new DecompressionStream('gzip')); return await new Response(s).text(); } } catch (e) {} return new TextDecoder().decode(buf); }
+// copia cifrada con AES-GCM (clave de 32 bytes); devuelve texto base64 = aviso(12) + cifrado
+async function relaySeal(key, obj) {
+  const k = await crypto.subtle.importKey('raw', key, 'AES-GCM', false, ['encrypt']), iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, k, await relayZip(JSON.stringify(obj))));
+  const all = new Uint8Array(12 + ct.length); all.set(iv); all.set(ct, 12);
+  let s = ''; for (let i = 0; i < all.length; i += 8192) s += String.fromCharCode(...all.subarray(i, i + 8192));
+  return btoa(s);
+}
+async function relayOpen(key, b64txt) {
+  const all = unb64(b64txt); if (all.length < 29) throw new Error('corta');
+  const k = await crypto.subtle.importKey('raw', key, 'AES-GCM', false, ['decrypt']);
+  return JSON.parse(await relayUnzip(new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: all.slice(0, 12) }, k, all.slice(12)))));
+}
 
 // Animaciones para los invitados: el anfitrión manda cada vuelo y cada aviso; el invitado los reproduce desde su sitio
 function netEv(e) {
@@ -3000,7 +3065,7 @@ function netEv(e) {
     const ev = { ...e, p: rot(e.p), from: rot(e.from) };
     if (e.k === 'draw' && !e.pinta && e.p !== q) delete ev.id;   // 13 nov (auditoría, T1): la carta que roba otro no se le dice a nadie
     if (e.k === 'callout' && e.sub) { const sb = netNarr(e.sub, q); ev.sub = sb === st.name ? L('Tú', 'Tu') : sb; }
-    try { NET.priv[st.id].send({ t: 'ev', e: ev }); } catch (x) {}
+    try { NET.priv[st.id].send(NET.ep ? { t: 'ev', e: ev, ep: NET.ep } : { t: 'ev', e: ev }); } catch (x) {}   // 26 nov: con la época, o tras un relevo el invitado lo ignoraba (sin sonidos ni reparto)
   }
 }
 let netChain = Promise.resolve(), netFx = null;
@@ -3099,7 +3164,8 @@ function netBannerHTML() {
   if (NET.role === 'guest' && G && G.away) return `🤖 ${L('Un bot está jugando por ti porque llevabas un rato sin jugar.', 'Un bot està jugant per tu perquè portaves una estona sense jugar.')} <button class="btn primary" type="button" data-net="back">${L('Vuelvo a jugar', 'Torne a jugar')}</button>`;
   return NET.banner || null;
 }
-const humanSeat = p => p === 0 || !!(NET && NET.role === 'host' && NET.started && NET.seats[p].kind === 'human' && NET.seats[p].online && !NET.seats[p].away);
+const GHOST = () => !!(NET && NET.ghost);   // árbitro de un relevo: el sitio 0 (el anfitrión que se fue) lo juega un bot
+const humanSeat = p => p === 0 ? !GHOST() : !!(NET && NET.role === 'host' && NET.started && NET.seats[p].kind === 'human' && NET.seats[p].online && !NET.seats[p].away);
 function netCanteWait() {
   if (NET.role !== 'host' || G.trick.length) return false;
   for (const q of [1, 2, 3]) if (humanSeat(q) && G.turn !== q && (coCantesFor(G, q).length || coCanSwap(G, q)) && (G.remotePass || {})[q] !== G.trickNo) return true;
@@ -3109,6 +3175,10 @@ const seatName = p => [L('Tú (anfitrión)', 'Tu (amfitrió)'), L('Rival de la d
 function showOnline(err) {
   if (!NET && hostRoomGet()) return netHostResume();
   if (!NET && netRoomGet()) return showRejoinBlock();
+  if (err && typeof err === 'object' && err.obras) {
+    showPanel(`<h2>Online</h2>${netObrasHTML(err.why)}<div class="acts"><button class="btn" type="button" data-act="play">${L('Volver', 'Tornar')}</button><button class="btn primary" type="button" data-act="online">${L('Reintentar', 'Tornar-ho a provar')}</button></div>`);
+    panelBack = 'menu'; cover(); return;
+  }
   const nm = esc(SETTINGS.alias || '');
   showPanel(`<h2>Online</h2>
   <p>${L('Coto, Cau o CotoCau con amigos, cada uno desde su móvil. Uno crea la sala (el anfitrión) y los demás se unen con el código.', 'Coto, Cau o CotoCau amb amics, cadascú des del seu mòbil. Un crea la sala (l\'amfitrió) i els altres s\'hi uneixen amb el codi.')}</p>
@@ -3186,7 +3256,7 @@ async function netHost(name, mode, open) {
   NET = { role: 'host', code: netCode(), name, mode, open: !!open, best: mode === 'coto3' ? 3 : mode === 'coto5' ? 5 : (SETTINGS.cotoBest || 5), started: false, priv: {}, seats: [{ kind: 'host', name }, { kind: 'free' }, { kind: 'free' }, { kind: 'free' }] };
   showPanel(`<h2>${L('Creando sala…', 'Creant sala…')}</h2>`); cover();
   try { NET.keys = await netKeys(false); NET.fp = (await netIdOf(NET.keys.raw)).slice(1, 13); try { NET.keyJwk = await crypto.subtle.exportKey('jwk', NET.keys.priv); } catch (e) {} NET.pub = await netOpen(NETNS + NET.code, netHostPub); }
-  catch (e) { NET = null; return showOnline(L('No se ha podido conectar. Comprueba la conexión a internet.', 'No s\'ha pogut connectar. Comprova la connexió a internet.') + ' (' + esc(e.message) + ')'); }
+  catch (e) { NET = null; return showOnline(await netFailMsg(e)); }
   NET.timer = setInterval(netHostTick, 3000);
   netPresenceTrack(true);
   netLobby();
@@ -3224,7 +3294,7 @@ function netLobby() {
 }
 // Quién hay en cada sitio, visto desde el asiento g: 'p' persona conectada, 'off' sin conexión, 'away' juega un bot por ella, 'bot'
 function netWho(g) {
-  return [0, 1, 2, 3].map(v => { const st = NET.seats[(v + g) % 4]; if (st.kind === 'host') return 'h'; if (st.kind !== 'human') return 'bot'; return st.away ? 'away' : st.online ? 'p' : 'off'; });
+  return [0, 1, 2, 3].map(v => { const st = NET.seats[(v + g) % 4]; if (st.kind === 'host') return GHOST() ? 'away' : 'h'; if (st.kind !== 'human') return 'bot'; return st.away ? 'away' : st.online ? 'p' : 'off'; });
 }
 // Marca de la mesa online para el sitio p (0 = abajo): punto verde en las personas, 🤖 en los bots
 function netSeatMark(p, role) {
@@ -3246,7 +3316,7 @@ function netSetMode(m) {
 function netHostKick(p) {
   const st = NET.seats[p]; if (!st || st.kind !== 'human' || NET.started) return;
   (NET.kicked = NET.kicked || new Set()).add(st.id);
-  try { NET.priv[st.id] && NET.priv[st.id].send({ t: 'kick' }); } catch (e) {}
+  try { NET.priv[st.id] && NET.priv[st.id].send(NET.ep ? { t: 'kick', ep: NET.ep } : { t: 'kick' }); } catch (e) {}
   const ch = NET.priv[st.id]; delete NET.priv[st.id]; setTimeout(() => { try { ch && ch.close(); } catch (e) {} }, 500);
   NET.seats[p] = { kind: 'free' }; netLobby();
 }
@@ -3288,20 +3358,58 @@ let hostSaveT = null;
 function hostRoomGet() { try { const r = JSON.parse(localStorage.getItem(HOSTR_KEY) || 'null'); if (r && r.v === 1 && /^[A-Z]{4,6}$/.test(r.code) && Date.now() - r.t < HOSTR_MAX && (r.G || r.S)) return r; localStorage.removeItem(HOSTR_KEY); } catch (e) {} return null; }
 function hostRoomClear() { clearTimeout(hostSaveT); hostSaveT = null; try { localStorage.removeItem(HOSTR_KEY); } catch (e) {} }
 function netHostSave() { if (hostSaveT) return; hostSaveT = setTimeout(() => { hostSaveT = null; netHostSaveNow(); }, 400); }
-function netHostSaveNow() {
-  if (!NET || NET.role !== 'host' || !NET.started || !NET.keyJwk || !(G || S)) return;
-  try {
-    const seats = NET.seats.map(x => x.kind === 'human' ? { kind: 'human', id: x.id, name: x.name, voz: x.voz, away: !!x.away, pk: (NET.pks || {})[x.id] || '' } : { kind: x.kind, name: x.name });
-    localStorage.setItem(HOSTR_KEY, JSON.stringify({ v: 1, t: Date.now(), code: NET.code, name: NET.name, mode: NET.mode, open: !!NET.open, best: NET.best, fp: NET.fp, keys: { priv: NET.keyJwk, raw: NET.keys.raw }, seats, kicked: [...(NET.kicked || [])], rk: NET.rk || null, vote: NET.vote ? { host: NET.vote.host, ans: NET.vote.ans, toLobby: !!NET.vote.toLobby } : null, vseq: NET.vseq || 0, appMode: APP.mode, M: APP.M, S: isCoto() ? null : S, G: isCoto() ? G : null }));
-  } catch (e) {}
+function netHostRecord() {
+  const seats = NET.seats.map(x => x.kind === 'human' ? { kind: 'human', id: x.id, name: x.name, voz: x.voz, away: !!x.away, pk: (NET.pks || {})[x.id] || '' } : { kind: x.kind, name: x.name });
+  return { v: 1, t: Date.now(), code: NET.code, name: NET.name, mode: NET.mode, open: !!NET.open, best: NET.best, fp: NET.fp, keys: { priv: NET.keyJwk, raw: NET.keys.raw }, seats, kicked: [...(NET.kicked || [])], rk: NET.rk || null, vote: NET.vote ? { host: NET.vote.host, ans: NET.vote.ans, toLobby: !!NET.vote.toLobby } : null, vseq: NET.vseq || 0, ep: NET.ep || 0, appMode: APP.mode, M: APP.M, S: isCoto() ? null : S, G: isCoto() ? G : null };
 }
-async function netHostResume() {
-  const r = hostRoomGet(); if (!r || NET) return showMenu();
-  showPanel(`<h2>${L('Volviendo a tu mesa…', 'Tornant a la teua taula…')}</h2>`); cover();
+function netHostSaveNow() {
+  if (!NET || NET.role !== 'host' || !NET.started || !NET.keyJwk || !(G || S) || NET.ghost) return;
+  try { localStorage.setItem(HOSTR_KEY, JSON.stringify(netHostRecord())); } catch (e) {}
+}
+// ---- Relevo (26 nov), lado anfitrión: cada invitado guarda un trozo de una clave y una copia cifrada de la mesa; con dos trozos se puede
+// abrir la copia y seguir. NET.ep = época: cada relevo la sube y los invitados ignoran lo que llegue de una época anterior.
+const NET_RELAY_MS = 30000;   // 26 nov: 30 s sin noticias del anfitrión (probado en 10 s: demasiado pronto, el anfitrión perdía la mesa por cortes cortos); los demás confirman a partir de 21 s
+function netRelayInit() {
+  if (!NET || NET.role !== 'host') return;
+  const hs = [1, 2, 3].filter(q => NET.seats[q].kind === 'human');
+  if (!hs.length) { NET.relay = null; return; }
+  const key = crypto.getRandomValues(new Uint8Array(32)), thr = hs.length >= 2 ? 2 : 1;
+  NET.relay = { g: hexOf(crypto.getRandomValues(new Uint8Array(4))), key, thr, sh: shamirSplit(key, thr, hs), hs, snap: null, at: 0, busy: false };
+  for (const q of hs) { NET.seats[q].snapS = null; netRelayShare(q); }
+}
+function netRelayShare(q) {
+  const R = NET && NET.relay, st = NET && NET.seats[q]; if (!R || !st || st.kind !== 'human' || !NET.priv[st.id] || !R.sh[q]) return;
+  const pe = R.hs.map(x => ({ q: x, id: NET.seats[x].id, pk: (NET.pks || {})[NET.seats[x].id] || '', name: NET.seats[x].name }));
+  try { NET.priv[st.id].send({ t: 'rl', ep: NET.ep || 0, g: R.g, thr: R.thr, x: q, y: b64(R.sh[q]), pe }); } catch (e) {}
+}
+function netRelaySnap() {   // una copia cifrada de la mesa como mucho cada 2,5 s; viaja pegada a la siguiente vista de cada invitado
+  const R = NET && NET.relay; if (!R || R.busy || !NET.started || !(G || S) || !NET.keyJwk) return;
+  const now = Date.now(); if (now - R.at < 2500) return;
+  R.busy = true; R.at = now;
+  let rec; try { rec = netHostRecord(); } catch (e) { R.busy = false; return; }
+  relaySeal(R.key, rec).then(d => { R.snap = { g: R.g, s: rec.vseq, e: rec.ep, d }; }).catch(() => {}).finally(() => { R.busy = false; });
+}
+// Otro anfitrión ha tomado el mando (época mayor): este deja la mesa y no vuelve a mandar nada
+function netSuperseded() {
+  if (!NET || NET.role !== 'host') return;
+  rkNetQuit('D'); hostRoomClear();   // 26 nov: cuenta como derrota virtual (media retirada), no como retirada
+  clearInterval(NET.timer); clearTimeout(NET.sched);
+  const chans = [NET.pub, ...Object.values(NET.priv || {})];
+  setTimeout(() => chans.forEach(c => { try { c && c.close(); } catch (e) {} }), 300);
+  netPresenceTrack(false).then(netPresenceClose, netPresenceClose);
+  NET = null; GEN++; busy = false; coDealView = null; coFx = null; coShowLast = false; coHide = new Set(); coPend = 0; coReveal = false;
+  applyLang(SETTINGS.lang, SETTINGS.names);
+  const a = loadApp(); if (a) { APP.mode = a.mode; APP.M = a.M; S = a.S || newGame(); G = a.G; S.feed = S.feed || []; if (G) G.feed = []; } else { APP.mode = 'cau'; APP.M = null; S = newGame(); S.feed = []; G = null; }
+  hasSaved = savedActive(); $('coach').hidden = true;
+  showPanel(`<h2>${L('La partida ha seguido sin ti', 'La partida ha continuat sense tu')}</h2><p>${L('Como tardaste en volver, otro jugador ha tomado el mando de la mesa y la partida continúa. Para la clasificación cuenta como una derrota.', 'Com has tardat a tornar, un altre jugador ha pres el comandament de la taula i la partida continua. Per a la classificació compta com una derrota.')}</p><div class="acts"><button class="btn primary" type="button" data-act="menu">${L('Menú', 'Menú')}</button></div>`); cover();
+}
+async function netHostResume(rec, ghost) {
+  const r = rec || hostRoomGet(); if (!r || NET) return ghost ? null : showMenu();
+  if (!ghost) { showPanel(`<h2>${L('Volviendo a tu mesa…', 'Tornant a la teua taula…')}</h2>`); cover(); }
   try {
     const priv = await crypto.subtle.importKey('jwk', r.keys.priv, NET_EC, true, ['deriveBits']);
     applyLang(SETTINGS.lang, SETTINGS.names);
-    NET = { role: 'host', code: r.code, name: r.name, mode: r.mode, open: !!r.open, best: r.best, started: true, warned: true, priv: {}, pks: {}, kicked: new Set(r.kicked || []), rk: r.rk || null, vseq: (r.vseq || 0) + 1, fp: r.fp, keys: { priv, raw: r.keys.raw }, keyJwk: r.keys.priv,
+    NET = { role: 'host', ghost: !!ghost, ep: r.ep | 0, code: r.code, name: r.name, mode: r.mode, open: !!r.open, best: r.best, started: true, warned: true, priv: {}, pks: {}, kicked: new Set(r.kicked || []), rk: r.rk || null, vseq: (r.vseq || 0) + 1000, fp: r.fp, keys: { priv, raw: r.keys.raw }, keyJwk: r.keys.priv,
       seats: r.seats.map(x => x.kind === 'human' ? { kind: 'human', id: x.id, name: cleanName(x.name), voz: vozNum(x.voz), away: !!x.away, online: false, last: 0 } : { kind: x.kind, name: x.name }) };
     r.seats.forEach(x => { if (x.kind === 'human' && x.pk) NET.pks[x.id] = x.pk; });
     APP.mode = r.appMode; APP.M = r.M; G = r.G || null; S = r.S || newGame();
@@ -3318,11 +3426,15 @@ async function netHostResume() {
     }
   } catch (e) {
     NET = null;
-    return showPanel(`<h2>${L('No se ha podido volver a la mesa', 'No s\'ha pogut tornar a la taula')}</h2><p>${L('Comprueba la conexión a internet.', 'Comprova la connexió a internet.')} (${esc(e.message)})</p><div class="acts"><button class="btn" type="button" data-act="net-hforget">${L('Olvidar esta mesa', 'Oblidar esta taula')}</button><button class="btn primary" type="button" data-act="net-hresume">${L('Reintentar', 'Tornar-ho a provar')}</button></div>`);
+    const fm = await netFailMsg(e);
+    return showPanel(`<h2>${L('No se ha podido volver a la mesa', 'No s\'ha pogut tornar a la taula')}</h2>${typeof fm === 'object' ? netObrasHTML(fm.why) : `<p>${fm}</p>`}<div class="acts"><button class="btn" type="button" data-act="net-hforget">${L('Olvidar esta mesa', 'Oblidar esta taula')}</button><button class="btn primary" type="button" data-act="net-hresume">${L('Reintentar', 'Tornar-ho a provar')}</button></div>`);
   }
   NET.timer = setInterval(netHostTick, 3000);
-  netPresenceTrack(true);
-  closePanel(); render(); netSchedule(); if (!busy) loop();
+  if (!ghost) netPresenceTrack(true);
+  if (!ghost) { const yo = NET; setTimeout(() => { if (NET === yo && !yo.ghost && !yo.seats.some((x, q) => q > 0 && x.kind === 'human' && x.online)) rkNetDiscard(); }, 60000); }   // 26 nov: nadie ha vuelto en 1 min (la mesa pudo acabar en un relevo): lo que jueguen los bots no cuenta
+  netRelayInit();
+  if (!ghost) closePanel();
+  render(); netSchedule(); if (!busy) loop();
 }
 async function netHostPub(m) {
   if (!NET || NET.role !== 'host' || !m || m.t !== 'hello' || typeof m.pk !== 'string' || m.pk.length > 200) return;
@@ -3379,7 +3491,7 @@ async function netHostMsg(m) {
   }
   if (m.t === 'hi') { const q = seatOf(m.id); if (q > 0) { if (NET.started && !NET.seats[q].online) sfxConectado(); NET.seats[q].online = true; NET.seats[q].last = Date.now(); if (NET.seats[q].away && G) netSetAway(q, false); } if (NET.started) { netSend({ t: 'start' }); netSchedule(); render(); } else netLobby(); return; }
   if (m.t === 'rx') { const q = seatOf(m.id); if (q > 0) netRxHost(NET.seats[q], m.k); return; }
-  if (m.t === 'ping') { const q = seatOf(m.id); if (q > 0 && NET.started && (G || S)) { const stq = NET.seats[q]; if (m.s !== (NET.vseq || 0)) { stq.stale = (stq.stale || 0) + 1; if (stq.stale >= 2) { stq.stale = 0; netPushView(q); } } else stq.stale = 0; } if (q > 0) { const was = NET.seats[q].online; NET.seats[q].last = Date.now(); NET.seats[q].online = true; if (!was) { if (NET.started) sfxConectado(); NAMES[q] = NET.seats[q].name; netSchedule(); if (NET.started) render(); if (NET.started && !busy) loop(); } } return; }
+  if (m.t === 'ping') { const q = seatOf(m.id); if ((m.ep | 0) > (NET.ep | 0)) return netSuperseded(); if (q > 0 && NET.relay && NET.started && m.r !== NET.relay.g && Date.now() - (NET.seats[q].rlAt || 0) > 2500) { NET.seats[q].rlAt = Date.now(); netRelayShare(q); } if (q > 0 && NET.started && (G || S)) { const stq = NET.seats[q]; if (m.s !== (NET.vseq || 0)) { stq.stale = (stq.stale || 0) + 1; if (stq.stale >= 2) { stq.stale = 0; netPushView(q); } } else stq.stale = 0; } if (q > 0) { const was = NET.seats[q].online; NET.seats[q].last = Date.now(); NET.seats[q].online = true; if (!was) { if (NET.started) sfxConectado(); NAMES[q] = NET.seats[q].name; netSchedule(); if (NET.started) render(); if (NET.started && !busy) loop(); } } return; }
   if (m.t === 'sit' && !NET.started) {
     const p = m.seat; if (!Number.isInteger(p) || !(p >= 1 && p <= 3) || NET.seats[p].kind !== 'free') return netLobby();
     const was = seatOf(m.id);
@@ -3417,7 +3529,8 @@ function netHostTick() {
   if (NET.vote) netVoteSend();
   const now = Date.now();
   if (!NET.started) { const sent = new Set(NET.seats.filter(x => x.kind === 'human').map(x => x.id)); for (const k of Object.keys(NET.priv)) if (!sent.has(k) && now - ((NET.rate && NET.rate[k] && NET.rate[k].t0) || now) > 90000) netDrop(k, false); }
-  for (const q of [1, 2, 3]) { const st = NET.seats[q]; if (st.kind !== 'human') continue; const on = now - (st.last || 0) < 15000; if (on !== st.online) { st.online = on; if (!on) sfxDesconectado(); if (NET.started) { netSchedule(); render(); if (!on && !busy) loop(); } else { if (!on) NET.seats[q] = { kind: 'free' }; netLobby(); } } }   // en la sala, quien pierde la conexión deja su sitio libre
+  const deaf = !navigator.onLine || now < (NET.graceUntil || 0);   // 26 nov: si es el anfitrión quien ha perdido la red, no oye a nadie: no es culpa de los invitados
+  for (const q of [1, 2, 3]) { const st = NET.seats[q]; if (st.kind !== 'human') continue; if (deaf && st.online) { st.last = Math.max(st.last || 0, now - 5000); continue; } const on = now - (st.last || 0) < 15000; if (on !== st.online) { st.online = on; if (!on) sfxDesconectado(); if (NET.started) { netSchedule(); render(); if (!on && !busy) loop(); } else { if (!on) NET.seats[q] = { kind: 'free' }; netLobby(); } } }   // en la sala, quien pierde la conexión deja su sitio libre
 }
 function netStart() {
   for (const q of [1, 2, 3]) if (NET.seats[q].kind === 'free') NET.seats[q] = { kind: 'bot' };
@@ -3431,7 +3544,7 @@ function netStart() {
   else if (md === 'cotocau') { APP.mode = 'cotocau'; APP.M = { stage: 'coto', cur: 'coto', res: {} }; }
   else { APP.mode = 'coto'; APP.M = null; }
   NET.hpanel = null;
-  netSend({ t: 'start' }); netPresenceTrack(true);
+  netSend({ t: 'start' }); netPresenceTrack(true); netRelayInit();
   if (first) showPanel(`<h2>${L('¡Empieza la partida!', 'Comença la partida!')}</h2>${netWarnHost()}<div class="acts"><button class="btn primary" type="button" data-act="net-stay">${L('Entendido', 'Entesos')}</button></div>`);
   else closePanel();
   rkNetBegin(md === 'cau' ? 'cau' : 'coto');
@@ -3488,8 +3601,15 @@ function netVoteHTML() {
   return `${q}<div class="nvst">${st}</div>${left ? `<p class="desc nvt" style="text-align:center">${L(`Quedan ${left} s para contestar`, `Queden ${left} s per a contestar`)}</p>` : ''}${btns}`;
 }
 function netVoteRender() { const el = $('netvote'); if (el) el.innerHTML = netVoteHTML(); }
+function netGhostEnd() {   // la partida o el coto han acabado en un relevo: sin anfitrión no hay mesa a la que volver; se cierra y cada uno vuelve a su menú
+  netSend({ t: 'bye', why: 'relevo' });
+  clearInterval(NET.timer);
+  setTimeout(() => { try { window.parent.document.getElementById('arbitro').remove(); } catch (e) {} }, 900);
+  NET.ghost = false; NET.started = false;
+}
 function netVoteStart() {
   if (!NET || NET.role !== 'host' || NET.vote) return;
+  if (NET.ghost) return netGhostEnd();   // 26 nov: ni un segundo de votación en pantalla
   NET.vote = { until: Date.now() + NET_VOTE_MS, ans: {}, host: null };
   setTimeout(netVoteSend, 50);
 }
@@ -3521,7 +3641,7 @@ function netVoteCheck() {
   if (yes.length === humans.length && !V.toLobby) return netStart();   // «cambiar de juego»: todos a la sala
   for (const q of humans) if (!yes.includes(q)) {   // los que no siguen: se les avisa y su sitio queda libre
     const st = NET.seats[q], ch = NET.priv[st.id];
-    try { ch && ch.send({ t: 'out' }); } catch (e) {}
+    try { ch && ch.send(NET.ep ? { t: 'out', ep: NET.ep } : { t: 'out' }); } catch (e) {}
     delete NET.priv[st.id]; setTimeout(() => { try { ch && ch.close(); } catch (e) {} }, 500);
     NET.seats[q] = { kind: 'free' };
   }
@@ -3531,11 +3651,16 @@ function netSchedule() { if (!NET || NET.role !== 'host' || NET.sched) return; N
 function netPushView(q) {
   const st = NET.seats[q]; if (!st || st.kind !== 'human' || !NET.priv[st.id]) return;
   const coto = isCoto(), s = NET.vseq || 0;
-  try { NET.priv[st.id].send(coto ? { t: 'view', s, v: netView(q), hp: NET.hpanel || null, match: netMatchView(q), who: netWho(q), rk: NET.rk || null } : { t: 'cview', s, v: netCauView(q), hp: NET.hpanel || null, match: netMatchView(q), who: netWho(q), rk: NET.rk || null }); } catch (e) {}
+  try {
+    const pl = coto ? { t: 'view', s, v: netView(q), hp: NET.hpanel || null, match: netMatchView(q), who: netWho(q), rk: NET.rk || null } : { t: 'cview', s, v: netCauView(q), hp: NET.hpanel || null, match: netMatchView(q), who: netWho(q), rk: NET.rk || null };
+    if (NET.ep) pl.ep = NET.ep;
+    const R = NET.relay; if (R && R.snap && st.snapS !== R.snap.s) { pl.snap = R.snap; st.snapS = R.snap.s; }
+    NET.priv[st.id].send(pl);
+  } catch (e) {}
 }
 function netPushViews() {
   if (!NET || !(isCoto() ? G : S)) return;
-  netHostSave();
+  netHostSave(); netRelaySnap();
   NET.vseq = (NET.vseq || 0) + 1;   // número de vista: el invitado lo repite en cada ping y, si va por detrás, se le reenvía
   for (const q of [1, 2, 3]) netPushView(q);
 }
@@ -3563,10 +3688,11 @@ async function netJoin(code, name, autoSit, rejoin, pin) {
   name = cleanName(name) || L('Jugador', 'Jugador');
   if (!/^[A-Z]{4,6}$/.test(code)) return showOnline(L('El código son 6 letras.', 'El codi són 6 lletres.'));
   if (!SETTINGS.alias) { SETTINGS.alias = name; saveSettings(); }
-  NET = { role: 'guest', code, name, pin, lastHost: Date.now(), seats: null, priv: null, autoSit: !!autoSit || !!rejoin, rejoin: !!rejoin, joinT: Date.now() };   // al volver a una sala, se sienta solo si su sitio se liberó
+  NET = { role: 'guest', code, name, pin, lastHost: Date.now(), seats: null, priv: null, autoSit: !!autoSit || !!rejoin, rejoin: !!rejoin, joinT: Date.now() };
+  if (rejoin) netRelayLoad();   // al volver a una sala, se sienta solo si su sitio se liberó
   showPanel(`<h2>${L('Conectando…', 'Connectant…')}</h2>`); cover();
   try { NET.keys = await netKeys(true); NET.id = await netIdOf(NET.keys.raw); NET.pub = await netOpen(NETNS + code, netGuestPub); }
-  catch (e) { NET = null; return showOnline(L('No se ha podido conectar. Comprueba la conexión a internet.', 'No s\'ha pogut connectar. Comprova la connexió a internet.') + ' (' + esc(e.message) + ')'); }
+  catch (e) { NET = null; return showOnline(await netFailMsg(e)); }
   NET.timer = setInterval(netGuestTick, 3000);
   // al entrar, cada segundo: saludo hasta que conteste el anfitrión y «hi» hasta recibir la sala (un mensaje perdido ya no cuesta 3 s)
   NET.fast = setInterval(() => {
@@ -3580,6 +3706,8 @@ async function netJoin(code, name, autoSit, rejoin, pin) {
 const netHello = () => { try { NET && NET.pub && NET.pub.send({ t: 'hello', pk: NET.keys.raw }); } catch (e) {} };
 // Canal común: el invitado solo atiende las respuestas a su saludo
 async function netGuestPub(m) {
+  if (NET && NET.role === 'guest' && m && m.t === 'rlq') return netRelayAsk(m);
+  if (NET && NET.role === 'guest' && m && m.t === 'rls' && m.to === NET.id) return netRelayGot(m);
   if (!NET || NET.role !== 'guest' || !m || m.to !== NET.id || NET.priv) return;
   if (m.t === 'welcome' && typeof m.hpk === 'string' && m.hpk.length <= 200 && !NET.joining) {
     const yo = NET;
@@ -3629,7 +3757,10 @@ async function netGuestPub(m) {
 function netGuestMsg(m) {
   if (!NET || NET.role !== 'guest' || !m) return;
   if (NET.cut && (m.t === 'view' || m.t === 'cview')) return;   // solo lo usa la prueba para simular que la red pierde mensajes
-  NET.lastHost = Date.now(); if (NET.banner) { NET.banner = null; if (G) render(); }
+  { const e = m.ep | 0; if (e < (NET.ep | 0)) return; if (e > (NET.ep | 0)) NET.ep = e; }   // lo de una época anterior (un anfitrión que ya cedió el mando) se ignora
+  NET.lastHost = Date.now();
+  if (m.t === 'rl') return netRelayStore(m);
+  if (m.snap) netRelaySnapIn(m.snap); if (NET.banner) { NET.banner = null; if (G) render(); }
   if (m.t === 'lobby') {
     if (NET.started) { NET.started = false; NET.hp = null; NET.hpShown = null; NET.banner = null; }   // el anfitrión ha vuelto a la sala al acabar
     NET.vote = null; NET.myVote = null;
@@ -3659,8 +3790,8 @@ function netGuestMsg(m) {
   if (m.t === 'out') { netRoomClear(); netLeave(true); showPanel(`<h2>${L('La mesa sigue sin ti', 'La taula continua sense tu')}</h2><p>${L('No contestaste a tiempo si querías otra partida, así que tu sitio ha quedado libre.', 'No vas contestar a temps si volies una altra partida, així que el teu lloc ha quedat lliure.')}</p><div class="acts"><button class="btn primary" type="button" data-act="menu">${L('Menú', 'Menú')}</button></div>`); return; }
   if (m.t === 'kick') { rkNetDiscard(); netRoomClear(); const n = NET.host || L('El anfitrión', 'L\'amfitrió'); netLeave(true); showPanel(`<h2>${L('Fuera de la sala', 'Fora de la sala')}</h2><p>${L(`${esc(n)} te ha sacado de la sala.`, `${esc(n)} t'ha tret de la sala.`)}</p><div class="acts"><button class="btn primary" type="button" data-act="menu">${L('Menú', 'Menú')}</button></div>`); return; }
   if (m.t === 'rxs') return netRxShow(cleanName(m.n), m.k);
-  if (m.t === 'ev') return netGuestEv(m.e);
-  if (m.t === 'bye') { rkNetDiscard(); netRoomClear(); const n = NET.host || L('El anfitrión', 'L\'amfitrió'); netLeave(true); showPanel(`<h2>${L('Partida cerrada', 'Partida tancada')}</h2><p>${L(`${esc(n)} ha cerrado la sala.`, `${esc(n)} ha tancat la sala.`)}</p><div class="acts"><button class="btn primary" type="button" data-act="menu">${L('Menú', 'Menú')}</button></div>`); return; }
+  if (m.t === 'ev') { NET.evN = (NET.evN | 0) + 1; return netGuestEv(m.e); }
+  if (m.t === 'bye') { rkNetDiscard(); netRoomClear(); const n = NET.host || L('El anfitrión', 'L\'amfitrió'), fin = m.why === 'relevo'; netLeave(true); showPanel(`<h2>${fin ? L('Partida terminada', 'Partida acabada') : L('Partida cerrada', 'Partida tancada')}</h2><p>${fin ? L('La partida ha terminado. Quien la llevaba se había ido y la ha acabado otro jugador.', 'La partida ha acabat. Qui la portava se n\'havia anat i l\'ha acabada un altre jugador.') : L(`${esc(n)} ha cerrado la sala.`, `${esc(n)} ha tancat la sala.`)}</p><div class="acts"><button class="btn primary" type="button" data-act="menu">${L('Menú', 'Menú')}</button></div>`); return; }
   if (m.t === 'cview') {
     NET.seq = m.s;
     netRoomSave();
@@ -3696,6 +3827,80 @@ function netGuestMsg(m) {
     render();
   }
 }
+// ---- Relevo (26 nov), lado invitado ----
+// El invitado guarda el trozo de clave que le manda el anfitrión (NET.rl) y la última copia cifrada de la mesa (NET.snap). Si el anfitrión lleva
+// 30 s sin dar señales, el primer invitado de la lista que siga conectado pide los trozos de los demás (por el canal común, cifrados de dos en
+// dos), abre la copia y arranca en su móvil una segunda copia invisible de la app (iframe ?arbitro=1) que hace de árbitro con la misma sala.
+const RELAY_KEY = 'cau.relay';
+const relayId = v => typeof v === 'string' && /^p[0-9a-f]{16}$/.test(v);
+function netRelayStore(m) {
+  if (!NET || typeof m.g !== 'string' || !/^[0-9a-f]{8}$/.test(m.g) || !(m.x >= 1 && m.x <= 3) || !(m.thr === 1 || m.thr === 2) || typeof m.y !== 'string' || m.y.length > 64 || !Array.isArray(m.pe)) return;
+  const pe = m.pe.slice(0, 3).filter(p => p && p.q >= 1 && p.q <= 3 && relayId(p.id) && typeof p.pk === 'string' && p.pk.length <= 200).map(p => ({ q: p.q | 0, id: p.id, pk: p.pk, name: cleanName(p.name) }));
+  if (!pe.some(p => p.id === NET.id)) return;
+  try { NET.rl = { g: m.g, thr: m.thr, x: m.x | 0, y: unb64(m.y), pe }; } catch (e) { return; }
+  if (NET.snap && NET.snap.g !== m.g) NET.snap = null;
+  netRelaySave();
+}
+function netRelaySnapIn(sn) {
+  if (!NET || !sn || typeof sn.d !== 'string' || sn.d.length > 900000 || typeof sn.g !== 'string' || !/^[0-9a-f]{8}$/.test(sn.g)) return;
+  if (NET.snap && NET.snap.g === sn.g && (NET.snap.s | 0) > (sn.s | 0)) return;
+  NET.snap = { g: sn.g, s: sn.s | 0, e: sn.e | 0, d: sn.d };
+  if (Date.now() - (NET.rlSaved || 0) > 6000) netRelaySave();
+}
+function netRelaySave() { try { NET.rlSaved = Date.now(); if (NET.rl) localStorage.setItem(RELAY_KEY, JSON.stringify({ code: NET.code, t: Date.now(), ep: NET.ep | 0, rl: { ...NET.rl, y: b64(NET.rl.y) }, snap: NET.snap || null })); } catch (e) {} }
+function netRelayLoad() {
+  try { const j = JSON.parse(localStorage.getItem(RELAY_KEY) || 'null'); if (!j || j.code !== NET.code || Date.now() - j.t > HOSTR_MAX || !j.rl) return; NET.rl = { ...j.rl, y: unb64(j.rl.y) }; NET.snap = j.snap && j.snap.g === j.rl.g ? j.snap : null; NET.ep = j.ep | 0; } catch (e) {}
+}
+function netRelayClear() { try { localStorage.removeItem(RELAY_KEY); localStorage.removeItem('cau.relevo'); } catch (e) {} const f = document.getElementById('arbitro'); if (f) f.remove(); if (NET) NET.relayRun = false; }
+const relayPairKey = async (L, pk) => { const hex = await netSecret(NET.keys.priv, pk, NET.code); return Uint8Array.from(hex.match(/../g).map(h => parseInt(h, 16))); };
+function netRelayTick() {
+  const R = NET && NET.rl, sn = NET && NET.snap;
+  if (!NET.started || !R || !sn || sn.g !== R.g || NET.relayRun) return;
+  const silent = Date.now() - NET.lastHost, wait = NET_RELAY_MS * (R.thr === 1 ? 2 : 1);   // si solo hay un invitado se espera más: no hay nadie que confirme que el anfitrión se ha ido
+  if (silent < wait) { NET.rlStage = -1; NET.rlGot = null; return; }
+  const order = R.pe.map(p => p.id), stage = Math.floor((silent - wait) / 10000);
+  if (order[stage % order.length] !== NET.id) return;   // le toca a otro (si falla, en 25 s le toca al siguiente)
+  if (NET.rlStage !== stage || !NET.rlGot) { NET.rlStage = stage; NET.rlGot = { g: R.g, got: new Map([[R.x, R.y]]) }; }
+  if (R.thr <= 1) return netRelayGo();
+  try { NET.pub.send({ t: 'rlq', from: NET.id, g: R.g }); } catch (e) {}
+}
+async function netRelayAsk(m) {   // otro invitado quiere tomar el mando: si yo también llevo rato sin saber del anfitrión, le doy mi trozo (cifrado para él)
+  const R = NET && NET.rl; if (!R || !NET.started || !NET.keys || m.g !== R.g || !relayId(m.from) || m.from === NET.id) return;
+  if (Date.now() - NET.lastHost < NET_RELAY_MS * 0.7 || Date.now() - (NET.rlAskAt || 0) < 1500) return;
+  const L0 = R.pe.find(p => p.id === m.from); if (!L0) return;
+  NET.rlAskAt = Date.now();
+  try {
+    const d = await relaySeal(await relayPairKey(L0, L0.pk), { g: R.g, x: R.x, y: b64(R.y) });
+    NET.pub.send({ t: 'rls', to: m.from, from: NET.id, d });
+  } catch (e) {}
+}
+async function netRelayGot(m) {
+  const G0 = NET && NET.rlGot, R = NET && NET.rl; if (!G0 || !R || NET.relayRun || !relayId(m.from) || typeof m.d !== 'string' || m.d.length > 400) return;
+  const B = R.pe.find(p => p.id === m.from); if (!B) return;
+  try {
+    const x = await relayOpen(await relayPairKey(B, B.pk), m.d);
+    if (!x || x.g !== R.g || x.x !== B.q || typeof x.y !== 'string') return;
+    G0.got.set(B.q, unb64(x.y));
+    if (G0.got.size >= R.thr) netRelayGo();
+  } catch (e) {}
+}
+async function netRelayGo() {
+  const yo = NET, R = NET && NET.rl, G0 = NET && NET.rlGot; if (!R || !G0 || NET.relayRun || !NET.snap || NET.snap.g !== R.g) return;
+  NET.relayRun = true;
+  try {
+    const key = shamirJoin([...G0.got].slice(0, R.thr).map(([x, y]) => ({ x, y })));
+    const rec = await relayOpen(key, NET.snap.d);
+    if (NET !== yo || !rec || rec.code !== NET.code || (NET.hfp && rec.fp !== NET.hfp)) throw new Error('copia');
+    rec.ep = Math.max(rec.ep | 0, NET.ep | 0) + 1;
+    localStorage.setItem('cau.relevo', JSON.stringify(rec));
+    const f = document.createElement('iframe'); f.id = 'arbitro'; f.setAttribute('aria-hidden', 'true'); f.tabIndex = -1;
+    f.style.cssText = 'position:fixed;left:0;top:0;width:390px;height:780px;opacity:0;pointer-events:none;border:0;z-index:-1';
+    f.src = location.pathname + '?arbitro=1' + (/net=local/.test(location.search + location.hash) ? '&net=local' : '');
+    document.body.appendChild(f);
+    NET.lastHost = Date.now();   // se le da tiempo al árbitro a arrancar antes de volver a dudar
+    setTimeout(() => { if (NET === yo && Date.now() - NET.lastHost > 24000) netRelayClear(); }, 26000);   // si no ha arrancado, se quita y se vuelve a intentar
+  } catch (e) { if (NET === yo) { NET.relayRun = false; NET.rlGot = null; NET.rlStage = -1; } }
+}
 function netGuestTick() {
   if (!NET || NET.role !== 'guest') return;
   if (!NET.priv && NET.rejoin && Date.now() - NET.joinT > 20000) {   // la partida ya no está: se puede reintentar u olvidarla
@@ -3704,9 +3909,10 @@ function netGuestTick() {
     return;
   }
   if (!NET.priv) return netHello();   // aún no ha contestado el anfitrión: volver a saludar
-  netSend({ t: 'ping', s: NET.seq });
-  const lost = $('netlost'); if (lost) lost.innerHTML = Date.now() - NET.lastHost > 12000 ? `<p class="desc" style="text-align:center">${L('El anfitrión no responde.', 'L\'amfitrió no respon.')}</p><div class="acts"><button class="btn" type="button" data-act="net-leave">${L('Salir', 'Eixir')}</button></div>` : '';
-  if (NET.started && Date.now() - NET.lastHost > 12000 && !NET.banner) { NET.banner = L('⏸️ El anfitrión no responde (puede que haya minimizado la app o se haya quedado sin conexión). La partida sigue cuando vuelva.', '⏸️ L\'amfitrió no respon (potser ha minimitzat l\'app o s\'ha quedat sense connexió). La partida continua quan torne.'); if (G || S) render(); }
+  netSend({ t: 'ping', s: NET.seq, r: NET.rl ? NET.rl.g : '', ep: NET.ep | 0 });
+  netRelayTick();
+  const lost = $('netlost'); if (lost) lost.innerHTML = Date.now() - NET.lastHost > 12000 ? `<p class="desc" style="text-align:center">${L('El anfitrión no responde. Si no vuelve pronto, otro jugador tomará el mando y un bot jugará en su lugar. Si sales ahora, no cuenta como retirada.', 'L\'amfitrió no respon. Si no torna prompte, un altre jugador pendrà el comandament i un bot jugarà en el seu lloc. Si n\'eixes ara, no compta com a retirada.')}</p><div class="acts"><button class="btn" type="button" data-act="net-leave">${L('Salir', 'Eixir')}</button></div>` : '';
+  if (NET.started && Date.now() - NET.lastHost > 12000 && !NET.banner) { NET.banner = L('⏸️ El anfitrión no responde (puede que haya minimizado la app o se haya quedado sin conexión). La partida sigue cuando vuelva. Si no vuelve pronto, otro jugador tomará el mando y un bot jugará en su lugar. Si prefieres salir, no cuenta como retirada.', '⏸️ L\'amfitrió no respon (potser ha minimitzat l\'app o s\'ha quedat sense connexió). La partida continua quan torne. Si no torna prompte, un altre jugador pendrà el comandament i un bot jugarà en el seu lloc. Si prefereixes eixir, no compta com a retirada.'); if (G || S) render(); }
 }
 function netGuestSummary() {
   const H = G.handSummary; const sc = i => { const [n, w] = coScoreTxt(G.score[i]); return `${n} ${w}`; };
@@ -3717,11 +3923,12 @@ function netAskLeave() {
   const host = NET.role === 'host';
   showPanel(`<h2>${L('¿Salir de la partida online?', 'Eixir de la partida online?')}</h2><p>${host ? L('Eres el anfitrión: si sales, la partida se acaba para todos.', 'Eres l\'amfitrió: si n\'ixes, la partida s\'acaba per a tots.') : L('Si sales, un bot jugará por ti. Puedes volver a entrar con el mismo código.', 'Si n\'ixes, un bot jugarà per tu. Pots tornar a entrar amb el mateix codi.')}</p><div class="acts"><button class="btn" type="button" data-act="net-leave">${L('Salir', 'Eixir')}</button><button class="btn primary" type="button" data-act="net-stay">${L('Seguir jugando', 'Continuar jugant')}</button></div>`);
 }
+const netHostGone = () => !!(NET && NET.role === 'guest' && NET.started && Date.now() - NET.lastHost > 12000);   // 26 nov: el anfitrión no da señales: salir ahora no penaliza
 function netLeave(quiet) {
   if (!NET) return;
-  if (NET.started) rkNetQuit('R');   // salir a mitad de una partida cuenta como retirada (si se fue el anfitrión o te echó, ya se descartó antes)
+  if (NET.started) { if (netHostGone()) rkNetDiscard(); else rkNetQuit('R'); }   // salir a mitad de una partida cuenta como retirada (si se fue el anfitrión o te echó, ya se descartó antes)
   if (NET.role === 'host') { hostRoomClear(); netSend({ t: 'bye' }); netPresenceTrack(false).then(netPresenceClose, netPresenceClose); }
-  else { if (!NET.started && !quiet) netRoomClear(); netSend({ t: 'leave' }); }   // salir de la sala antes de empezar: ya no hay partida que recuperar
+  else { if (!NET.started && !quiet) netRoomClear(); netSend({ t: 'leave' }); netRelayClear(); }   // salir de la sala antes de empezar: ya no hay partida que recuperar
   clearInterval(NET.timer); clearTimeout(NET.sched); if (NET.fast) clearInterval(NET.fast);
   const chans = [NET.pub, ...(NET.role === 'host' ? Object.values(NET.priv || {}) : [NET.priv])];
   setTimeout(() => chans.forEach(c => { try { c && c.close(); } catch (e) {} }), 300);
@@ -3735,7 +3942,7 @@ function netLeave(quiet) {
 // El invitado cierra la página o la app: avisa al anfitrión para que su sitio quede libre al momento (en la sala) o salga
 // «sin conexión» (en partida). Por si el canal no llega a enviarlo, también por el servidor con una petición que sobrevive al cierre.
 window.addEventListener('pagehide', e => {
-  if (NET && NET.started && !(e && e.persisted) && NET.role !== 'host') rkNetQuit('R');   // el anfitrión puede volver a su mesa: no cuenta como retirada   // cierre de verdad a mitad de partida online
+  if (NET && NET.started && !(e && e.persisted) && NET.role !== 'host') { if (netHostGone()) rkNetDiscard(); else rkNetQuit('R'); }   // el anfitrión puede volver a su mesa: no cuenta como retirada   // cierre de verdad a mitad de partida online
   if (!NET || NET.role !== 'guest' || !NET.priv) return;
   const m = { t: 'leave' }; NET.autoSit = true;
   try { NET.priv.send(m); } catch (e) {}
@@ -3744,7 +3951,8 @@ window.addEventListener('pagehide', e => {
 });
 // si la página no se había cerrado de verdad (vuelve de la caché del navegador), saluda otra vez y recupera un sitio
 window.addEventListener('pageshow', e => { if (e.persisted && NET && NET.role === 'guest' && NET.priv) { NET.autoSit = true; try { NET.priv.send({ t: 'hi' }); } catch (x) {} } });
-document.addEventListener('visibilitychange', () => { if (!document.hidden && NET && NET.role === 'host') { netSend({ t: 'ping' }); netSchedule(); if (NET.started && !busy) loop(); } });
+window.addEventListener('online', () => { if (NET && NET.role === 'host') NET.graceUntil = Date.now() + 25000; });   // al volver la red tarda en reconectar: 25 s de margen antes de dar a nadie por ausente
+document.addEventListener('visibilitychange', () => { if (!document.hidden && NET && NET.role === 'host') { NET.graceUntil = Date.now() + 20000; for (const q of [1, 2, 3]) { const st = NET.seats[q]; if (st && st.kind === 'human' && st.online) st.last = Math.max(st.last || 0, Date.now() - 5000); } netSend({ t: 'ping' }); netSchedule(); if (NET.started && !busy) loop(); } });
 
 
 /* ---------------- Partidas guiadas: pausas ---------------- */
@@ -4253,7 +4461,7 @@ $('panel').addEventListener('click', e => {
   if (a === 'net-rejoin') { const r = netRoomGet(); if (r && !NET) netJoin(r.code, r.name, false, true); else showMenu(); }
   if (a === 'net-hresume') netHostResume();
   if (a === 'net-hforget') { hostRoomClear(); rkNetStale(); showMenu(); }
-  if (a === 'net-forget') { rkNetQuit('R'); netRoomClear(); showMenu(); }
+  if (a === 'net-forget') { rkNetDiscard(); netRoomClear(); showMenu(); }
   if (a === 'net-lobby') netBackLobby();
   if (a === 'back') { if (CRED_FROM_SET) { CRED_FROM_SET = false; showSettings(); } else showMenu(); }
   if (a === 'nexthand') { S.dealer = (S.dealer + 1) % 4; newHand(S); S.feed = []; narr = L(`Mano ${S.handNo}. Reparte ${NAMES[S.dealer]}.`, `Mà ${S.handNo}. Dona ${NAMES[S.dealer]}.`); closePanel(); beginHand(); }
@@ -4469,7 +4677,7 @@ async function cotoLoop() {
       if (sang) { render(); await coDrain(); continue; }
       // 25 nov: antes de la última baza con montón, quien reparte avisa «Últimes!»
       if (!G.trick.length && G.stock.length === 4 && !G.ult0 && !TUTG) { G.ult0 = true; voz('ultimes0', G.dealer); }
-      if ((coCantesFor(G, 0).length || coCanSwap(G, 0)) && G.cantePass !== G.trickNo && G.turn !== 0) break;
+      if (!GHOST() && (coCantesFor(G, 0).length || coCanSwap(G, 0)) && G.cantePass !== G.trickNo && G.turn !== 0) break;
       if (TUTG && G.trickNo === 1 && !G.trick.length && coCanSwap(G, 0)) break;
       if (NET && netCanteWait()) break;
       if (humanSeat(G.turn)) break;
@@ -4655,9 +4863,29 @@ function showPlay() {
   $('panel').classList.add('menu'); cover();
 }
 
-if (PRUEBAS || /net=local/.test(location.search + location.hash)) window.CAU = { APP, netInfo: () => ({ vseq: NET && NET.vseq, seq: NET && NET.seq, cortar: v => { if (NET) NET.cut = !!v; }, empujar: () => netPushViews() }), rk: { net: { open: rkNetOpen, end: rkNetEnd, quit: rkNetQuit, discard: rkNetDiscard, begin: rkNetBegin }, start: rkStart, end: rkEnd, abandon: rkAbandon, stale: rkStale, flush: rkFlush, restore: rkRestoreCode }, get ZOOM() { return { zoom: ZOOM, factorMedido: ZK }; }, seatVoices, cotoNewMatch, coNext, exportText, coSwap, coCanSwap, coBotChoose, coPlay, coLegal, get G() { return G; }, set G(v) { G = v; }, set S(v) { S = v; }, render, matchNext, newGame, newHand, applyPlay, afterPlay, INFER, SMART, holdProb, determinize, botChoose, botChooseHard, botChooseNormal, botChooseEasy, botChooseDificil, botChooseExperto, botBet, botSing, SETTINGS, betAct, betOptions, sing, startSing, resolveNit, canFirst, canSecond, cardSVG, get S() { return S; } };
+if (PRUEBAS || /net=local/.test(location.search + location.hash)) window.CAU = { APP, netInfo: () => ({ evN: NET && NET.evN, vseq: NET && NET.vseq, seq: NET && NET.seq, ep: NET && NET.ep, role: NET && NET.role, ghost: !!(NET && NET.ghost), hasRl: !!(NET && NET.rl), hasSnap: !!(NET && NET.snap), snapBytes: NET && NET.snap ? NET.snap.d.length : 0, relayRun: !!(NET && NET.relayRun), silent: NET && NET.lastHost ? Date.now() - NET.lastHost : null, hostRelay: !!(NET && NET.relay), cortar: v => { if (NET) NET.cut = !!v; }, empujar: () => netPushViews() }), rk: { net: { open: rkNetOpen, end: rkNetEnd, quit: rkNetQuit, discard: rkNetDiscard, begin: rkNetBegin }, start: rkStart, end: rkEnd, abandon: rkAbandon, stale: rkStale, flush: rkFlush, restore: rkRestoreCode }, get ZOOM() { return { zoom: ZOOM, factorMedido: ZK }; }, seatVoices, cotoNewMatch, coNext, exportText, coSwap, coCanSwap, coBotChoose, coPlay, coLegal, get G() { return G; }, set G(v) { G = v; }, set S(v) { S = v; }, render, matchNext, newGame, newHand, applyPlay, afterPlay, INFER, SMART, holdProb, determinize, botChoose, botChooseHard, botChooseNormal, botChooseEasy, botChooseDificil, botChooseExperto, botBet, botSing, SETTINGS, betAct, betOptions, sing, startSing, resolveNit, canFirst, canSecond, cardSVG, get S() { return S; } };
 
+// ---- Árbitro invisible del relevo: copia de la app dentro de un iframe del móvil que toma el mando. Sin pantalla ni sonido; el sitio 0 lo juega un bot.
+async function arbiterBoot() {
+  let r = null; try { r = JSON.parse(localStorage.getItem('cau.relevo') || 'null'); localStorage.removeItem('cau.relevo'); } catch (e) {}
+  if (!r || !/^[A-Z]{4,6}$/.test(r.code || '') || !(r.G || r.S)) return;
+  SETTINGS.sonidos = false; SETTINGS.voces = false; SETTINGS.share = false;   // solo en memoria (saveSettings no hace nada aquí)
+  await netHostResume(r, true);
+  if (NET) setInterval(ghostTick, 1000);
+}
+let ghostSeen = { k: '', t: 0 };
+function ghostTick() {
+  if (!NET || !NET.ghost || !NET.started) return;
+  if ($('overlay').hidden) { ghostSeen = { k: '', t: 0 }; return; }
+  const pn = $('panel'), k = pn.textContent.slice(0, 240);
+  if (k !== ghostSeen.k) { ghostSeen = { k, t: Date.now() }; return; }
+  if (Date.now() - ghostSeen.t < 7000) return;   // se deja ver el resultado antes de seguir
+  const b = pn.querySelector('[data-act="co-next"],[data-act="nexthand"],[data-act="match"],[data-act="match-tb"]');
+  if (b) { ghostSeen = { k: '', t: 0 }; b.click(); return; }
+  if ($('netvote')) netGhostEnd();
+}
 function start(data) {
+  if (ARBITRO) return arbiterBoot();
   if (data && data.app) { Object.assign(APP, data.app); S = data.S; G = data.G; if (S) S.feed = []; if (G) G.feed = []; hasSaved = true; render(); loop(); return; }
   const app = loadApp();
   if (app) {

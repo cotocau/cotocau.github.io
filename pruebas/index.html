@@ -2,7 +2,7 @@
 <html lang="es" data-color="verde">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-wsFyphAQdVfc+MrrLvTqVeL3oayFTGJIDh5IIb7L0Eg=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-YjSu803++U5MLP37aSvnfAbA7Xz3tHusyeQEHADXF28=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script>(()=>{try{const P='pr.',S=Storage.prototype,g=S.getItem,s=S.setItem,r=S.removeItem;S.getItem=function(k){return g.call(this,P+k)};S.setItem=function(k,v){return s.call(this,P+k,v)};S.removeItem=function(k){return r.call(this,P+k)};}catch(e){}})();</script>
 <meta name="theme-color" content="#07170e">
@@ -246,6 +246,7 @@ button{font:inherit;color:inherit}
 .pw{display:flex;gap:8px}
 .pw input{flex:1;min-width:0;font:600 16px var(--f-body);color:var(--ink);background:rgba(0,0,0,.25);border:1px solid var(--line);border-radius:10px;padding:9px 11px}
 .pwerr{color:var(--rival);font-weight:700}
+.rkaviso{border:1px solid rgba(227,178,79,.7);background:rgba(227,178,79,.12);border-radius:12px;padding:9px 12px;margin:0 0 10px;font-size:13px;line-height:1.45;text-align:center}.rkaviso .btn{display:block;margin:8px auto 0;padding:6px 16px;font-size:13px}
 .obras{text-align:center}.obras svg{display:block;width:min(80%,260px);height:auto;margin:0 auto 6px}.obras h3{margin:4px 0 6px;color:#e3b24f}.obras p{margin:4px 0}.obras small{opacity:.7}
 .rk{width:100%;border-collapse:collapse;font-size:14px}
 .rk th,.rk td{padding:6px 5px;border-bottom:1px solid var(--line);text-align:right}
@@ -1955,9 +1956,9 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-26-21';
+const APP_VER = 'cau-2026-11-27-1';
 // Número que se ve en el menú de la oficial: la versión de la app de Android (1.2.4) y detrás un contador que sube con cada publicación en la oficial (1.2.4.1, 1.2.4.2…). Al subir la app de Android, se cambia el principio y el contador vuelve a 1.
-const APP_REL = '1.2.4.6';
+const APP_REL = '1.2.4.7';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
 // sus partidas llevan «-pruebas» en la versión y su online usa salas aparte (canales cc-p…), para no mezclarse con la oficial.
 const PRUEBAS = true;
@@ -2151,12 +2152,13 @@ function showRank() {
       : `<p class="desc" style="text-align:center">${L('Aún no hay nadie en esta tabla.', 'Encara no hi ha ningú en esta taula.')}</p>`;
     if (mine && !mine.en_tabla) body += `<p class="big-result" style="font-size:15px">${L(`Te faltan ${Math.max(1, 10 - mine.partidas)} partidas para entrar (llevas ${mine.partidas}).`, `Et falten ${Math.max(1, 10 - mine.partidas)} partides per a entrar (en portes ${mine.partidas}).`)}</p>`;
     else if (!mine && SETTINGS.rank && RK.juego === 'combinada') body += `<p class="desc">${L('Para salir en la combinada hace falta estar en la tabla del Coto y en la del Cau.', 'Per a eixir en la combinada cal estar en la taula del Coto i en la del Cau.')}</p>`;
-    if (!SETTINGS.rank) body += `<p class="desc">${L('Para salir en la clasificación, actívalo en Ajustes → Perfil.', 'Per a eixir en la classificació, activa-ho en Ajusts → Perfil.')} <button class="linkbtn" type="button" data-act="rank-go">${L('Ir a Ajustes', 'Anar a Ajusts')}</button></p>`;
   }
   const nota = RK.modo === 'offline'
     ? L('Solo cuentan partidas contra bots de nivel «muy difícil», tus últimas 50 por juego. Hace falta un mínimo de 10 partidas para salir en la tabla. Si pasas más de 7 días sin jugar, bajas un poco cada semana.', 'Només compten partides contra bots de nivell «molt difícil», les últimes 50 per joc. Cal un mínim de 10 partides per a eixir en la taula. Si passes més de 7 dies sense jugar, baixes un poc cada setmana.')
     : L('Solo cuentan mesas que empiezan con 4 personas. Hace falta un mínimo de 10 partidas para salir en la tabla. Abandonar una partida pesa el doble que perderla.', 'Només compten taules que comencen amb 4 persones. Cal un mínim de 10 partides per a eixir en la taula. Abandonar una partida pesa el doble que perdre-la.');
-  showPanel(`<h2 data-rk>${L('Clasificación', 'Classificació')}</h2>${tab('modo', M, RK.modo, 2)}${tab('juego', J, RK.juego, 3)}${body}<p class="desc rknote">${nota}</p>${PRUEBAS ? `<p class="desc" style="font-size:11px;opacity:.7">diag: interruptor ${SETTINGS.rank ? 'sí' : 'NO'} · compañero ${SETTINGS.partner} · rivales ${SETTINGS.rivals} · en curso ${JSON.stringify(rkGet('cau.rkp', null))} · por enviar ${rkGet('cau.rkq', []).length} · último envío ${JSON.stringify(rkGet('cau.rkl', null))}</p>` : ''}
+  // 27 nov: recordatorio bien visible arriba (antes era una línea pequeña debajo de la tabla) para quien no tiene activado «Aparecer en la clasificación»
+  const aviso = SETTINGS.rank ? '' : `<div class="rkaviso">🔔 <b>${L('Tú no sales en la clasificación.', 'Tu no eixes en la classificació.')}</b> ${L('Para aparecer, activa «Aparecer en la clasificación» en Ajustes → Perfil.', 'Per a aparéixer, activa «Aparéixer en la classificació» en Ajusts → Perfil.')} <button class="btn" type="button" data-act="rank-go">${L('Ir a Ajustes', 'Anar a Ajusts')}</button></div>`;
+  showPanel(`<h2 data-rk>${L('Clasificación', 'Classificació')}</h2>${aviso}${tab('modo', M, RK.modo, 2)}${tab('juego', J, RK.juego, 3)}${body}<p class="desc rknote">${nota}</p>${PRUEBAS ? `<p class="desc" style="font-size:11px;opacity:.7">diag: interruptor ${SETTINGS.rank ? 'sí' : 'NO'} · compañero ${SETTINGS.partner} · rivales ${SETTINGS.rivals} · en curso ${JSON.stringify(rkGet('cau.rkp', null))} · por enviar ${rkGet('cau.rkq', []).length} · último envío ${JSON.stringify(rkGet('cau.rkl', null))}</p>` : ''}
   <div class="acts"><button class="btn primary" type="button" data-act="close">${L('Volver', 'Tornar')}</button></div>`); cover();
   const box = $('panel').querySelector('.rkbox'), me = box && box.querySelector('tr.me');
   if (me) box.scrollTop = Math.max(0, me.offsetTop - box.clientHeight / 2);
