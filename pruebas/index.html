@@ -2,7 +2,7 @@
 <html lang="es" data-color="verde">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-pAEw1FRvhL0WPE1AB6iptKYQbrFR13iXx70lJc8MCqs=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-rBAkPdqNQhlXxOKBRb4DZoypgWXegNVqA7NDDwU6fyc=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script>(()=>{try{const P='pr.',S=Storage.prototype,g=S.getItem,s=S.setItem,r=S.removeItem;S.getItem=function(k){return g.call(this,P+k)};S.setItem=function(k,v){return s.call(this,P+k,v)};S.removeItem=function(k){return r.call(this,P+k)};}catch(e){}})();</script>
 <meta name="theme-color" content="#07170e">
@@ -1954,7 +1954,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-26-16';
+const APP_VER = 'cau-2026-11-26-17';
 // Número que se ve en el menú de la oficial: la versión de la app de Android (1.2.4) y detrás un contador que sube con cada publicación en la oficial (1.2.4.1, 1.2.4.2…). Al subir la app de Android, se cambia el principio y el contador vuelve a 1.
 const APP_REL = '1.2.4.6';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
@@ -3879,8 +3879,8 @@ function netGuestTick() {
   if (!NET.priv) return netHello();   // aún no ha contestado el anfitrión: volver a saludar
   netSend({ t: 'ping', s: NET.seq, r: NET.rl ? NET.rl.g : '', ep: NET.ep | 0 });
   netRelayTick();
-  const lost = $('netlost'); if (lost) lost.innerHTML = Date.now() - NET.lastHost > 12000 ? `<p class="desc" style="text-align:center">${L('El anfitrión no responde. Si sales ahora, no cuenta como retirada.', 'L\'amfitrió no respon. Si n\'eixes ara, no compta com a retirada.')}</p><div class="acts"><button class="btn" type="button" data-act="net-leave">${L('Salir', 'Eixir')}</button></div>` : '';
-  if (NET.started && Date.now() - NET.lastHost > 12000 && !NET.banner) { NET.banner = L('⏸️ El anfitrión no responde (puede que haya minimizado la app o se haya quedado sin conexión). La partida sigue cuando vuelva. Si no vuelve, puedes salir: no cuenta como retirada.', '⏸️ L\'amfitrió no respon (potser ha minimitzat l\'app o s\'ha quedat sense connexió). La partida continua quan torne. Si no torna, pots eixir: no compta com a retirada.'); if (G || S) render(); }
+  const lost = $('netlost'); if (lost) lost.innerHTML = Date.now() - NET.lastHost > 12000 ? `<p class="desc" style="text-align:center">${L('El anfitrión no responde. Si sales ahora, no cuenta como retirada y un bot jugará por ti en cuanto la partida siga.', 'L\'amfitrió no respon. Si n\'eixes ara, no compta com a retirada i un bot jugarà per tu quan la partida continue.')}</p><div class="acts"><button class="btn" type="button" data-act="net-leave">${L('Salir', 'Eixir')}</button></div>` : '';
+  if (NET.started && Date.now() - NET.lastHost > 12000 && !NET.banner) { NET.banner = L('⏸️ El anfitrión no responde (puede que haya minimizado la app o se haya quedado sin conexión). La partida sigue cuando vuelva. Si no vuelve, puedes salir: no cuenta como retirada y un bot jugará por ti en cuanto la partida siga.', '⏸️ L\'amfitrió no respon (potser ha minimitzat l\'app o s\'ha quedat sense connexió). La partida continua quan torne. Si no torna, pots eixir: no compta com a retirada i un bot jugarà per tu quan la partida continue.'); if (G || S) render(); }
 }
 function netGuestSummary() {
   const H = G.handSummary; const sc = i => { const [n, w] = coScoreTxt(G.score[i]); return `${n} ${w}`; };
