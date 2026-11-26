@@ -2,7 +2,7 @@
 <html lang="es" data-color="verde">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-mRiYETzg5ge8pCKd/GRqkJiyjK5ruZYqmaMfzpjFshM=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-qHQxJbaDi6HiZZlPE9xKZGa3EvpupDa/h994f1cWqDw=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script>(()=>{try{const P='pr.',S=Storage.prototype,g=S.getItem,s=S.setItem,r=S.removeItem;S.getItem=function(k){return g.call(this,P+k)};S.setItem=function(k,v){return s.call(this,P+k,v)};S.removeItem=function(k){return r.call(this,P+k)};}catch(e){}})();</script>
 <meta name="theme-color" content="#07170e">
@@ -1954,7 +1954,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-26-12';
+const APP_VER = 'cau-2026-11-26-13';
 // Número que se ve en el menú de la oficial: la versión de la app de Android (1.2.4) y detrás un contador que sube con cada publicación en la oficial (1.2.4.1, 1.2.4.2…). Al subir la app de Android, se cambia el principio y el contador vuelve a 1.
 const APP_REL = '1.2.4.6';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
@@ -3346,7 +3346,7 @@ function netHostSaveNow() {
 }
 // ---- Relevo (26 nov), lado anfitrión: cada invitado guarda un trozo de una clave y una copia cifrada de la mesa; con dos trozos se puede
 // abrir la copia y seguir. NET.ep = época: cada relevo la sube y los invitados ignoran lo que llegue de una época anterior.
-const NET_RELAY_MS = 30000;
+const NET_RELAY_MS = 10000;   // 26 nov: 10 s sin noticias del anfitrión (antes 30); los demás confirman a partir de 7 s
 function netRelayInit() {
   if (!NET || NET.role !== 'host') return;
   const hs = [1, 2, 3].filter(q => NET.seats[q].kind === 'human');
@@ -3826,7 +3826,7 @@ function netRelayTick() {
   if (!NET.started || !R || !sn || sn.g !== R.g || NET.relayRun) return;
   const silent = Date.now() - NET.lastHost, wait = NET_RELAY_MS * (R.thr === 1 ? 2 : 1);   // si solo hay un invitado se espera más: no hay nadie que confirme que el anfitrión se ha ido
   if (silent < wait) { NET.rlStage = -1; NET.rlGot = null; return; }
-  const order = R.pe.map(p => p.id), stage = Math.floor((silent - wait) / 25000);
+  const order = R.pe.map(p => p.id), stage = Math.floor((silent - wait) / 10000);
   if (order[stage % order.length] !== NET.id) return;   // le toca a otro (si falla, en 25 s le toca al siguiente)
   if (NET.rlStage !== stage || !NET.rlGot) { NET.rlStage = stage; NET.rlGot = { g: R.g, got: new Map([[R.x, R.y]]) }; }
   if (R.thr <= 1) return netRelayGo();
@@ -3834,7 +3834,7 @@ function netRelayTick() {
 }
 async function netRelayAsk(m) {   // otro invitado quiere tomar el mando: si yo también llevo rato sin saber del anfitrión, le doy mi trozo (cifrado para él)
   const R = NET && NET.rl; if (!R || !NET.started || !NET.keys || m.g !== R.g || !relayId(m.from) || m.from === NET.id) return;
-  if (Date.now() - NET.lastHost < 20000 || Date.now() - (NET.rlAskAt || 0) < 2000) return;
+  if (Date.now() - NET.lastHost < NET_RELAY_MS * 0.7 || Date.now() - (NET.rlAskAt || 0) < 1500) return;
   const L0 = R.pe.find(p => p.id === m.from); if (!L0) return;
   NET.rlAskAt = Date.now();
   try {
