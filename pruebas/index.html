@@ -2,7 +2,7 @@
 <html lang="es" data-color="verde">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-GCkULDGry7Me3pngWqpWmudLPHysCR1RysEXEgZ0K2c=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-zxnOPw/C94XqogxC7RUQDzRv2vnJjH9izDoUjYdHnZ0=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script>(()=>{try{const P='pr.',S=Storage.prototype,g=S.getItem,s=S.setItem,r=S.removeItem;S.getItem=function(k){return g.call(this,P+k)};S.setItem=function(k,v){return s.call(this,P+k,v)};S.removeItem=function(k){return r.call(this,P+k)};}catch(e){}})();</script>
 <meta name="theme-color" content="#07170e">
@@ -1952,7 +1952,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-26-7';
+const APP_VER = 'cau-2026-11-26-8';
 // Número que se ve en el menú de la oficial: la versión de la app de Android (1.2.4) y detrás un contador que sube con cada publicación en la oficial (1.2.4.1, 1.2.4.2…). Al subir la app de Android, se cambia el principio y el contador vuelve a 1.
 const APP_REL = '1.2.4.4';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
@@ -2413,6 +2413,7 @@ function render() {
   document.body.classList.toggle('deck-clasica', SETTINGS.deck === 'clasica');
   renderScore(0); renderScore(1);
   if (TUTG && TUTG.cau) { $('coach').hidden = false; $('coach').innerHTML = TUTG.pause ? tutPauseHTML() : tutCauCoach(); }
+  else if (NET) { const nb = netBannerHTML(); if (nb) { $('coach').hidden = false; $('coach').innerHTML = nb; } }   // aviso de «el anfitrión no responde» también en el Cau
   $('coach').classList.toggle('paused', !!(TUTG && TUTG.pause));
   $('info').textContent = L(`Mano ${S.handNo} · Reparto ${Math.max(1, S.round)}/3 · Mazo ${S.deck.length}`, `Mà ${S.handNo} · Repartiment ${Math.max(1, S.round)}/3 · Baralla ${S.deck.length}`);
   $('lbl0').textContent = TEAMN[0]; $('lbl1').textContent = TEAMN[1];
@@ -3224,12 +3225,13 @@ function netLobby() {
 }
 // Quién hay en cada sitio, visto desde el asiento g: 'p' persona conectada, 'off' sin conexión, 'away' juega un bot por ella, 'bot'
 function netWho(g) {
-  return [0, 1, 2, 3].map(v => { const st = NET.seats[(v + g) % 4]; if (st.kind === 'host') return 'p'; if (st.kind !== 'human') return 'bot'; return st.away ? 'away' : st.online ? 'p' : 'off'; });
+  return [0, 1, 2, 3].map(v => { const st = NET.seats[(v + g) % 4]; if (st.kind === 'host') return 'h'; if (st.kind !== 'human') return 'bot'; return st.away ? 'away' : st.online ? 'p' : 'off'; });
 }
 // Marca de la mesa online para el sitio p (0 = abajo): punto verde en las personas, 🤖 en los bots
 function netSeatMark(p, role) {
   if (!NET || !NET.started) return { av: '', sub: `<span class="sub">${role}</span>` };
   const w = (NET.role === 'host' ? netWho(0) : NET.who || [])[p];
+  if (w === 'h') { if (NET.role === 'guest' && NET.started && Date.now() - NET.lastHost > 12000) return { av: '', sub: `<span class="sub off">📵 ${L('Sin conexión', 'Sense connexió')}</span>` }; return { av: ' live', sub: `<span class="sub">${role}</span>` }; }   // el anfitrión: el invitado lo ve sin conexión si lleva un rato sin saber de él
   if (w === 'p') return { av: ' live', sub: `<span class="sub">${role}</span>` };
   if (w === 'bot') return { av: '', sub: `<span class="sub bot">🤖 Bot</span>` };
   if (w === 'off') return { av: '', sub: `<span class="sub off">📵 ${L('Sin conexión', 'Sense connexió')}</span>` };
@@ -3702,7 +3704,7 @@ function netGuestTick() {
   if (!NET.priv) return netHello();   // aún no ha contestado el anfitrión: volver a saludar
   netSend({ t: 'ping', s: NET.seq });
   const lost = $('netlost'); if (lost) lost.innerHTML = Date.now() - NET.lastHost > 12000 ? `<p class="desc" style="text-align:center">${L('El anfitrión no responde.', 'L\'amfitrió no respon.')}</p><div class="acts"><button class="btn" type="button" data-act="net-leave">${L('Salir', 'Eixir')}</button></div>` : '';
-  if (NET.started && Date.now() - NET.lastHost > 12000 && !NET.banner) { NET.banner = L('⏸️ El anfitrión no responde (puede que haya minimizado la app o se haya quedado sin conexión). La partida sigue cuando vuelva.', '⏸️ L\'amfitrió no respon (potser ha minimitzat l\'app o s\'ha quedat sense connexió). La partida continua quan torne.'); if (G) render(); }
+  if (NET.started && Date.now() - NET.lastHost > 12000 && !NET.banner) { NET.banner = L('⏸️ El anfitrión no responde (puede que haya minimizado la app o se haya quedado sin conexión). La partida sigue cuando vuelva.', '⏸️ L\'amfitrió no respon (potser ha minimitzat l\'app o s\'ha quedat sense connexió). La partida continua quan torne.'); if (G || S) render(); }
 }
 function netGuestSummary() {
   const H = G.handSummary; const sc = i => { const [n, w] = coScoreTxt(G.score[i]); return `${n} ${w}`; };
