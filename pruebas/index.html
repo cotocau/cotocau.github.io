@@ -2,7 +2,7 @@
 <html lang="es" data-color="verde">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-aMjVfHudS0rZyme3E2LASoLK0rC6N5tHGzkEt3LUEtI=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-VrJEkP4lZanAPc+RXuRgPLmQLjCXB0J6Y1eda/5F7MQ=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script>(()=>{try{const P='pr.',S=Storage.prototype,g=S.getItem,s=S.setItem,r=S.removeItem;S.getItem=function(k){return g.call(this,P+k)};S.setItem=function(k,v){return s.call(this,P+k,v)};S.removeItem=function(k){return r.call(this,P+k)};}catch(e){}})();</script>
 <meta name="theme-color" content="#07170e">
@@ -1475,7 +1475,7 @@ function coDeterminize0(G, p) {
   return null;
 }
 function coRolloutValue(d, t) { return (d.pts[t] + d.cantes[t]) - (d.pts[1 - t] + d.cantes[1 - t]); }
-const CO_EXP = { trumpPen: 5, briscaPen: 0, leadPen: 12, noLead: true, minTrumpPts: 10, solve: 7, protect: true, deepLast: 8, discW: 1, signals: false, markW: 6, noGift: true, N: 80, refine: 12, refineN: 400, refineMs: 250, safe3: true, safe3T: true, secoW: 4, swapV: true, swapTop: true, swapLast: false, swapNow: false, loadTol: 1, winW: 60, vueltasScale: 0 };
+const CO_EXP = { behindLead: 40, trumpPen: 5, briscaPen: 0, leadPen: 12, noLead: true, minTrumpPts: 10, solve: 7, protect: true, deepLast: 8, discW: 1, signals: false, markW: 6, noGift: true, N: 80, refine: 12, refineN: 400, refineMs: 250, safe3: true, safe3T: true, secoW: 4, swapV: true, swapTop: true, swapLast: false, swapNow: false, loadTol: 1, winW: 60, vueltasScale: 0 };
 // Muy difícil. El metajuego cambia según el momento:
 // · mano normal, con montón: se guardan los triunfos para el arrastre y nunca se sale de triunfo;
 // · arrastre: se puede salir de triunfo para quitar los de los rivales;
@@ -1856,6 +1856,16 @@ function coSureExit(G, p, all) {
   }
   return best ? best.id : null;
 }
+// mano de vueltas, saliendo con montón y yendo perdiendo por 40 o más: si iba a salir con un triunfo bajo teniendo el 3 de triunfo como el más alto
+// (sin el as), sale con el 3 (26 nov: en la mesa se arriesga para remontar; en 300 posiciones al azar sin diferencia medible: 14,7 % frente a 13,0 %)
+function coBehindLead(G, p, id) {
+  if (!CO_EXP.behindLead || !G.vueltas || G.trick.length || coArrastre(G)) return id;
+  const t = team(p); if (G.score[1 - t] - G.score[t] < CO_EXP.behindLead) return id;
+  if (coCard(id).s !== G.trump) return id;
+  const tr = G.hands[p].filter(c => c.s === G.trump);
+  const top = tr.reduce((a, c) => CSTR[c.r] > CSTR[a.r] ? c : a);
+  return top.r === 2 ? top.id : id;
+}
 // entre cartas equivalentes del mismo palo (sin ninguna por salir entre ellas), si gano la baza seguro echo la que más puntos vale
 function coEquivPoints(G, p, id) {
   if (G.trick.length !== 3) return id;
@@ -1871,7 +1881,7 @@ function coBotChoose(G, p, lvl) {
   if (lvl === 'experto' || lvl === 'dificil') { const x = coSureExit(G, p); if (x != null) return x; }   // salirse ya si es seguro
   if (lvl === 'facil') return coBotEasy(G, p);
   if (lvl === 'dificil') return coBotBest(G, p);
-  if (lvl === 'experto') return coEquivPoints(G, p, coBotExpert(G, p));
+  if (lvl === 'experto') return coEquivPoints(G, p, coBehindLead(G, p, coBotExpert(G, p)));
   return coBotNormal(G, p);
 }
 // Los bots cantan siempre que pueden, salvo en la mano de vueltas si cantar no les sirve para salirse
@@ -1934,7 +1944,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-26-1';
+const APP_VER = 'cau-2026-11-26-2';
 // Número que se ve en el menú de la oficial: la versión de la app de Android (1.2.4) y detrás un contador que sube con cada publicación en la oficial (1.2.4.1, 1.2.4.2…). Al subir la app de Android, se cambia el principio y el contador vuelve a 1.
 const APP_REL = '1.2.4.3';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
