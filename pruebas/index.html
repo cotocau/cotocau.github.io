@@ -2,7 +2,7 @@
 <html lang="es" data-color="verde">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-u4qfKMr4W2XY0/6EItuMhWyuFxuJSEo2uStStTQrD54=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-pAEw1FRvhL0WPE1AB6iptKYQbrFR13iXx70lJc8MCqs=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script>(()=>{try{const P='pr.',S=Storage.prototype,g=S.getItem,s=S.setItem,r=S.removeItem;S.getItem=function(k){return g.call(this,P+k)};S.setItem=function(k,v){return s.call(this,P+k,v)};S.removeItem=function(k){return r.call(this,P+k)};}catch(e){}})();</script>
 <meta name="theme-color" content="#07170e">
@@ -1954,7 +1954,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-26-15';
+const APP_VER = 'cau-2026-11-26-16';
 // Número que se ve en el menú de la oficial: la versión de la app de Android (1.2.4) y detrás un contador que sube con cada publicación en la oficial (1.2.4.1, 1.2.4.2…). Al subir la app de Android, se cambia el principio y el contador vuelve a 1.
 const APP_REL = '1.2.4.6';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
@@ -3879,8 +3879,8 @@ function netGuestTick() {
   if (!NET.priv) return netHello();   // aún no ha contestado el anfitrión: volver a saludar
   netSend({ t: 'ping', s: NET.seq, r: NET.rl ? NET.rl.g : '', ep: NET.ep | 0 });
   netRelayTick();
-  const lost = $('netlost'); if (lost) lost.innerHTML = Date.now() - NET.lastHost > 12000 ? `<p class="desc" style="text-align:center">${L('El anfitrión no responde.', 'L\'amfitrió no respon.')}</p><div class="acts"><button class="btn" type="button" data-act="net-leave">${L('Salir', 'Eixir')}</button></div>` : '';
-  if (NET.started && Date.now() - NET.lastHost > 12000 && !NET.banner) { NET.banner = L('⏸️ El anfitrión no responde (puede que haya minimizado la app o se haya quedado sin conexión). La partida sigue cuando vuelva.', '⏸️ L\'amfitrió no respon (potser ha minimitzat l\'app o s\'ha quedat sense connexió). La partida continua quan torne.'); if (G || S) render(); }
+  const lost = $('netlost'); if (lost) lost.innerHTML = Date.now() - NET.lastHost > 12000 ? `<p class="desc" style="text-align:center">${L('El anfitrión no responde. Si sales ahora, no cuenta como retirada.', 'L\'amfitrió no respon. Si n\'eixes ara, no compta com a retirada.')}</p><div class="acts"><button class="btn" type="button" data-act="net-leave">${L('Salir', 'Eixir')}</button></div>` : '';
+  if (NET.started && Date.now() - NET.lastHost > 12000 && !NET.banner) { NET.banner = L('⏸️ El anfitrión no responde (puede que haya minimizado la app o se haya quedado sin conexión). La partida sigue cuando vuelva. Si no vuelve, puedes salir: no cuenta como retirada.', '⏸️ L\'amfitrió no respon (potser ha minimitzat l\'app o s\'ha quedat sense connexió). La partida continua quan torne. Si no torna, pots eixir: no compta com a retirada.'); if (G || S) render(); }
 }
 function netGuestSummary() {
   const H = G.handSummary; const sc = i => { const [n, w] = coScoreTxt(G.score[i]); return `${n} ${w}`; };
@@ -3891,9 +3891,10 @@ function netAskLeave() {
   const host = NET.role === 'host';
   showPanel(`<h2>${L('¿Salir de la partida online?', 'Eixir de la partida online?')}</h2><p>${host ? L('Eres el anfitrión: si sales, la partida se acaba para todos.', 'Eres l\'amfitrió: si n\'ixes, la partida s\'acaba per a tots.') : L('Si sales, un bot jugará por ti. Puedes volver a entrar con el mismo código.', 'Si n\'ixes, un bot jugarà per tu. Pots tornar a entrar amb el mateix codi.')}</p><div class="acts"><button class="btn" type="button" data-act="net-leave">${L('Salir', 'Eixir')}</button><button class="btn primary" type="button" data-act="net-stay">${L('Seguir jugando', 'Continuar jugant')}</button></div>`);
 }
+const netHostGone = () => !!(NET && NET.role === 'guest' && NET.started && Date.now() - NET.lastHost > 12000);   // 26 nov: el anfitrión no da señales: salir ahora no penaliza
 function netLeave(quiet) {
   if (!NET) return;
-  if (NET.started) rkNetQuit('R');   // salir a mitad de una partida cuenta como retirada (si se fue el anfitrión o te echó, ya se descartó antes)
+  if (NET.started) { if (netHostGone()) rkNetDiscard(); else rkNetQuit('R'); }   // salir a mitad de una partida cuenta como retirada (si se fue el anfitrión o te echó, ya se descartó antes)
   if (NET.role === 'host') { hostRoomClear(); netSend({ t: 'bye' }); netPresenceTrack(false).then(netPresenceClose, netPresenceClose); }
   else { if (!NET.started && !quiet) netRoomClear(); netSend({ t: 'leave' }); netRelayClear(); }   // salir de la sala antes de empezar: ya no hay partida que recuperar
   clearInterval(NET.timer); clearTimeout(NET.sched); if (NET.fast) clearInterval(NET.fast);
@@ -3909,7 +3910,7 @@ function netLeave(quiet) {
 // El invitado cierra la página o la app: avisa al anfitrión para que su sitio quede libre al momento (en la sala) o salga
 // «sin conexión» (en partida). Por si el canal no llega a enviarlo, también por el servidor con una petición que sobrevive al cierre.
 window.addEventListener('pagehide', e => {
-  if (NET && NET.started && !(e && e.persisted) && NET.role !== 'host') rkNetQuit('R');   // el anfitrión puede volver a su mesa: no cuenta como retirada   // cierre de verdad a mitad de partida online
+  if (NET && NET.started && !(e && e.persisted) && NET.role !== 'host') { if (netHostGone()) rkNetDiscard(); else rkNetQuit('R'); }   // el anfitrión puede volver a su mesa: no cuenta como retirada   // cierre de verdad a mitad de partida online
   if (!NET || NET.role !== 'guest' || !NET.priv) return;
   const m = { t: 'leave' }; NET.autoSit = true;
   try { NET.priv.send(m); } catch (e) {}
@@ -4427,7 +4428,7 @@ $('panel').addEventListener('click', e => {
   if (a === 'net-rejoin') { const r = netRoomGet(); if (r && !NET) netJoin(r.code, r.name, false, true); else showMenu(); }
   if (a === 'net-hresume') netHostResume();
   if (a === 'net-hforget') { hostRoomClear(); rkNetStale(); showMenu(); }
-  if (a === 'net-forget') { rkNetQuit('R'); netRoomClear(); showMenu(); }
+  if (a === 'net-forget') { rkNetDiscard(); netRoomClear(); showMenu(); }
   if (a === 'net-lobby') netBackLobby();
   if (a === 'back') { if (CRED_FROM_SET) { CRED_FROM_SET = false; showSettings(); } else showMenu(); }
   if (a === 'nexthand') { S.dealer = (S.dealer + 1) % 4; newHand(S); S.feed = []; narr = L(`Mano ${S.handNo}. Reparte ${NAMES[S.dealer]}.`, `Mà ${S.handNo}. Dona ${NAMES[S.dealer]}.`); closePanel(); beginHand(); }
