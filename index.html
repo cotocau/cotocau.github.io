@@ -2,7 +2,7 @@
 <html lang="es" data-color="verde">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-dKosbEWIOnw7lgD29cwxRCEjkCEB7fFe7Kqdu2jOEm0=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-EJ4c7UgenalPW8gQoM1qH1pz7crRiA85aFA6VvLto2w=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#07170e">
 <meta name="description" content="CotoCau: el Coto y el Cau, los juegos de cartas de las filaes de Alcoy. Juega con tu compañera contra dos rivales.">
@@ -1951,9 +1951,9 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-26-9';
+const APP_VER = 'cau-2026-11-26-11';
 // Número que se ve en el menú de la oficial: la versión de la app de Android (1.2.4) y detrás un contador que sube con cada publicación en la oficial (1.2.4.1, 1.2.4.2…). Al subir la app de Android, se cambia el principio y el contador vuelve a 1.
-const APP_REL = '1.2.4.5';
+const APP_REL = '1.2.4.6';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
 // sus partidas llevan «-pruebas» en la versión y su online usa salas aparte (canales cc-p…), para no mezclarse con la oficial.
 const PRUEBAS = false;
@@ -3292,7 +3292,7 @@ function netHostSaveNow() {
   if (!NET || NET.role !== 'host' || !NET.started || !NET.keyJwk || !(G || S)) return;
   try {
     const seats = NET.seats.map(x => x.kind === 'human' ? { kind: 'human', id: x.id, name: x.name, voz: x.voz, away: !!x.away, pk: (NET.pks || {})[x.id] || '' } : { kind: x.kind, name: x.name });
-    localStorage.setItem(HOSTR_KEY, JSON.stringify({ v: 1, t: Date.now(), code: NET.code, name: NET.name, mode: NET.mode, open: !!NET.open, best: NET.best, fp: NET.fp, keys: { priv: NET.keyJwk, raw: NET.keys.raw }, seats, kicked: [...(NET.kicked || [])], rk: NET.rk || null, vseq: NET.vseq || 0, appMode: APP.mode, M: APP.M, S: isCoto() ? null : S, G: isCoto() ? G : null }));
+    localStorage.setItem(HOSTR_KEY, JSON.stringify({ v: 1, t: Date.now(), code: NET.code, name: NET.name, mode: NET.mode, open: !!NET.open, best: NET.best, fp: NET.fp, keys: { priv: NET.keyJwk, raw: NET.keys.raw }, seats, kicked: [...(NET.kicked || [])], rk: NET.rk || null, vote: NET.vote ? { host: NET.vote.host, ans: NET.vote.ans, toLobby: !!NET.vote.toLobby } : null, vseq: NET.vseq || 0, appMode: APP.mode, M: APP.M, S: isCoto() ? null : S, G: isCoto() ? G : null }));
   } catch (e) {}
 }
 async function netHostResume() {
@@ -3307,6 +3307,7 @@ async function netHostResume() {
     APP.mode = r.appMode; APP.M = r.M; G = r.G || null; S = r.S || newGame();
     S.feed = []; if (G) G.feed = [];
     for (const q of [1, 2, 3]) if (NET.seats[q].kind === 'human') NAMES[q] = NET.seats[q].name;
+    if (r.vote && typeof r.vote === 'object') NET.vote = { until: Date.now() + NET_VOTE_MS, ans: r.vote.ans && typeof r.vote.ans === 'object' ? r.vote.ans : {}, host: r.vote.host === true ? true : r.vote.host === false ? false : null, toLobby: !!r.vote.toLobby };   // si estaban votando «¿otra partida?», se sigue con los votos que ya había y 30 s nuevos
     GEN++; busy = false; coDealView = null; dealView = null; fx = null; coFx = null; coShowLast = false; coHide = new Set(); coPend = 0; coReveal = false; TUTG = null; narr = ''; NET.hpanel = null;
     NET.pub = await netOpen(NETNS + NET.code, netHostPub);
     for (const x of NET.seats) {
@@ -3498,7 +3499,7 @@ function netVoteState() {
   for (const q of [1, 2, 3]) { const x = NET.seats[q]; if (x.kind !== 'human') continue; const a = V.ans[q]; st.push({ n: x.name, v: a == null ? (x.online ? null : 0) : a ? 1 : 0 }); }
   return { st, left: (V.until - Date.now()) / 1000 };
 }
-function netVoteSend() { if (!NET || NET.role !== 'host' || !NET.vote) return; const s = netVoteState(); netSend({ t: 'vote', st: s.st, left: s.left }); netVoteRender(); netVoteCheck(); }
+function netVoteSend() { if (!NET || NET.role !== 'host' || !NET.vote) return; netHostSave(); const s = netVoteState(); netSend({ t: 'vote', st: s.st, left: s.left }); netVoteRender(); netVoteCheck(); }
 function netVoteCast(v) {
   if (!NET) return;
   if (NET.role === 'host') {
@@ -3651,7 +3652,9 @@ function netGuestMsg(m) {
   if (m.t === 'start') { NET.started = true; NET.vote = null; NET.myVote = null; netRoomSave(); return; }
   if (m.t === 'vote') {
     const st = (Array.isArray(m.st) ? m.st : []).slice(0, 4).map(x => ({ n: cleanName(x && x.n) || '?', v: x && (x.v === 1 || x.v === 0) ? x.v : null }));
-    NET.vote = { st, left: Math.max(0, Math.min(60, +m.left || 0)) }; netVoteRender(); return;
+    NET.vote = { st, left: Math.max(0, Math.min(60, +m.left || 0)) }; netVoteRender();
+    const yo = st.find(x => x.n === cleanName(NET.name)); if (NET.myVote === 1 && yo && yo.v == null && Date.now() - (NET.voteRe || 0) > 2000) { NET.voteRe = Date.now(); netSend({ t: 'act', id: NET.id, a: 'vote', v: 1 }); }   // el anfitrión no tiene mi «sí» (se reinició al volver): lo repito
+    return;
   }
   if (m.t === 'out') { netRoomClear(); netLeave(true); showPanel(`<h2>${L('La mesa sigue sin ti', 'La taula continua sense tu')}</h2><p>${L('No contestaste a tiempo si querías otra partida, así que tu sitio ha quedado libre.', 'No vas contestar a temps si volies una altra partida, així que el teu lloc ha quedat lliure.')}</p><div class="acts"><button class="btn primary" type="button" data-act="menu">${L('Menú', 'Menú')}</button></div>`); return; }
   if (m.t === 'kick') { rkNetDiscard(); netRoomClear(); const n = NET.host || L('El anfitrión', 'L\'amfitrió'); netLeave(true); showPanel(`<h2>${L('Fuera de la sala', 'Fora de la sala')}</h2><p>${L(`${esc(n)} te ha sacado de la sala.`, `${esc(n)} t'ha tret de la sala.`)}</p><div class="acts"><button class="btn primary" type="button" data-act="menu">${L('Menú', 'Menú')}</button></div>`); return; }
