@@ -2,7 +2,7 @@
 <html lang="es" data-color="verde">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-npDbgE65z+aoHaSlh6qMahJuV5Lk5t+2WL7uDcuSRLI=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-mI4dnVrWLagG6+tK21A977JYsETbJNIrf8BPdOEKbvs=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script>(()=>{try{const P='pr.',S=Storage.prototype,g=S.getItem,s=S.setItem,r=S.removeItem;S.getItem=function(k){return g.call(this,P+k)};S.setItem=function(k,v){return s.call(this,P+k,v)};S.removeItem=function(k){return r.call(this,P+k)};}catch(e){}})();</script>
 <meta name="theme-color" content="#07170e">
@@ -1952,7 +1952,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-26-4';
+const APP_VER = 'cau-2026-11-26-5';
 // Número que se ve en el menú de la oficial: la versión de la app de Android (1.2.4) y detrás un contador que sube con cada publicación en la oficial (1.2.4.1, 1.2.4.2…). Al subir la app de Android, se cambia el principio y el contador vuelve a 1.
 const APP_REL = '1.2.4.3';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
@@ -2485,6 +2485,17 @@ function sfxConectado() {
       const t = sctx.currentTime + d, o = sctx.createOscillator(), g = sctx.createGain();
       o.type = 'sine'; o.frequency.value = f; g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.16, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.6);
       o.connect(g); g.connect(sctx.destination); o.start(t); o.stop(t + 0.65);
+    });
+  } catch (e) {}
+}
+// Al revés (si y luego mi, más apagado): alguien se va de la mesa o pierde la conexión.
+function sfxDesconectado() {
+  if (SETTINGS.sonidos === false || !sctx || document.hidden) return;
+  try {
+    [[987.77, 0], [659.25, 0.13]].forEach(([f, d]) => {
+      const t = sctx.currentTime + d, o = sctx.createOscillator(), g = sctx.createGain();
+      o.type = 'sine'; o.frequency.value = f; g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.13, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.55);
+      o.connect(g); g.connect(sctx.destination); o.start(t); o.stop(t + 0.6);
     });
   } catch (e) {}
 }
@@ -3302,7 +3313,7 @@ function netDrop(id, ban) {
   delete NET.priv[id]; try { ch && ch.close(); } catch (e) {}
   if (NET.rate) delete NET.rate[id];
   if (ban) (NET.ban = NET.ban || {})[id] = Date.now() + 60000;
-  if (q > 0) { if (NET.started) { NET.seats[q].online = false; NET.seats[q].last = 0; netSchedule(); render(); if (!busy) loop(); } else { NET.seats[q] = { kind: 'free' }; netLobby(); } }
+  if (q > 0) { sfxDesconectado(); if (NET.started) { NET.seats[q].online = false; NET.seats[q].last = 0; netSchedule(); render(); if (!busy) loop(); } else { NET.seats[q] = { kind: 'free' }; netLobby(); } }
 }
 async function netHostMsg(m) {
   if (!NET || NET.role !== 'host' || !m || !m.id || !NET.priv[m.id]) return;
@@ -3315,8 +3326,8 @@ async function netHostMsg(m) {
   // Alguien sale: en la sala su sitio queda libre al momento; en plena partida pasa a «sin conexión» ya (juega un bot) y puede volver
   if (m.t === 'leave') {
     const q = seatOf(m.id);
-    if (!NET.started) { const ch = NET.priv[m.id]; delete NET.priv[m.id]; setTimeout(() => { try { ch && ch.close(); } catch (e) {} }, 300); if (q > 0) { NET.seats[q] = { kind: 'free' }; netLobby(); } return; }
-    if (q > 0 && NET.seats[q].online) { NET.seats[q].online = false; NET.seats[q].last = 0; netSchedule(); render(); if (!busy) loop(); }
+    if (!NET.started) { const ch = NET.priv[m.id]; delete NET.priv[m.id]; setTimeout(() => { try { ch && ch.close(); } catch (e) {} }, 300); if (q > 0) { sfxDesconectado(); NET.seats[q] = { kind: 'free' }; netLobby(); } return; }
+    if (q > 0 && NET.seats[q].online) { sfxDesconectado(); NET.seats[q].online = false; NET.seats[q].last = 0; netSchedule(); render(); if (!busy) loop(); }
     return;
   }
   if (m.t === 'hi') { const q = seatOf(m.id); if (q > 0) { if (NET.started && !NET.seats[q].online) sfxConectado(); NET.seats[q].online = true; NET.seats[q].last = Date.now(); if (NET.seats[q].away && G) netSetAway(q, false); } if (NET.started) { netSend({ t: 'start' }); netSchedule(); render(); } else netLobby(); return; }
@@ -3359,7 +3370,7 @@ function netHostTick() {
   if (NET.vote) netVoteSend();
   const now = Date.now();
   if (!NET.started) { const sent = new Set(NET.seats.filter(x => x.kind === 'human').map(x => x.id)); for (const k of Object.keys(NET.priv)) if (!sent.has(k) && now - ((NET.rate && NET.rate[k] && NET.rate[k].t0) || now) > 90000) netDrop(k, false); }
-  for (const q of [1, 2, 3]) { const st = NET.seats[q]; if (st.kind !== 'human') continue; const on = now - (st.last || 0) < 15000; if (on !== st.online) { st.online = on; if (NET.started) { netSchedule(); render(); if (!on && !busy) loop(); } else { if (!on) NET.seats[q] = { kind: 'free' }; netLobby(); } } }   // en la sala, quien pierde la conexión deja su sitio libre
+  for (const q of [1, 2, 3]) { const st = NET.seats[q]; if (st.kind !== 'human') continue; const on = now - (st.last || 0) < 15000; if (on !== st.online) { st.online = on; if (!on) sfxDesconectado(); if (NET.started) { netSchedule(); render(); if (!on && !busy) loop(); } else { if (!on) NET.seats[q] = { kind: 'free' }; netLobby(); } } }   // en la sala, quien pierde la conexión deja su sitio libre
 }
 function netStart() {
   for (const q of [1, 2, 3]) if (NET.seats[q].kind === 'free') NET.seats[q] = { kind: 'bot' };
