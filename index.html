@@ -2,7 +2,7 @@
 <html lang="es" data-color="verde">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-77z+2GGf1zVA2P3TbJUPKsYkN6ZgAOWMxqCitM0oPc0=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-3zdn0qHZWvTgRdAjtGueGQR3k7sFj7df+Tt6ncW9JEk=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#07170e">
 <meta name="description" content="CotoCau: el Coto y el Cau, los juegos de cartas de las filaes de Alcoy. Juega con tu compañera contra dos rivales.">
@@ -135,7 +135,7 @@ button{font:inherit;color:inherit}
 .card.incoming{animation:drop .45s ease-out}
 .card.taking{transform:translateY(-6px) scale(1.05);box-shadow:0 0 0 3px var(--gold),0 10px 20px rgba(0,0,0,.45)}
 .card.reserved{box-shadow:0 0 0 2px var(--felt-deep),0 0 0 4px var(--gold)}
-.card.last{box-shadow:0 0 0 2px rgba(244,234,216,.6),0 6px 14px rgba(0,0,0,.38)}
+.card.last{box-shadow:0 0 0 3px #ffe14d,0 0 14px 3px rgba(255,225,77,.6),0 6px 14px rgba(0,0,0,.38)}   /* última carta jugada: amarillo vivo que se ve sobre el tapete (25 nov) */
 .chain{display:flex;align-items:center;padding:12px 10px 8px;border:1.5px solid var(--gold);border-radius:12px;background:rgba(0,0,0,.22);position:relative}
 .chain .card+.card{margin-left:calc(var(--cw)*-.55)}
 .chain-lbl{position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--gold);color:var(--gold-ink);font-weight:800;font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:2px 7px;border-radius:999px;white-space:nowrap}
@@ -1474,7 +1474,7 @@ function coDeterminize0(G, p) {
   return null;
 }
 function coRolloutValue(d, t) { return (d.pts[t] + d.cantes[t]) - (d.pts[1 - t] + d.cantes[1 - t]); }
-const CO_EXP = { trumpPen: 5, briscaPen: 0, leadPen: 12, noLead: true, minTrumpPts: 10, solve: 7, protect: true, deepLast: 8, discW: 1, signals: false, markW: 6, noGift: true, N: 80, refine: 12, refineN: 400, refineMs: 250, safe3: true, safe3T: true, secoW: 4, swapV: true, swapTop: true, swapLast: false, swapNow: false, loadTol: 1, winW: 60, vueltasScale: 0 };
+const CO_EXP = { behindLead: 40, trumpPen: 5, briscaPen: 0, leadPen: 12, noLead: true, minTrumpPts: 10, solve: 7, protect: true, deepLast: 8, discW: 1, signals: false, markW: 6, noGift: true, N: 80, refine: 12, refineN: 400, refineMs: 250, safe3: true, safe3T: true, secoW: 4, swapV: true, swapTop: true, swapLast: false, swapNow: false, loadTol: 1, winW: 60, vueltasScale: 0 };
 // Muy difícil. El metajuego cambia según el momento:
 // · mano normal, con montón: se guardan los triunfos para el arrastre y nunca se sale de triunfo;
 // · arrastre: se puede salir de triunfo para quitar los de los rivales;
@@ -1754,6 +1754,14 @@ function coBotExpert(G, p, N = CO_EXP.N || 40) {
   if (G.vueltas && !arr && CO_EXP.protect && G.trick.length === 2) {
     const w = coTrickWinner(G, G.trick);
     if (team(w.p) === t && w.c.s !== G.trump) {
+      // 26 nov: si ganando esta baza los rivales pueden salirse, se protege con el triunfo más bajo que nadie pueda matar
+      // (antes el más bajo a secas: en la fila 1402 Toni echó el 2c con el as de triunfo en la mano y lo mataron)
+      const mesa = G.trick.reduce((s, x) => s + CPTS[x.c.r], 0);
+      if (G.score[1 - t] + mesa + 11 >= 101) {
+        const uns = coUnseen(G, p).filter(c => c.s === G.trump);
+        const safe = legal.filter(c => c.s === G.trump && !uns.some(u => CSTR[u.r] > CSTR[c.r])).sort((a, b) => CSTR[a.r] - CSTR[b.r]);
+        if (safe.length) return safe[0].id;
+      }
       const low = legal.filter(c => c.s === G.trump && CSTR[c.r] < 6).sort((a, b) => CSTR[a.r] - CSTR[b.r]);
       if (low.length) return low[0].id;
     }
@@ -1855,6 +1863,16 @@ function coSureExit(G, p, all) {
   }
   return best ? best.id : null;
 }
+// mano de vueltas, saliendo con montón y yendo perdiendo por 40 o más: si iba a salir con un triunfo bajo teniendo el 3 de triunfo como el más alto
+// (sin el as), sale con el 3 (26 nov: en la mesa se arriesga para remontar; en 300 posiciones al azar sin diferencia medible: 14,7 % frente a 13,0 %)
+function coBehindLead(G, p, id) {
+  if (!CO_EXP.behindLead || !G.vueltas || G.trick.length || coArrastre(G)) return id;
+  const t = team(p); if (G.score[1 - t] - G.score[t] < CO_EXP.behindLead) return id;
+  if (coCard(id).s !== G.trump) return id;
+  const tr = G.hands[p].filter(c => c.s === G.trump);
+  const top = tr.reduce((a, c) => CSTR[c.r] > CSTR[a.r] ? c : a);
+  return top.r === 2 ? top.id : id;
+}
 // entre cartas equivalentes del mismo palo (sin ninguna por salir entre ellas), si gano la baza seguro echo la que más puntos vale
 function coEquivPoints(G, p, id) {
   if (G.trick.length !== 3) return id;
@@ -1870,7 +1888,7 @@ function coBotChoose(G, p, lvl) {
   if (lvl === 'experto' || lvl === 'dificil') { const x = coSureExit(G, p); if (x != null) return x; }   // salirse ya si es seguro
   if (lvl === 'facil') return coBotEasy(G, p);
   if (lvl === 'dificil') return coBotBest(G, p);
-  if (lvl === 'experto') return coEquivPoints(G, p, coBotExpert(G, p));
+  if (lvl === 'experto') return coEquivPoints(G, p, coBehindLead(G, p, coBotExpert(G, p)));
   return coBotNormal(G, p);
 }
 // Los bots cantan siempre que pueden, salvo en la mano de vueltas si cantar no les sirve para salirse
@@ -1933,9 +1951,9 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-25-13';
+const APP_VER = 'cau-2026-11-26-6';
 // Número que se ve en el menú de la oficial: la versión de la app de Android (1.2.4) y detrás un contador que sube con cada publicación en la oficial (1.2.4.1, 1.2.4.2…). Al subir la app de Android, se cambia el principio y el contador vuelve a 1.
-const APP_REL = '1.2.4.3';
+const APP_REL = '1.2.4.4';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
 // sus partidas llevan «-pruebas» en la versión y su online usa salas aparte (canales cc-p…), para no mezclarse con la oficial.
 const PRUEBAS = false;
@@ -2455,6 +2473,29 @@ function sfx(k, delay = 0, vol = 1) {
     const s = sctx.createBufferSource(), g = sctx.createGain(); s.buffer = sbuf[k];
     s.playbackRate.value = 0.93 + Math.random() * 0.14; g.gain.value = 0.6 * vol * (0.75 + Math.random() * 0.25);
     s.connect(g); g.connect(sctx.destination); s.start(sctx.currentTime + delay);
+  } catch (e) {}
+}
+// 26 nov: aviso suave al anfitrión cuando alguien entra en la mesa o vuelve a la partida. Dos notas de campanita (mi5 y si5),
+// sintetizadas aquí (no hay archivo); respeta el ajuste «Sonidos de cartas».
+function sfxConectado() {
+  if (SETTINGS.sonidos === false || !sctx || document.hidden) return;
+  try {
+    [[659.25, 0], [987.77, 0.13]].forEach(([f, d]) => {
+      const t = sctx.currentTime + d, o = sctx.createOscillator(), g = sctx.createGain();
+      o.type = 'sine'; o.frequency.value = f; g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.16, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.6);
+      o.connect(g); g.connect(sctx.destination); o.start(t); o.stop(t + 0.65);
+    });
+  } catch (e) {}
+}
+// Al revés (si y luego mi, más apagado): alguien se va de la mesa o pierde la conexión.
+function sfxDesconectado() {
+  if (SETTINGS.sonidos === false || !sctx || document.hidden) return;
+  try {
+    [[987.77, 0], [659.25, 0.13]].forEach(([f, d]) => {
+      const t = sctx.currentTime + d, o = sctx.createOscillator(), g = sctx.createGain();
+      o.type = 'sine'; o.frequency.value = f; g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.13, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.55);
+      o.connect(g); g.connect(sctx.destination); o.start(t); o.stop(t + 0.6);
+    });
   } catch (e) {}
 }
 const sfxDeal = ms => { sfx('roce', 0, 0.8); sfx('toque', ms * 0.92 / 1000, 0.8); };
@@ -3271,7 +3312,7 @@ function netDrop(id, ban) {
   delete NET.priv[id]; try { ch && ch.close(); } catch (e) {}
   if (NET.rate) delete NET.rate[id];
   if (ban) (NET.ban = NET.ban || {})[id] = Date.now() + 60000;
-  if (q > 0) { if (NET.started) { NET.seats[q].online = false; NET.seats[q].last = 0; netSchedule(); render(); if (!busy) loop(); } else { NET.seats[q] = { kind: 'free' }; netLobby(); } }
+  if (q > 0) { sfxDesconectado(); if (NET.started) { NET.seats[q].online = false; NET.seats[q].last = 0; netSchedule(); render(); if (!busy) loop(); } else { NET.seats[q] = { kind: 'free' }; netLobby(); } }
 }
 async function netHostMsg(m) {
   if (!NET || NET.role !== 'host' || !m || !m.id || !NET.priv[m.id]) return;
@@ -3284,18 +3325,19 @@ async function netHostMsg(m) {
   // Alguien sale: en la sala su sitio queda libre al momento; en plena partida pasa a «sin conexión» ya (juega un bot) y puede volver
   if (m.t === 'leave') {
     const q = seatOf(m.id);
-    if (!NET.started) { const ch = NET.priv[m.id]; delete NET.priv[m.id]; setTimeout(() => { try { ch && ch.close(); } catch (e) {} }, 300); if (q > 0) { NET.seats[q] = { kind: 'free' }; netLobby(); } return; }
-    if (q > 0 && NET.seats[q].online) { NET.seats[q].online = false; NET.seats[q].last = 0; netSchedule(); render(); if (!busy) loop(); }
+    if (!NET.started) { const ch = NET.priv[m.id]; delete NET.priv[m.id]; setTimeout(() => { try { ch && ch.close(); } catch (e) {} }, 300); if (q > 0) { sfxDesconectado(); NET.seats[q] = { kind: 'free' }; netLobby(); } return; }
+    if (q > 0 && NET.seats[q].online) { sfxDesconectado(); NET.seats[q].online = false; NET.seats[q].last = 0; netSchedule(); render(); if (!busy) loop(); }
     return;
   }
-  if (m.t === 'hi') { const q = seatOf(m.id); if (q > 0) { NET.seats[q].online = true; NET.seats[q].last = Date.now(); if (NET.seats[q].away && G) netSetAway(q, false); } if (NET.started) { netSend({ t: 'start' }); netSchedule(); render(); } else netLobby(); return; }
+  if (m.t === 'hi') { const q = seatOf(m.id); if (q > 0) { if (NET.started && !NET.seats[q].online) sfxConectado(); NET.seats[q].online = true; NET.seats[q].last = Date.now(); if (NET.seats[q].away && G) netSetAway(q, false); } if (NET.started) { netSend({ t: 'start' }); netSchedule(); render(); } else netLobby(); return; }
   if (m.t === 'rx') { const q = seatOf(m.id); if (q > 0) netRxHost(NET.seats[q], m.k); return; }
-  if (m.t === 'ping') { const q = seatOf(m.id); if (q > 0) { const was = NET.seats[q].online; NET.seats[q].last = Date.now(); NET.seats[q].online = true; if (!was) { NAMES[q] = NET.seats[q].name; netSchedule(); if (NET.started) render(); if (NET.started && !busy) loop(); } } return; }
+  if (m.t === 'ping') { const q = seatOf(m.id); if (q > 0 && NET.started && (G || S)) { const stq = NET.seats[q]; if (m.s !== (NET.vseq || 0)) { stq.stale = (stq.stale || 0) + 1; if (stq.stale >= 2) { stq.stale = 0; netPushView(q); } } else stq.stale = 0; } if (q > 0) { const was = NET.seats[q].online; NET.seats[q].last = Date.now(); NET.seats[q].online = true; if (!was) { if (NET.started) sfxConectado(); NAMES[q] = NET.seats[q].name; netSchedule(); if (NET.started) render(); if (NET.started && !busy) loop(); } } return; }
   if (m.t === 'sit' && !NET.started) {
     const p = m.seat; if (!Number.isInteger(p) || !(p >= 1 && p <= 3) || NET.seats[p].kind !== 'free') return netLobby();
     const was = seatOf(m.id);
     if (was > 0) { NET.seats[p] = NET.seats[was]; NET.seats[was] = { kind: 'free' }; return netLobby(); }   // se cambia de sitio
     NET.seats[p] = { kind: 'human', id: m.id, name: cleanName(m.name) || L('Jugador', 'Jugador'), online: true, last: Date.now(), voz: vozNum(m.voz) };
+    sfxConectado();
     return netLobby();
   }
   if (m.t === 'act' && NET.started && (G || S)) {
@@ -3327,7 +3369,7 @@ function netHostTick() {
   if (NET.vote) netVoteSend();
   const now = Date.now();
   if (!NET.started) { const sent = new Set(NET.seats.filter(x => x.kind === 'human').map(x => x.id)); for (const k of Object.keys(NET.priv)) if (!sent.has(k) && now - ((NET.rate && NET.rate[k] && NET.rate[k].t0) || now) > 90000) netDrop(k, false); }
-  for (const q of [1, 2, 3]) { const st = NET.seats[q]; if (st.kind !== 'human') continue; const on = now - (st.last || 0) < 15000; if (on !== st.online) { st.online = on; if (NET.started) { netSchedule(); render(); if (!on && !busy) loop(); } else { if (!on) NET.seats[q] = { kind: 'free' }; netLobby(); } } }   // en la sala, quien pierde la conexión deja su sitio libre
+  for (const q of [1, 2, 3]) { const st = NET.seats[q]; if (st.kind !== 'human') continue; const on = now - (st.last || 0) < 15000; if (on !== st.online) { st.online = on; if (!on) sfxDesconectado(); if (NET.started) { netSchedule(); render(); if (!on && !busy) loop(); } else { if (!on) NET.seats[q] = { kind: 'free' }; netLobby(); } } }   // en la sala, quien pierde la conexión deja su sitio libre
 }
 function netStart() {
   for (const q of [1, 2, 3]) if (NET.seats[q].kind === 'free') NET.seats[q] = { kind: 'bot' };
@@ -3438,11 +3480,15 @@ function netVoteCheck() {
   netBackLobby();
 }
 function netSchedule() { if (!NET || NET.role !== 'host' || NET.sched) return; NET.sched = setTimeout(() => { NET && (NET.sched = null); netPushViews(); }, 60); }
+function netPushView(q) {
+  const st = NET.seats[q]; if (!st || st.kind !== 'human' || !NET.priv[st.id]) return;
+  const coto = isCoto(), s = NET.vseq || 0;
+  try { NET.priv[st.id].send(coto ? { t: 'view', s, v: netView(q), hp: NET.hpanel || null, match: netMatchView(q), who: netWho(q), rk: NET.rk || null } : { t: 'cview', s, v: netCauView(q), hp: NET.hpanel || null, match: netMatchView(q), who: netWho(q), rk: NET.rk || null }); } catch (e) {}
+}
 function netPushViews() {
   if (!NET || !(isCoto() ? G : S)) return;
-  const coto = isCoto();
-  for (const q of [1, 2, 3]) { const st = NET.seats[q]; if (st.kind !== 'human' || !NET.priv[st.id]) continue;
-    try { NET.priv[st.id].send(coto ? { t: 'view', v: netView(q), hp: NET.hpanel || null, match: netMatchView(q), who: netWho(q), rk: NET.rk || null } : { t: 'cview', v: netCauView(q), hp: NET.hpanel || null, match: netMatchView(q), who: netWho(q), rk: NET.rk || null }); } catch (e) {} }
+  NET.vseq = (NET.vseq || 0) + 1;   // número de vista: el invitado lo repite en cada ping y, si va por detrás, se le reenvía
+  for (const q of [1, 2, 3]) netPushView(q);
 }
 // Lo que ve el jugador del asiento g: girado para que él quede abajo y sin las cartas de los demás
 function netView(g) {
@@ -3533,6 +3579,7 @@ async function netGuestPub(m) {
 // Canal privado: todo lo que llega aquí es del anfitrión
 function netGuestMsg(m) {
   if (!NET || NET.role !== 'guest' || !m) return;
+  if (NET.cut && (m.t === 'view' || m.t === 'cview')) return;   // solo lo usa la prueba para simular que la red pierde mensajes
   NET.lastHost = Date.now(); if (NET.banner) { NET.banner = null; if (G) render(); }
   if (m.t === 'lobby') {
     if (NET.started) { NET.started = false; NET.hp = null; NET.hpShown = null; NET.banner = null; }   // el anfitrión ha vuelto a la sala al acabar
@@ -3564,6 +3611,7 @@ function netGuestMsg(m) {
   if (m.t === 'ev') return netGuestEv(m.e);
   if (m.t === 'bye') { rkNetDiscard(); netRoomClear(); const n = NET.host || L('El anfitrión', 'L\'amfitrió'); netLeave(true); showPanel(`<h2>${L('Partida cerrada', 'Partida tancada')}</h2><p>${L(`${esc(n)} ha cerrado la sala.`, `${esc(n)} ha tancat la sala.`)}</p><div class="acts"><button class="btn primary" type="button" data-act="menu">${L('Menú', 'Menú')}</button></div>`); return; }
   if (m.t === 'cview') {
+    NET.seq = m.s;
     netRoomSave();
     const v = m.v; NET.started = true; NET.hp = m.hp; NET.match = m.match; NET.who = m.who || null;
     if (m.rk && m.rk.id) { NET.rk = { id: String(m.rk.id), juego: m.rk.juego, ok: m.rk.ok === true }; rkNetOpen(NET.rk); }
@@ -3578,6 +3626,7 @@ function netGuestMsg(m) {
     return;
   }
   if (m.t === 'view') {
+    NET.seq = m.s;
     netRoomSave();
     const v = m.v; NET.started = true; NET.hp = m.hp; NET.match = m.match; NET.who = m.who || null;
     if (m.rk && m.rk.id) { NET.rk = { id: String(m.rk.id), juego: m.rk.juego, ok: m.rk.ok === true }; rkNetOpen(NET.rk); }
@@ -3604,7 +3653,7 @@ function netGuestTick() {
     return;
   }
   if (!NET.priv) return netHello();   // aún no ha contestado el anfitrión: volver a saludar
-  netSend({ t: 'ping' });
+  netSend({ t: 'ping', s: NET.seq });
   const lost = $('netlost'); if (lost) lost.innerHTML = Date.now() - NET.lastHost > 12000 ? `<p class="desc" style="text-align:center">${L('El anfitrión no responde.', 'L\'amfitrió no respon.')}</p><div class="acts"><button class="btn" type="button" data-act="net-leave">${L('Salir', 'Eixir')}</button></div>` : '';
   if (NET.started && Date.now() - NET.lastHost > 12000 && !NET.banner) { NET.banner = L('⏸️ El anfitrión no responde (puede que haya minimizado la app o se haya quedado sin conexión). La partida sigue cuando vuelva.', '⏸️ L\'amfitrió no respon (potser ha minimitzat l\'app o s\'ha quedat sense connexió). La partida continua quan torne.'); if (G) render(); }
 }
@@ -4553,7 +4602,7 @@ function showPlay() {
   $('panel').classList.add('menu'); cover();
 }
 
-if (PRUEBAS || /net=local/.test(location.search + location.hash)) window.CAU = { APP, rk: { net: { open: rkNetOpen, end: rkNetEnd, quit: rkNetQuit, discard: rkNetDiscard, begin: rkNetBegin }, start: rkStart, end: rkEnd, abandon: rkAbandon, stale: rkStale, flush: rkFlush, restore: rkRestoreCode }, get ZOOM() { return { zoom: ZOOM, factorMedido: ZK }; }, seatVoices, cotoNewMatch, coNext, exportText, coSwap, coCanSwap, coBotChoose, coPlay, coLegal, get G() { return G; }, set G(v) { G = v; }, set S(v) { S = v; }, render, matchNext, newGame, newHand, applyPlay, afterPlay, INFER, SMART, holdProb, determinize, botChoose, botChooseHard, botChooseNormal, botChooseEasy, botChooseDificil, botChooseExperto, botBet, botSing, SETTINGS, betAct, betOptions, sing, startSing, resolveNit, canFirst, canSecond, cardSVG, get S() { return S; } };
+if (PRUEBAS || /net=local/.test(location.search + location.hash)) window.CAU = { APP, netInfo: () => ({ vseq: NET && NET.vseq, seq: NET && NET.seq, cortar: v => { if (NET) NET.cut = !!v; }, empujar: () => netPushViews() }), rk: { net: { open: rkNetOpen, end: rkNetEnd, quit: rkNetQuit, discard: rkNetDiscard, begin: rkNetBegin }, start: rkStart, end: rkEnd, abandon: rkAbandon, stale: rkStale, flush: rkFlush, restore: rkRestoreCode }, get ZOOM() { return { zoom: ZOOM, factorMedido: ZK }; }, seatVoices, cotoNewMatch, coNext, exportText, coSwap, coCanSwap, coBotChoose, coPlay, coLegal, get G() { return G; }, set G(v) { G = v; }, set S(v) { S = v; }, render, matchNext, newGame, newHand, applyPlay, afterPlay, INFER, SMART, holdProb, determinize, botChoose, botChooseHard, botChooseNormal, botChooseEasy, botChooseDificil, botChooseExperto, botBet, botSing, SETTINGS, betAct, betOptions, sing, startSing, resolveNit, canFirst, canSecond, cardSVG, get S() { return S; } };
 
 function start(data) {
   if (data && data.app) { Object.assign(APP, data.app); S = data.S; G = data.G; if (S) S.feed = []; if (G) G.feed = []; hasSaved = true; render(); loop(); return; }
