@@ -2,7 +2,7 @@
 <html lang="es" data-color="verde">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-VrJEkP4lZanAPc+RXuRgPLmQLjCXB0J6Y1eda/5F7MQ=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-aIturX2qb+4scGdGYlK5hk2CqB8wbbICd8BvXddyLCg=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script>(()=>{try{const P='pr.',S=Storage.prototype,g=S.getItem,s=S.setItem,r=S.removeItem;S.getItem=function(k){return g.call(this,P+k)};S.setItem=function(k,v){return s.call(this,P+k,v)};S.removeItem=function(k){return r.call(this,P+k)};}catch(e){}})();</script>
 <meta name="theme-color" content="#07170e">
@@ -1755,6 +1755,14 @@ function coBotExpert(G, p, N = CO_EXP.N || 40) {
   if (G.vueltas && !arr && CO_EXP.protect && G.trick.length === 2) {
     const w = coTrickWinner(G, G.trick);
     if (team(w.p) === t && w.c.s !== G.trump) {
+      // 26 nov: si ganando esta baza los rivales pueden salirse, se protege con el triunfo más bajo que nadie pueda matar
+      // (antes el más bajo a secas: en la fila 1402 Toni echó el 2c con el as de triunfo en la mano y lo mataron)
+      const mesa = G.trick.reduce((s, x) => s + CPTS[x.c.r], 0);
+      if (G.score[1 - t] + mesa + 11 >= 101) {
+        const uns = coUnseen(G, p).filter(c => c.s === G.trump);
+        const safe = legal.filter(c => c.s === G.trump && !uns.some(u => CSTR[u.r] > CSTR[c.r])).sort((a, b) => CSTR[a.r] - CSTR[b.r]);
+        if (safe.length) return safe[0].id;
+      }
       const low = legal.filter(c => c.s === G.trump && CSTR[c.r] < 6).sort((a, b) => CSTR[a.r] - CSTR[b.r]);
       if (low.length) return low[0].id;
     }
@@ -1944,7 +1952,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-26-2';
+const APP_VER = 'cau-2026-11-26-3';
 // Número que se ve en el menú de la oficial: la versión de la app de Android (1.2.4) y detrás un contador que sube con cada publicación en la oficial (1.2.4.1, 1.2.4.2…). Al subir la app de Android, se cambia el principio y el contador vuelve a 1.
 const APP_REL = '1.2.4.3';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
