@@ -2,7 +2,7 @@
 <html lang="es" data-color="verde">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-p3FQZSdaC2EvniGU1v9Gfrq/EQ3V3AcKZ3OUVCwvWpw=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-GCkULDGry7Me3pngWqpWmudLPHysCR1RysEXEgZ0K2c=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script>(()=>{try{const P='pr.',S=Storage.prototype,g=S.getItem,s=S.setItem,r=S.removeItem;S.getItem=function(k){return g.call(this,P+k)};S.setItem=function(k,v){return s.call(this,P+k,v)};S.removeItem=function(k){return r.call(this,P+k)};}catch(e){}})();</script>
 <meta name="theme-color" content="#07170e">
@@ -1952,7 +1952,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-26-6';
+const APP_VER = 'cau-2026-11-26-7';
 // Número que se ve en el menú de la oficial: la versión de la app de Android (1.2.4) y detrás un contador que sube con cada publicación en la oficial (1.2.4.1, 1.2.4.2…). Al subir la app de Android, se cambia el principio y el contador vuelve a 1.
 const APP_REL = '1.2.4.4';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
@@ -2104,7 +2104,7 @@ function rkNetEnd(juego, ganada) {
 }
 function rkNetQuit(res) { const cur = rkGet('cau.rkn', null); if (cur) rkNetClose(cur, res); }   // sale a mitad de partida
 function rkNetDiscard() { rkSet('cau.rkn', null); }   // se fue el anfitrión o te echó: no cuenta
-function rkNetStale() { if (!NET && !netRoomGet()) { const cur = rkGet('cau.rkn', null); if (cur) rkNetClose(cur, 'D'); } }
+function rkNetStale() { if (!NET && !netRoomGet() && !hostRoomGet()) { const cur = rkGet('cau.rkn', null); if (cur) rkNetClose(cur, 'D'); } }
 function rkCopyCode() { const c = deviceId(); try { navigator.clipboard.writeText(c); } catch (e) {} }
 function rkRestoreCode(v) {
   v = String(v || '').trim().toLowerCase();
@@ -2168,7 +2168,7 @@ function saveSettings() { SETTINGS.speed = speedIx; try { localStorage.setItem('
 const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 const sleep = ms => new Promise(r => setTimeout(r, ms * SPEEDS[speedIx][1]));
 
-function save() { if (TUTG || NET) return; try { localStorage.setItem('app.v1', JSON.stringify({ mode: APP.mode, M: APP.M, S, G })); } catch (e) {} }
+function save() { if (NET && NET.role === 'host' && NET.started) return netHostSave(); if (TUTG || NET) return; try { localStorage.setItem('app.v1', JSON.stringify({ mode: APP.mode, M: APP.M, S, G })); } catch (e) {} }
 function load() { try { const s = JSON.parse(localStorage.getItem('cau.v2') || 'null'); return s && s.hands ? s : null; } catch (e) { return null; } }
 function loadApp() { try { const a = JSON.parse(localStorage.getItem('app.v1') || 'null'); return a && a.mode ? a : null; } catch (e) { return null; } }
 
@@ -2831,10 +2831,10 @@ function showMenu() {
   if (!SETTINGS.rankAsked && !netLink) return showRankAsk();
   const firstMenu = !netAutoTried; netAutoTried = true;   // volver sola a la partida online solo al abrir la app, no al salir de ella
   if (netLink && !NET) { const c = netLink; netLink = null; return showInvite(c); }
-  if (!NET && firstMenu) { const r = netRoomGet(); if (r) return netJoin(r.code, r.name, false, true); }   // al abrir la app: vuelve sola a su partida online
+  if (!NET && firstMenu) { const r = netRoomGet(); if (r) return netJoin(r.code, r.name, false, true); if (hostRoomGet()) return netHostResume(); }   // al abrir la app: vuelve sola a su partida online
   const cont = hasSaved && savedActive() ? `<button class="btn primary" type="button" data-act="continue">${L('Continuar', 'Continuar')}<small class="contlbl">${esc(continueLabel())}</small></button>` : '';
   const fan = [[0, -24], [10, -8], [20, 8], [30, 24]].map(([id, a]) => `<div class="fc" style="transform:translateX(-50%) rotate(${a}deg)">${cardHTML(coCard(id))}</div>`).join('');
-  showPanel(`<div class="menu" style="display:flex;flex-direction:column;gap:14px"><div class="fan" aria-hidden="true">${fan}</div><div class="logo">CotoCau</div><p class="tag">Els jocs de cartes de les filaes d'Alcoi</p><p class="desc" style="text-align:center;opacity:.6;margin:0">v. ${APP_REL}${PRUEBAS ? ' · ' + APP_VER.replace('cau-', '') + ' · PRUEBAS' : ''} · <button class="linkbtn" type="button" data-act="credits">${L('Créditos', 'Crèdits')}</button></p><div class="stack">${!NET && netRoomGet() ? `<button class="btn primary" type="button" data-act="net-rejoin">${L('Volver a la partida online', 'Tornar a la partida online')}<small class="contlbl">${L('Sala', 'Sala')} ${netRoomGet().code}</small></button>` : ''}${cont}<button class="btn ${cont ? '' : 'primary'}" type="button" data-act="play">${L('Jugar', 'Jugar')}</button><button class="btn" type="button" data-act="rank">${L('Clasificación', 'Classificació')}</button><button class="btn" type="button" data-act="settings">${L('Ajustes', 'Ajusts')}</button><button class="btn" type="button" data-act="tutorial">Tutorial</button><button class="btn" type="button" data-act="rules">${L('Reglas', 'Regles')}</button></div></div>`);
+  showPanel(`<div class="menu" style="display:flex;flex-direction:column;gap:14px"><div class="fan" aria-hidden="true">${fan}</div><div class="logo">CotoCau</div><p class="tag">Els jocs de cartes de les filaes d'Alcoi</p><p class="desc" style="text-align:center;opacity:.6;margin:0">v. ${APP_REL}${PRUEBAS ? ' · ' + APP_VER.replace('cau-', '') + ' · PRUEBAS' : ''} · <button class="linkbtn" type="button" data-act="credits">${L('Créditos', 'Crèdits')}</button></p><div class="stack">${!NET && hostRoomGet() ? `<button class="btn primary" type="button" data-act="net-hresume">${L('Volver a tu mesa online', 'Tornar a la teua taula online')}<small class="contlbl">${L('Sala', 'Sala')} ${hostRoomGet().code}</small></button>` : ''}${!NET && netRoomGet() ? `<button class="btn primary" type="button" data-act="net-rejoin">${L('Volver a la partida online', 'Tornar a la partida online')}<small class="contlbl">${L('Sala', 'Sala')} ${netRoomGet().code}</small></button>` : ''}${cont}<button class="btn ${cont ? '' : 'primary'}" type="button" data-act="play">${L('Jugar', 'Jugar')}</button><button class="btn" type="button" data-act="rank">${L('Clasificación', 'Classificació')}</button><button class="btn" type="button" data-act="settings">${L('Ajustes', 'Ajusts')}</button><button class="btn" type="button" data-act="tutorial">Tutorial</button><button class="btn" type="button" data-act="rules">${L('Reglas', 'Regles')}</button></div></div>`);
   $('panel').classList.add('menu'); cover();
 }
 
@@ -3107,6 +3107,7 @@ function netCanteWait() {
 }
 const seatName = p => [L('Tú (anfitrión)', 'Tu (amfitrió)'), L('Rival de la derecha', 'Rival de la dreta'), L('Compañero', 'Company'), L('Rival de la izquierda', "Rival de l'esquerra")][p];
 function showOnline(err) {
+  if (!NET && hostRoomGet()) return netHostResume();
   if (!NET && netRoomGet()) return showRejoinBlock();
   const nm = esc(SETTINGS.alias || '');
   showPanel(`<h2>Online</h2>
@@ -3177,13 +3178,14 @@ async function netInvite() {
 }
 async function netHost(name, mode, open) {
   if (netRoomGet()) return showRejoinBlock();
+  if (hostRoomGet()) return netHostResume();
   name = cleanName(name) || L('Anfitrión', 'Amfitrió');
   mode = NETMODES().some(x => x[0] === mode) ? mode : 'coto5';
   // 13 nov (auditoría, S1): el contador de mesas es solo informativo. Cualquiera podía anunciar 50 mesas falsas y nadie podía abrir sala.
   if (name !== SETTINGS.alias && !SETTINGS.alias) { SETTINGS.alias = name; saveSettings(); }
   NET = { role: 'host', code: netCode(), name, mode, open: !!open, best: mode === 'coto3' ? 3 : mode === 'coto5' ? 5 : (SETTINGS.cotoBest || 5), started: false, priv: {}, seats: [{ kind: 'host', name }, { kind: 'free' }, { kind: 'free' }, { kind: 'free' }] };
   showPanel(`<h2>${L('Creando sala…', 'Creant sala…')}</h2>`); cover();
-  try { NET.keys = await netKeys(false); NET.fp = (await netIdOf(NET.keys.raw)).slice(1, 13); NET.pub = await netOpen(NETNS + NET.code, netHostPub); }
+  try { NET.keys = await netKeys(false); NET.fp = (await netIdOf(NET.keys.raw)).slice(1, 13); try { NET.keyJwk = await crypto.subtle.exportKey('jwk', NET.keys.priv); } catch (e) {} NET.pub = await netOpen(NETNS + NET.code, netHostPub); }
   catch (e) { NET = null; return showOnline(L('No se ha podido conectar. Comprueba la conexión a internet.', 'No s\'ha pogut connectar. Comprova la connexió a internet.') + ' (' + esc(e.message) + ')'); }
   NET.timer = setInterval(netHostTick, 3000);
   netPresenceTrack(true);
@@ -3277,6 +3279,49 @@ function netSetAway(q, away) {
 }
 function netHostSeat(p, k) { const st = NET.seats[p]; if (st.kind === 'human' || (k !== 'bot' && k !== 'free') || st.kind === k) return; NET.seats[p] = { kind: k }; netLobby(); }
 // Canal común de la sala: solo se atienden saludos. El código de cada jugador sale de su clave pública, no de lo que diga el mensaje.
+// 26 nov: el anfitrión puede volver a su mesa (cierre de la app, llamada, Android que la mata). Se guarda la sala (código, clave, sitios)
+// y la partida cada vez que se guarda en el modo normal; al abrir la app, si hay mesa guardada, se reabre con el mismo código y la misma
+// huella, y los invitados (que ya vuelven solos) siguen donde estaban. Si el anfitrión sale a propósito (Menú → Salir) o acaba la partida, se borra.
+const HOSTR_KEY = 'cau.hostroom', HOSTR_MAX = 3 * 3600e3;
+let hostSaveT = null;
+function hostRoomGet() { try { const r = JSON.parse(localStorage.getItem(HOSTR_KEY) || 'null'); if (r && r.v === 1 && /^[A-Z]{4,6}$/.test(r.code) && Date.now() - r.t < HOSTR_MAX && (r.G || r.S)) return r; localStorage.removeItem(HOSTR_KEY); } catch (e) {} return null; }
+function hostRoomClear() { clearTimeout(hostSaveT); hostSaveT = null; try { localStorage.removeItem(HOSTR_KEY); } catch (e) {} }
+function netHostSave() { if (hostSaveT) return; hostSaveT = setTimeout(() => { hostSaveT = null; netHostSaveNow(); }, 400); }
+function netHostSaveNow() {
+  if (!NET || NET.role !== 'host' || !NET.started || !NET.keyJwk || !(G || S)) return;
+  try {
+    const seats = NET.seats.map(x => x.kind === 'human' ? { kind: 'human', id: x.id, name: x.name, voz: x.voz, away: !!x.away, pk: (NET.pks || {})[x.id] || '' } : { kind: x.kind, name: x.name });
+    localStorage.setItem(HOSTR_KEY, JSON.stringify({ v: 1, t: Date.now(), code: NET.code, name: NET.name, mode: NET.mode, open: !!NET.open, best: NET.best, fp: NET.fp, keys: { priv: NET.keyJwk, raw: NET.keys.raw }, seats, kicked: [...(NET.kicked || [])], rk: NET.rk || null, vseq: NET.vseq || 0, appMode: APP.mode, M: APP.M, S: isCoto() ? null : S, G: isCoto() ? G : null }));
+  } catch (e) {}
+}
+async function netHostResume() {
+  const r = hostRoomGet(); if (!r || NET) return showMenu();
+  showPanel(`<h2>${L('Volviendo a tu mesa…', 'Tornant a la teua taula…')}</h2>`); cover();
+  try {
+    const priv = await crypto.subtle.importKey('jwk', r.keys.priv, NET_EC, true, ['deriveBits']);
+    applyLang(SETTINGS.lang, SETTINGS.names);
+    NET = { role: 'host', code: r.code, name: r.name, mode: r.mode, open: !!r.open, best: r.best, started: true, warned: true, priv: {}, pks: {}, kicked: new Set(r.kicked || []), rk: r.rk || null, vseq: (r.vseq || 0) + 1, fp: r.fp, keys: { priv, raw: r.keys.raw }, keyJwk: r.keys.priv,
+      seats: r.seats.map(x => x.kind === 'human' ? { kind: 'human', id: x.id, name: cleanName(x.name), voz: vozNum(x.voz), away: !!x.away, online: false, last: 0 } : { kind: x.kind, name: x.name }) };
+    r.seats.forEach(x => { if (x.kind === 'human' && x.pk) NET.pks[x.id] = x.pk; });
+    APP.mode = r.appMode; APP.M = r.M; G = r.G || null; S = r.S || newGame();
+    S.feed = []; if (G) G.feed = [];
+    for (const q of [1, 2, 3]) if (NET.seats[q].kind === 'human') NAMES[q] = NET.seats[q].name;
+    GEN++; busy = false; coDealView = null; dealView = null; fx = null; coFx = null; coShowLast = false; coHide = new Set(); coPend = 0; coReveal = false; TUTG = null; narr = ''; NET.hpanel = null;
+    NET.pub = await netOpen(NETNS + NET.code, netHostPub);
+    for (const x of NET.seats) {
+      if (x.kind !== 'human' || !NET.pks[x.id]) continue;
+      const sec = await netSecret(priv, NET.pks[x.id], NET.code), id = x.id;
+      NET.priv[id] = await netOpen(NETNS + NET.code + '-' + sec, m => netHostMsg(Object.assign({}, m, { id })));
+      const t = Date.now(); (NET.rate = NET.rate || {})[id] = { n: 0, t, t0: t, hi: 0 };
+    }
+  } catch (e) {
+    NET = null;
+    return showPanel(`<h2>${L('No se ha podido volver a la mesa', 'No s\'ha pogut tornar a la taula')}</h2><p>${L('Comprueba la conexión a internet.', 'Comprova la connexió a internet.')} (${esc(e.message)})</p><div class="acts"><button class="btn" type="button" data-act="net-hforget">${L('Olvidar esta mesa', 'Oblidar esta taula')}</button><button class="btn primary" type="button" data-act="net-hresume">${L('Reintentar', 'Tornar-ho a provar')}</button></div>`);
+  }
+  NET.timer = setInterval(netHostTick, 3000);
+  netPresenceTrack(true);
+  closePanel(); render(); netSchedule(); if (!busy) loop();
+}
 async function netHostPub(m) {
   if (!NET || NET.role !== 'host' || !m || m.t !== 'hello' || typeof m.pk !== 'string' || m.pk.length > 200) return;
   let id; try { id = await netIdOf(m.pk); } catch (e) { return; }
@@ -3292,7 +3337,7 @@ async function netHostPub(m) {
       if (!viejo) return;
       netDrop(viejo, false);
     }
-    NET.opening.add(id);
+    NET.opening.add(id); (NET.pks = NET.pks || {})[id] = m.pk;
     try {
       const sec = await netSecret(NET.keys.priv, m.pk, NET.code); if (!NET) return;
       try { NET.pub.send({ t: 'welcome', to: id, hpk: NET.keys.raw }); } catch (e) {}   // contesta ya: invitado y anfitrión abren el canal privado a la vez
@@ -3394,7 +3439,7 @@ function netStart() {
 // Al acabar: el anfitrión vuelve a la sala con los mismos (para cambiar de sitio o de modalidad, o esperar a alguien)
 function netBackLobby() {
   if (!NET || NET.role !== 'host') return;
-  NET.started = false; NET.hpanel = null; NET.banner = null; NET.waitKey = ''; NET.vote = null; GEN++; busy = false;
+  NET.started = false; NET.hpanel = null; NET.banner = null; NET.waitKey = ''; NET.vote = null; GEN++; busy = false; hostRoomClear();
   for (const q of [1, 2, 3]) { const st = NET.seats[q]; if (st.kind === 'human') st.away = false; }
   applyLang(SETTINGS.lang, SETTINGS.names);
   netLobby();
@@ -3488,6 +3533,7 @@ function netPushView(q) {
 }
 function netPushViews() {
   if (!NET || !(isCoto() ? G : S)) return;
+  netHostSave();
   NET.vseq = (NET.vseq || 0) + 1;   // número de vista: el invitado lo repite en cada ping y, si va por detrás, se le reenvía
   for (const q of [1, 2, 3]) netPushView(q);
 }
@@ -3670,7 +3716,7 @@ function netAskLeave() {
 function netLeave(quiet) {
   if (!NET) return;
   if (NET.started) rkNetQuit('R');   // salir a mitad de una partida cuenta como retirada (si se fue el anfitrión o te echó, ya se descartó antes)
-  if (NET.role === 'host') { netSend({ t: 'bye' }); netPresenceTrack(false).then(netPresenceClose, netPresenceClose); }
+  if (NET.role === 'host') { hostRoomClear(); netSend({ t: 'bye' }); netPresenceTrack(false).then(netPresenceClose, netPresenceClose); }
   else { if (!NET.started && !quiet) netRoomClear(); netSend({ t: 'leave' }); }   // salir de la sala antes de empezar: ya no hay partida que recuperar
   clearInterval(NET.timer); clearTimeout(NET.sched); if (NET.fast) clearInterval(NET.fast);
   const chans = [NET.pub, ...(NET.role === 'host' ? Object.values(NET.priv || {}) : [NET.priv])];
@@ -3685,7 +3731,7 @@ function netLeave(quiet) {
 // El invitado cierra la página o la app: avisa al anfitrión para que su sitio quede libre al momento (en la sala) o salga
 // «sin conexión» (en partida). Por si el canal no llega a enviarlo, también por el servidor con una petición que sobrevive al cierre.
 window.addEventListener('pagehide', e => {
-  if (NET && NET.started && !(e && e.persisted)) rkNetQuit('R');   // cierre de verdad a mitad de partida online
+  if (NET && NET.started && !(e && e.persisted) && NET.role !== 'host') rkNetQuit('R');   // el anfitrión puede volver a su mesa: no cuenta como retirada   // cierre de verdad a mitad de partida online
   if (!NET || NET.role !== 'guest' || !NET.priv) return;
   const m = { t: 'leave' }; NET.autoSit = true;
   try { NET.priv.send(m); } catch (e) {}
@@ -4201,6 +4247,8 @@ $('panel').addEventListener('click', e => {
   if (a === 'net-again') netStart();
   if (a === 'net-vote') netVoteCast(+b.dataset.v);
   if (a === 'net-rejoin') { const r = netRoomGet(); if (r && !NET) netJoin(r.code, r.name, false, true); else showMenu(); }
+  if (a === 'net-hresume') netHostResume();
+  if (a === 'net-hforget') { hostRoomClear(); rkNetStale(); showMenu(); }
   if (a === 'net-forget') { rkNetQuit('R'); netRoomClear(); showMenu(); }
   if (a === 'net-lobby') netBackLobby();
   if (a === 'back') { if (CRED_FROM_SET) { CRED_FROM_SET = false; showSettings(); } else showMenu(); }
