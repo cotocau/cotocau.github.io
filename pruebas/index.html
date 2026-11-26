@@ -2,7 +2,7 @@
 <html lang="es" data-color="verde">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-XLsvQwaicnIExVJr+WBFfQ6lSGNDFv4BGP1exSvmoVA=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-LZE2theIKIuuPGq1Wm8cfNtyyNTzbujw7oZMkD5gtyo=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script>(()=>{try{const P='pr.',S=Storage.prototype,g=S.getItem,s=S.setItem,r=S.removeItem;S.getItem=function(k){return g.call(this,P+k)};S.setItem=function(k,v){return s.call(this,P+k,v)};S.removeItem=function(k){return r.call(this,P+k)};}catch(e){}})();</script>
 <meta name="theme-color" content="#07170e">
@@ -1954,7 +1954,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-26-18';
+const APP_VER = 'cau-2026-11-26-19';
 // Número que se ve en el menú de la oficial: la versión de la app de Android (1.2.4) y detrás un contador que sube con cada publicación en la oficial (1.2.4.1, 1.2.4.2…). Al subir la app de Android, se cambia el principio y el contador vuelve a 1.
 const APP_REL = '1.2.4.6';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
@@ -3047,7 +3047,7 @@ function netEv(e) {
     const ev = { ...e, p: rot(e.p), from: rot(e.from) };
     if (e.k === 'draw' && !e.pinta && e.p !== q) delete ev.id;   // 13 nov (auditoría, T1): la carta que roba otro no se le dice a nadie
     if (e.k === 'callout' && e.sub) { const sb = netNarr(e.sub, q); ev.sub = sb === st.name ? L('Tú', 'Tu') : sb; }
-    try { NET.priv[st.id].send({ t: 'ev', e: ev }); } catch (x) {}
+    try { NET.priv[st.id].send(NET.ep ? { t: 'ev', e: ev, ep: NET.ep } : { t: 'ev', e: ev }); } catch (x) {}   // 26 nov: con la época, o tras un relevo el invitado lo ignoraba (sin sonidos ni reparto)
   }
 }
 let netChain = Promise.resolve(), netFx = null;
@@ -3294,7 +3294,7 @@ function netSetMode(m) {
 function netHostKick(p) {
   const st = NET.seats[p]; if (!st || st.kind !== 'human' || NET.started) return;
   (NET.kicked = NET.kicked || new Set()).add(st.id);
-  try { NET.priv[st.id] && NET.priv[st.id].send({ t: 'kick' }); } catch (e) {}
+  try { NET.priv[st.id] && NET.priv[st.id].send(NET.ep ? { t: 'kick', ep: NET.ep } : { t: 'kick' }); } catch (e) {}
   const ch = NET.priv[st.id]; delete NET.priv[st.id]; setTimeout(() => { try { ch && ch.close(); } catch (e) {} }, 500);
   NET.seats[p] = { kind: 'free' }; netLobby();
 }
@@ -3408,6 +3408,7 @@ async function netHostResume(rec, ghost) {
   }
   NET.timer = setInterval(netHostTick, 3000);
   if (!ghost) netPresenceTrack(true);
+  if (!ghost) { const yo = NET; setTimeout(() => { if (NET === yo && !yo.ghost && !yo.seats.some((x, q) => q > 0 && x.kind === 'human' && x.online)) rkNetDiscard(); }, 60000); }   // 26 nov: nadie ha vuelto en 1 min (la mesa pudo acabar en un relevo): lo que jueguen los bots no cuenta
   netRelayInit();
   if (!ghost) closePanel();
   render(); netSchedule(); if (!busy) loop();
@@ -3576,8 +3577,15 @@ function netVoteHTML() {
   return `${q}<div class="nvst">${st}</div>${left ? `<p class="desc nvt" style="text-align:center">${L(`Quedan ${left} s para contestar`, `Queden ${left} s per a contestar`)}</p>` : ''}${btns}`;
 }
 function netVoteRender() { const el = $('netvote'); if (el) el.innerHTML = netVoteHTML(); }
+function netGhostEnd() {   // la partida o el coto han acabado en un relevo: sin anfitrión no hay mesa a la que volver; se cierra y cada uno vuelve a su menú
+  netSend({ t: 'bye', why: 'relevo' });
+  clearInterval(NET.timer);
+  setTimeout(() => { try { window.parent.document.getElementById('arbitro').remove(); } catch (e) {} }, 900);
+  NET.ghost = false; NET.started = false;
+}
 function netVoteStart() {
   if (!NET || NET.role !== 'host' || NET.vote) return;
+  if (NET.ghost) return netGhostEnd();   // 26 nov: ni un segundo de votación en pantalla
   NET.vote = { until: Date.now() + NET_VOTE_MS, ans: {}, host: null };
   setTimeout(netVoteSend, 50);
 }
@@ -3609,7 +3617,7 @@ function netVoteCheck() {
   if (yes.length === humans.length && !V.toLobby) return netStart();   // «cambiar de juego»: todos a la sala
   for (const q of humans) if (!yes.includes(q)) {   // los que no siguen: se les avisa y su sitio queda libre
     const st = NET.seats[q], ch = NET.priv[st.id];
-    try { ch && ch.send({ t: 'out' }); } catch (e) {}
+    try { ch && ch.send(NET.ep ? { t: 'out', ep: NET.ep } : { t: 'out' }); } catch (e) {}
     delete NET.priv[st.id]; setTimeout(() => { try { ch && ch.close(); } catch (e) {} }, 500);
     NET.seats[q] = { kind: 'free' };
   }
@@ -3758,7 +3766,7 @@ function netGuestMsg(m) {
   if (m.t === 'out') { netRoomClear(); netLeave(true); showPanel(`<h2>${L('La mesa sigue sin ti', 'La taula continua sense tu')}</h2><p>${L('No contestaste a tiempo si querías otra partida, así que tu sitio ha quedado libre.', 'No vas contestar a temps si volies una altra partida, així que el teu lloc ha quedat lliure.')}</p><div class="acts"><button class="btn primary" type="button" data-act="menu">${L('Menú', 'Menú')}</button></div>`); return; }
   if (m.t === 'kick') { rkNetDiscard(); netRoomClear(); const n = NET.host || L('El anfitrión', 'L\'amfitrió'); netLeave(true); showPanel(`<h2>${L('Fuera de la sala', 'Fora de la sala')}</h2><p>${L(`${esc(n)} te ha sacado de la sala.`, `${esc(n)} t'ha tret de la sala.`)}</p><div class="acts"><button class="btn primary" type="button" data-act="menu">${L('Menú', 'Menú')}</button></div>`); return; }
   if (m.t === 'rxs') return netRxShow(cleanName(m.n), m.k);
-  if (m.t === 'ev') return netGuestEv(m.e);
+  if (m.t === 'ev') { NET.evN = (NET.evN | 0) + 1; return netGuestEv(m.e); }
   if (m.t === 'bye') { rkNetDiscard(); netRoomClear(); const n = NET.host || L('El anfitrión', 'L\'amfitrió'), fin = m.why === 'relevo'; netLeave(true); showPanel(`<h2>${fin ? L('Partida terminada', 'Partida acabada') : L('Partida cerrada', 'Partida tancada')}</h2><p>${fin ? L('La partida ha terminado. Quien la llevaba se había ido y la ha acabado otro jugador.', 'La partida ha acabat. Qui la portava se n\'havia anat i l\'ha acabada un altre jugador.') : L(`${esc(n)} ha cerrado la sala.`, `${esc(n)} ha tancat la sala.`)}</p><div class="acts"><button class="btn primary" type="button" data-act="menu">${L('Menú', 'Menú')}</button></div>`); return; }
   if (m.t === 'cview') {
     NET.seq = m.s;
@@ -4830,7 +4838,7 @@ function showPlay() {
   $('panel').classList.add('menu'); cover();
 }
 
-if (PRUEBAS || /net=local/.test(location.search + location.hash)) window.CAU = { APP, netInfo: () => ({ vseq: NET && NET.vseq, seq: NET && NET.seq, ep: NET && NET.ep, role: NET && NET.role, ghost: !!(NET && NET.ghost), hasRl: !!(NET && NET.rl), hasSnap: !!(NET && NET.snap), snapBytes: NET && NET.snap ? NET.snap.d.length : 0, relayRun: !!(NET && NET.relayRun), silent: NET && NET.lastHost ? Date.now() - NET.lastHost : null, hostRelay: !!(NET && NET.relay), cortar: v => { if (NET) NET.cut = !!v; }, empujar: () => netPushViews() }), rk: { net: { open: rkNetOpen, end: rkNetEnd, quit: rkNetQuit, discard: rkNetDiscard, begin: rkNetBegin }, start: rkStart, end: rkEnd, abandon: rkAbandon, stale: rkStale, flush: rkFlush, restore: rkRestoreCode }, get ZOOM() { return { zoom: ZOOM, factorMedido: ZK }; }, seatVoices, cotoNewMatch, coNext, exportText, coSwap, coCanSwap, coBotChoose, coPlay, coLegal, get G() { return G; }, set G(v) { G = v; }, set S(v) { S = v; }, render, matchNext, newGame, newHand, applyPlay, afterPlay, INFER, SMART, holdProb, determinize, botChoose, botChooseHard, botChooseNormal, botChooseEasy, botChooseDificil, botChooseExperto, botBet, botSing, SETTINGS, betAct, betOptions, sing, startSing, resolveNit, canFirst, canSecond, cardSVG, get S() { return S; } };
+if (PRUEBAS || /net=local/.test(location.search + location.hash)) window.CAU = { APP, netInfo: () => ({ evN: NET && NET.evN, vseq: NET && NET.vseq, seq: NET && NET.seq, ep: NET && NET.ep, role: NET && NET.role, ghost: !!(NET && NET.ghost), hasRl: !!(NET && NET.rl), hasSnap: !!(NET && NET.snap), snapBytes: NET && NET.snap ? NET.snap.d.length : 0, relayRun: !!(NET && NET.relayRun), silent: NET && NET.lastHost ? Date.now() - NET.lastHost : null, hostRelay: !!(NET && NET.relay), cortar: v => { if (NET) NET.cut = !!v; }, empujar: () => netPushViews() }), rk: { net: { open: rkNetOpen, end: rkNetEnd, quit: rkNetQuit, discard: rkNetDiscard, begin: rkNetBegin }, start: rkStart, end: rkEnd, abandon: rkAbandon, stale: rkStale, flush: rkFlush, restore: rkRestoreCode }, get ZOOM() { return { zoom: ZOOM, factorMedido: ZK }; }, seatVoices, cotoNewMatch, coNext, exportText, coSwap, coCanSwap, coBotChoose, coPlay, coLegal, get G() { return G; }, set G(v) { G = v; }, set S(v) { S = v; }, render, matchNext, newGame, newHand, applyPlay, afterPlay, INFER, SMART, holdProb, determinize, botChoose, botChooseHard, botChooseNormal, botChooseEasy, botChooseDificil, botChooseExperto, botBet, botSing, SETTINGS, betAct, betOptions, sing, startSing, resolveNit, canFirst, canSecond, cardSVG, get S() { return S; } };
 
 // ---- Árbitro invisible del relevo: copia de la app dentro de un iframe del móvil que toma el mando. Sin pantalla ni sonido; el sitio 0 lo juega un bot.
 async function arbiterBoot() {
@@ -4849,12 +4857,7 @@ function ghostTick() {
   if (Date.now() - ghostSeen.t < 7000) return;   // se deja ver el resultado antes de seguir
   const b = pn.querySelector('[data-act="co-next"],[data-act="nexthand"],[data-act="match"],[data-act="match-tb"]');
   if (b) { ghostSeen = { k: '', t: 0 }; b.click(); return; }
-  if ($('netvote')) {   // la partida o el coto han acabado: sin anfitrión no hay mesa a la que volver; se cierra y cada uno vuelve a su menú
-    netSend({ t: 'bye', why: 'relevo' });
-    clearInterval(NET.timer);
-    setTimeout(() => { try { window.parent.document.getElementById('arbitro').remove(); } catch (e) {} }, 900);
-    NET.ghost = false; NET.started = false;
-  }
+  if ($('netvote')) netGhostEnd();
 }
 function start(data) {
   if (ARBITRO) return arbiterBoot();
