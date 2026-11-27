@@ -2,7 +2,7 @@
 <html lang="es" data-color="verde">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-fEKESJqdaAlPKWBDnGPUyGCrUCWe64r460CTFWsf89E=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-D9NVCYhbFyXLtqDSZwBTrpXfxtUgynG44QJ1ORVepPA=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script>(()=>{try{const P='pr.',S=Storage.prototype,g=S.getItem,s=S.setItem,r=S.removeItem;S.getItem=function(k){return g.call(this,P+k)};S.setItem=function(k,v){return s.call(this,P+k,v)};S.removeItem=function(k){return r.call(this,P+k)};}catch(e){}})();</script>
 <meta name="theme-color" content="#07170e">
@@ -313,6 +313,10 @@ button{font:inherit;color:inherit}
 .sub.bot{opacity:.75}.sub.off{color:#ff8c8c}
 .netwarn{border:1px solid rgba(226,96,96,.6);background:rgba(226,96,96,.12);border-radius:12px;padding:9px 12px;font-size:13px;line-height:1.4}
 .netin{width:100%;font:600 16px var(--f-body);color:var(--ink);background:rgba(0,0,0,.25);border:1px solid var(--line);border-radius:10px;padding:9px 11px}
+/* consejo del bot (27 nov, solo pruebas): la carta que jugaría el bot lleva un borde azul y un robot */
+.hc.botpick{position:relative}
+.hc.botpick .card{box-shadow:0 0 0 3px #6fd0ff,0 8px 18px rgba(0,0,0,.5);transform:translateY(-8px)}
+.hc.botpick::after{content:"🤖";position:absolute;top:-18px;left:50%;transform:translateX(-50%);font-size:15px;line-height:1;pointer-events:none}
 .hc.tutpick .card{box-shadow:0 0 0 3px var(--gold),0 8px 18px rgba(0,0,0,.5);transform:translateY(-8px)}
 .tut .tcards{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;padding:6px 0}
 .tut .tc{display:flex;flex-direction:column;align-items:center;gap:4px;--cw:44px}
@@ -914,7 +918,7 @@ const ordOn = () => SETTINGS.ordenar === 'mano' && !TUTG;
 const ordKey = () => isCoto() ? `co-${G.partidaNo}-${G.handNo}` : `cau-${S.handNo}-${S.round}`;
 const ordSave = () => { try { localStorage.setItem(ORDK, JSON.stringify(HORD)); } catch (e) {} };
 let NET = null;    // partida online (anfitrión o invitado)
-let SETTINGS = { partner: 'experto', rivals: 'experto', hints: false, labels: false, socarrat: false, speed: 1, deck: 'clasica', lang: 'es', names: ['Toni','Maria','Vicent'], cotoBest: 5, unlocked: false, showAll: false, share: null, alias: '', rank: false, rankAsked: false, voces: true, voz: 1, sonidos: true, ordenar: 'auto', color: 'verde' };
+let SETTINGS = { partner: 'experto', rivals: 'experto', hints: false, labels: false, socarrat: false, consejo: false, speed: 1, deck: 'clasica', lang: 'es', names: ['Toni','Maria','Vicent'], cotoBest: 5, unlocked: false, showAll: false, share: null, alias: '', rank: false, rankAsked: false, voces: true, voz: 1, sonidos: true, ordenar: 'auto', color: 'verde' };
 const SOCARRAT_DISP = false;   // 27 nov: «Sóc socarrat» oculto de momento (no sale en Ajustes y no se aplica aunque estuviera guardado); poner true para recuperarlo
 const socarratOn = () => SOCARRAT_DISP && !!SETTINGS.socarrat;
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('cau.settings') || '{}')); } catch (e) {}
@@ -1984,7 +1988,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-27-16';
+const APP_VER = 'cau-2026-11-27-17';
 // Número que se ve en el menú de la oficial: la versión de la app de Android (1.2.4) y detrás un contador que sube con cada publicación en la oficial (1.2.4.1, 1.2.4.2…). Al subir la app de Android, se cambia el principio y el contador vuelve a 1.
 const APP_REL = '1.2.4.10';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
@@ -2394,15 +2398,41 @@ function cauSpeaker(S) {
 function speakerName(S) { return NAMES[spkOf(S, S.bet.turnTeam)]; }
 function myTurn() { return S.phase === 'play' && S.turn === 0 && !busy && !fx && !S.over; }
 
+// Consejo del bot (27 nov, SOLO PRUEBAS y nunca online, como «Ver todas las cartas»): en tu turno marca la carta que jugaría el bot
+// «muy difícil» en tu lugar; tú eliges la que quieras. Queda anotado en la mano (Historial y «Copiar esta mano para analizar»)
+// qué aconsejó el bot, qué jugaste y si coinciden. Se calcula tras pintar la mano (el Coto piensa más) y se guarda por decisión.
+let ADV = null;   // { key, cid, ready }
+const advOn = () => PRUEBAS && !!SETTINGS.consejo && !NET && !TUTG;
+const advKeyCau = () => `c|${S.handNo}|${S.round}|${S.turn}|${S.hands[0].map(c => c.id).join()}|${S.table.map(c => c.id).join()}`;
+const advKeyCoto = () => `o|${G.partidaNo}|${G.handNo}|${G.trickNo}|${G.trick.length}|${G.hands[0].map(c => c.id).join()}`;
+function advGet(key, calc) {
+  if (ADV && ADV.key === key) return ADV;
+  const my = ADV = { key, cid: null, ready: false };
+  setTimeout(() => {
+    if (ADV !== my) return;
+    try { if ((isCoto() ? advKeyCoto() : advKeyCau()) === key) my.cid = calc(); } catch (e) { my.cid = null; }
+    my.ready = true;
+    if (ADV === my) { if (isCoto()) coRenderHand(); else renderHand(); }
+  }, 60);
+  return my;
+}
+function advNoteFor(cid) {
+  if (!advOn() || !ADV || ADV.key !== (isCoto() ? advKeyCoto() : advKeyCau())) return null;
+  const nm = id => { try { return cardName(isCoto() ? coCard(id) : S.hands[0].find(c => c.id === id)); } catch (e) { return String(id); } };
+  if (!ADV.ready || ADV.cid == null) return 'Consejo del bot: no estaba calculado cuando jugaste';
+  return `Consejo del bot: ${nm(ADV.cid)} · tú: ${nm(cid)} — ${ADV.cid === cid ? 'coincide' : 'distinta'}`;
+}
+
 function renderHand() {
   if (isCoto()) return;
   const mine = myTurn();
   if (DRAG && DRAG.on) return;   // no se redibuja mientras arrastras una carta
+  const adv = mine && advOn() && S.hands[0].length > 1 ? advGet(advKeyCau(), () => botChooseExperto(S, 0)) : null;
   $('hand').classList.toggle('ordmano', ordOn());
   $('hand').innerHTML = myOrder(S.hands[0], S.myDeal || (S.dealSeq || []).filter(x => x.to === 0 && x.id != null).map(x => x.id)).filter(c => !(fx && fx.card.id === c.id)).slice(0, dealView ? dealView.n[0] : 3).map(c => {
     let h = '', cls = ''; if (mine && SETTINGS.hints) try { [h, cls] = hintFor(c.id); } catch (e) {}
     const tw = mine && TUTG && TUTG.cau ? tutCauWant() : null, lock = mine && TUTG && TUTG.cau && ((tw != null && c.id !== tw) || (S.round === 2 && canFirst(S, 0)));
-    return `<button class="hc ${tw === c.id ? 'tutpick' : ''}" type="button" data-id="${c.id}" ${mine && !lock ? '' : 'disabled'}>${cardHTML(c)}<span class="hint ${cls}" ${h ? '' : 'style="visibility:hidden"'}>${h || '·'}</span></button>`;
+    return `<button class="hc ${tw === c.id ? 'tutpick' : ''}${adv && adv.ready && adv.cid === c.id ? ' botpick' : ''}" type="button" data-id="${c.id}" ${mine && !lock ? '' : 'disabled'}>${cardHTML(c)}<span class="hint ${cls}" ${h ? '' : 'style="visibility:hidden"'}>${h || '·'}</span></button>`;
   }).join('');
 }
 
@@ -2616,6 +2646,7 @@ async function drainFeed(untilDeal) {
 }
 
 async function doPlay(p, cid) {
+  const advNote = p === 0 ? advNoteFor(cid) : null;   // consejo del bot (solo pruebas)
   const tutD = TUTG && TUTG.cau && S.round === 1 ? 13 - S.hands.reduce((a, h) => a + h.length, 0) : 0;   // jugada nº tutD del primer reparto guiado
   const sim = clone(S); sim.feed = [];
   const res = applyPlay(sim, p, cid);
@@ -2643,6 +2674,7 @@ async function doPlay(p, cid) {
   fx = null; if (res.take.length) sfxNet('rec');   // se lleva las cartas de la mesa
   sim.bubbles[p] = cap ? cap.txt : '';
   if (special) sim.bubbles[special.p] = special.txt.replace(/[¡!]/g, '');
+  if (advNote) say(sim, advNote);
   say(sim, `${p === 0 ? L('Juegas', 'Jugues') : NAMES[p] + L(' juega', ' juga')} ${cardName(res.card)} — ${res.ev.map(e => e.txt).join(' · ')}.`);
   const roundBefore = sim.round;
   afterPlay(sim);
@@ -4365,6 +4397,7 @@ function showSettings() {
       setOpt(L('Baraja', 'Baralla'), seg('deck', [['moderna','Moderna'],['clasica', L('Clásica', 'Clàssica')]], SETTINGS.deck, true), L('La clásica es la «Baraja española» de Basquetteur (Wikimedia Commons, licencia CC BY-SA). Más en Créditos.', 'La clàssica és la «Baraja española» de Basquetteur (Wikimedia Commons, llicència CC BY-SA). Més en Crèdits.')),
       setOpt(L('Ordenar mis cartas', 'Ordenar les meues cartes'), seg('ordenar', [['auto', L('Automático', 'Automàtic')], ['mano', L('A mano', 'A mà')]], SETTINGS.ordenar === 'mano' ? 'mano' : 'auto', true), L('A mano: arrastra una carta a su sitio (tocar sin mover sigue jugándola). Las cartas nuevas entran por la izquierda. Solo cambia cómo las ves tú.', "A mà: arrossega una carta al seu lloc (tocar-la sense moure la continua jugant). Les cartes noves entren per l'esquerra. Només canvia com les veus tu.")),
       setOpt(L('Ayudas (Cau)', 'Ajudes (Cau)'), seg('ayudas', [['ninguna', L('Ninguna', 'Cap')], ['etiquetas', L('Etiquetas', 'Etiquetes')], ['todas', L('Etiquetas y ayudas', 'Etiquetes i ajudes')]], ay), L('Etiquetas: recuerdan la última jugada de cada uno bajo su nombre (Bac, Limpia, Captura 2…). Ayudas: muestran debajo de cada una de tus cartas qué pasa si la juegas (Captura 3, Bac +2…). El «De nit» se ve siempre.', "Etiquetes: recorden l'última jugada de cadascú davall del seu nom (Bac, Limpia, Arreplega 2…). Ajudes: mostren davall de cada carta teua què passa si la jugues (Arreplega 3, Bac +2…). El «De nit» es veu sempre.")),
+      PRUEBAS ? setOpt('🧪 Consejo del bot (pruebas)', seg('consejo', off, !!SETTINGS.consejo, true), 'En tu turno marca con un robot azul la carta que jugaría el bot «muy difícil» en tu lugar (en el Coto tarda un momento en salir). Tú eliges la que quieras. En el Historial y en «Copiar esta mano» queda anotado qué aconsejó, qué jugaste y si coinciden. Solo contra bots.') : '',
       PRUEBAS ? setOpt(`🧪 ${L('Ver todas las cartas (pruebas)', 'Vore totes les cartes (proves)')}`, seg('showAll', off, !!SETTINGS.showAll, true), L('Para estudiar a los bots: enseña las cartas de tu compañero y de los rivales. Solo contra bots.', 'Per a estudiar els bots: mostra les cartes del teu company i dels rivals. Només contra bots.')) : ''
     ].join('');
   }
@@ -4507,7 +4540,7 @@ $('panel').addEventListener('click', e => {
   const sb = e.target.closest('[data-set]');
   if (sb) {
     const k = sb.dataset.set, v = sb.dataset.val;
-    if (k === 'hints' || k === 'labels' || k === 'socarrat' || k === 'showAll' || k === 'share' || k === 'rank' || k === 'voces' || k === 'sonidos') SETTINGS[k] = v === 'true';
+    if (k === 'hints' || k === 'labels' || k === 'socarrat' || k === 'showAll' || k === 'consejo' || k === 'share' || k === 'rank' || k === 'voces' || k === 'sonidos') SETTINGS[k] = v === 'true';
     else if (k === 'speed') speedIx = +v;
     else if (k === 'cotoBest') SETTINGS.cotoBest = +v;
     else if (k === 'bots') { SETTINGS.partner = v; SETTINGS.rivals = v; }   // un solo nivel para compañero y rivales
@@ -4676,8 +4709,9 @@ function coRenderHand() {
   $('hand').classList.add('co-hand');
   if (DRAG && DRAG.on) return;   // no se redibuja mientras arrastras una carta
   $('hand').classList.toggle('ordmano', ordOn() && !coDealView);
+  const adv = advOn() && !coDealView && !coFx && !busy && G.phase === 'play' && G.turn === 0 && legal.length > 1 ? advGet(advKeyCoto(), () => coBotChoose(G, 0, 'experto')) : null;
   const order = coDealView && G.dealOrder ? G.dealOrder.map(id => G.hands[0].find(c => c.id === id)).filter(Boolean) : myOrder(G.hands[0], G.dealOrder);
-  $('hand').innerHTML = order.filter(c => !coHide.has(c.id)).slice(0, n).map(c => `<button class="hc ${c.id === pick ? 'tutpick' : ''}" type="button" data-id="${c.id}" ${legal.includes(c.id) ? '' : 'disabled'}>${cardHTML(c)}</button>`).join('');
+  $('hand').innerHTML = order.filter(c => !coHide.has(c.id)).slice(0, n).map(c => `<button class="hc ${c.id === pick ? 'tutpick' : ''}${adv && adv.ready && adv.cid === c.id ? ' botpick' : ''}" type="button" data-id="${c.id}" ${legal.includes(c.id) ? '' : 'disabled'}>${cardHTML(c)}</button>`).join('');
 }
 function coRenderBottom() {
   const el = $('bottom');
@@ -4756,6 +4790,7 @@ async function coAnimSwap(p) {
 }
 async function coDoPlay(p, id) {
   const c = G.hands[p].find(x => x.id === id), k = G.trickNo;
+  const advNote = p === 0 ? advNoteFor(id) : null; if (advNote && G.rec) G.rec.ev.push('  ' + advNote);   // consejo del bot (solo pruebas)
   coFx = { p, id };
   const r = coPlay(G, p, id);
   // lo que se roba ya está en las manos del motor: se esconde hasta que llegue volando
