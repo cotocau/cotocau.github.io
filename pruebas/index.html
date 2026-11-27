@@ -2,7 +2,7 @@
 <html lang="es" data-color="verde">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-pno+yrfzRofir/I/62p/ujTOjhXevH74uNLbyI77rts=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-y9P8pCR5T8v4rnsQH5mRtxT358CfI4/kkT2qUZRtSCw=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script>(()=>{try{const P='pr.',S=Storage.prototype,g=S.getItem,s=S.setItem,r=S.removeItem;S.getItem=function(k){return g.call(this,P+k)};S.setItem=function(k,v){return s.call(this,P+k,v)};S.removeItem=function(k){return r.call(this,P+k)};}catch(e){}})();</script>
 <meta name="theme-color" content="#07170e">
@@ -521,7 +521,7 @@ function newHand(S) {
   S.round = 0; S.bet = null; S.summary = null; S.duels = []; S.duelNotes = []; S.endMid = false; S.bubbles = ['','','',''];
   S.turn = (S.dealer + 1) % 4;
   S.prevRec = S.rec || null;
-  S.rec = { game: 'cau', handNo: S.handNo, dealer: S.dealer, score: S.score.slice(), levels: [SETTINGS.partner, SETTINGS.rivals], socarrat: !!SETTINGS.socarrat, deals: [], lines: [],
+  S.rec = { game: 'cau', handNo: S.handNo, dealer: S.dealer, score: S.score.slice(), levels: [SETTINGS.partner, SETTINGS.rivals], socarrat: socarratOn(), deals: [], lines: [],
     online: typeof NET !== 'undefined' && NET && NET.role === 'host' ? [0, 1, 2, 3].map(p => p === 0 ? { h: NET.name } : NET.seats[p].kind === 'human' ? { h: NET.seats[p].name } : { bot: levelOf(p) }) : null };
   say(S, L(`Mano ${S.handNo}. Reparte ${NAMES[S.dealer]}.`, `Mà ${S.handNo}. Dona ${NAMES[S.dealer]}.`), 'hand');
   // Reparto real: una al centro, una a cada jugador, otra al centro… (4 al centro y 3 a cada uno)
@@ -547,7 +547,7 @@ function dealCenter(S) {
       S.dealSeq.push({ to: 'T', card: c, slot, pixat: true });
       S.aside.push(c);    // se aparta a la vista de todos; entra en el mazo al acabar de repartir
       say(S, L(`S'ha pixat: ${RNA[c.r]} ya estaba en el tapete. Se aparta y volverá al mazo al acabar de repartir.`, `S'ha pixat: ${RNA[c.r]} ja estava al tapet. S'aparta i tornarà a la baralla en acabar de repartir.`), 'pixat');
-      if (SETTINGS.socarrat) { const t = 1 - team(S.dealer); say(S, L(`Sóc socarrat: ${TEAMN[t]} se apuntan 1.`, `Sóc socarrat: ${TEAMN[t]} s'apunten 1.`), 'pts'); addPts(S, t, 'pixat', 1); }
+      if (socarratOn()) { const t = 1 - team(S.dealer); say(S, L(`Sóc socarrat: ${TEAMN[t]} se apuntan 1.`, `Sóc socarrat: ${TEAMN[t]} s'apunten 1.`), 'pts'); addPts(S, t, 'pixat', 1); }
       continue;
     }
     S.slots[c.id] = slot; S.table.push(c);
@@ -912,6 +912,8 @@ const ordKey = () => isCoto() ? `co-${G.partidaNo}-${G.handNo}` : `cau-${S.handN
 const ordSave = () => { try { localStorage.setItem(ORDK, JSON.stringify(HORD)); } catch (e) {} };
 let NET = null;    // partida online (anfitrión o invitado)
 let SETTINGS = { partner: 'experto', rivals: 'experto', hints: false, labels: false, socarrat: false, speed: 1, deck: 'clasica', lang: 'es', names: ['Toni','Maria','Vicent'], cotoBest: 5, unlocked: false, showAll: false, share: null, alias: '', rank: false, rankAsked: false, voces: true, voz: 1, sonidos: true, ordenar: 'auto', color: 'verde' };
+const SOCARRAT_DISP = false;   // 27 nov: «Sóc socarrat» oculto de momento (no sale en Ajustes y no se aplica aunque estuviera guardado); poner true para recuperarlo
+const socarratOn = () => SOCARRAT_DISP && !!SETTINGS.socarrat;
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('cau.settings') || '{}')); } catch (e) {}
 applyLang(SETTINGS.lang, SETTINGS.names);
 const levelOf = p => p === 2 ? SETTINGS.partner : SETTINGS.rivals;
@@ -1979,7 +1981,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-27-14';
+const APP_VER = 'cau-2026-11-27-15';
 // Número que se ve en el menú de la oficial: la versión de la app de Android (1.2.4) y detrás un contador que sube con cada publicación en la oficial (1.2.4.1, 1.2.4.2…). Al subir la app de Android, se cambia el principio y el contador vuelve a 1.
 const APP_REL = '1.2.4.10';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
@@ -2685,7 +2687,7 @@ async function animateDeal(withTable) {
       if (st.pixat) {
         dealView.temp = { card: st.card, slot: st.slot }; renderTable(); netSchedule();
         narr = L(`<b>S'ha pixat:</b> ${RNA[st.card.r]} ya estaba en el tapete. Se aparta y volverá al mazo al acabar de repartir.`, `<b>S'ha pixat:</b> ${RNA[st.card.r]} ja estava al tapet. S'aparta i tornarà a la baralla en acabar de repartir.`); $('narr').innerHTML = narr;
-        await callout("S'ha pixat", SETTINGS.socarrat ? `${TEAMN[1 - team(S.dealer)]} · +1` : `${RN[st.card.r]} ${L('repetido', 'repetit')}`);
+        await callout("S'ha pixat", socarratOn() ? `${TEAMN[1 - team(S.dealer)]} · +1` : `${RN[st.card.r]} ${L('repetido', 'repetit')}`);
         dealView.temp = null; renderTable(); netSchedule();
         netEv({ k: 'cfly', from: 'T', slot: st.slot, p: S.dealer });
         await fly(slotXY(st.slot), [ox, oy]);
@@ -4319,7 +4321,7 @@ function setOpt(label, control, desc) {
 }
 function showSettings() {
   panelBack = 'menu';
-  const off = [[false, L('Quitadas', 'Llevades')], [true, L('Puestas', 'Posades')]];
+  const off = [[false, L('Desactivado', 'Desactivat')], [true, L('Activado', 'Activat')]];
   const TABS = [['partida', '🎮', L('Partida', 'Partida')], ['aspecto', '🎨', L('Aspecto', 'Aspecte')], ['sonido', '🔊', L('Sonido', 'So')], ['perfil', '👤', L('Perfil', 'Perfil')]];
   if (SETTINGS.setTab === 'ayudas') SETTINGS.setTab = 'aspecto';   // la pestaña Ayudas ya no existe (27 nov)
   const tab = TABS.some(t => t[0] === SETTINGS.setTab) ? SETTINGS.setTab : 'partida';
@@ -4344,7 +4346,7 @@ function showSettings() {
     <span><small>${L('Rival de la izquierda', "Rival de l'esquerra")}</small><input id="nm3" type="text" maxlength="14" value="${esc(NAMES[3])}"></span></div>
     <button class="lnk" type="button" data-act="setnames">${L('Ocultar nombres', 'Amagar els noms')}</button></div>`
         : `<div class="opt"><button class="btn" type="button" data-act="setnames">${L('Cambiar nombres de los bots', 'Canviar els noms dels bots')}</button></div>`,
-      setOpt('Sóc socarrat', seg('socarrat', [[false,'No'],[true,'Sí']], SETTINGS.socarrat, true), L("A la manera de Cocentaina: cada vez que s'ha pixat al repartir, la pareja que no reparte se apunta un punto.", "A la manera de Cocentaina: cada vegada que s'ha pixat en repartir, la parella que no dona s'apunta un punt."))
+      SOCARRAT_DISP ? setOpt('Sóc socarrat', seg('socarrat', [[false,'No'],[true,'Sí']], SETTINGS.socarrat, true), L("A la manera de Cocentaina: cada vez que s'ha pixat al repartir, la pareja que no reparte se apunta un punto.", "A la manera de Cocentaina: cada vegada que s'ha pixat en repartir, la parella que no dona s'apunta un punt.")) : ''
     ].join('');
   }
   if (tab === 'sonido') body = [
