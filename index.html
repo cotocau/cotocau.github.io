@@ -2,7 +2,7 @@
 <html lang="es" data-color="verde">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-uUieubbp9lcQ6GVQNYdyTfzV8B9eKlGr/4HG76j3918=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-eEgA8z7KdwmCs+lHx2IoiCsU/lIH5dvubpaU0jNDMjQ=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#07170e">
 <meta name="description" content="CotoCau: el Coto y el Cau, los juegos de cartas de las filaes de Alcoy. Juega con tu compañera contra dos rivales.">
@@ -584,22 +584,24 @@ function postDeal(S) {
   S.phase = 'play';
   if (S.round === 3) {
     // Último reparto: se canta sin esperar el turno
-    for (const p of dealOrder(S)) if (p !== 0 && S.dealCombos[p]) sing(S, p);
-    if (S.dealCombos[0]) S.phase = 'singLast'; else resolveNit(S);
+    // 27 nov: las personas (tú y, online, los invitados) eligen si cantan; los bots cantan solos
+    S.sWait = [];
+    for (const p of dealOrder(S)) if (S.dealCombos[p]) { if (humanSeat(p)) S.sWait.push(p); else sing(S, p); }
+    if (S.sWait.length) S.phase = 'singLast'; else resolveNit(S);
   }
 }
 const dealOrder = S => [0,1,2,3].map(i => (S.dealStart + i) % 4);
 
 function sing(S, p) {
   const also = [0, 1, 2, 3].some(q => q !== p && S.sung[q]);
-  S.sung[p] = S.dealCombos[p];
+  S.sung[p] = combo(S.hands[p]) || S.dealCombos[p];
   S.bubbles[p] = 'De nit';
   say(S, p === 0 ? L('Cantas «de nit».', 'Cantes «de nit».') : `${NAMES[p]} canta «de nit».`, 'sing');
   S.feed[S.feed.length - 1].p = p;   // para la voz
   if (also) S.feed[S.feed.length - 1].v2 = vozAlt('jotambe', 'jotambe2');   // ya había cantado otro
 }
 function canFirst(S, p) {
-  return S.phase === 'play' && S.turn === p && S.round < 3 && S.nitState === 'open' && !S.first[p] && !S.sung[p] && !!S.dealCombos[p] && S.hands[p].length === 3;
+  return S.phase === 'play' && S.turn === p && S.round < 3 && S.nitState === 'open' && !S.sung[p] && !!combo(S.hands[p]);   // 27 nov: se puede cantar en cualquiera de tus turnos mientras tengas la pareja en la mano (mientras nadie haya cantado)
 }
 function canSecond(S, p) {
   return S.phase === 'play' && S.turn === p && S.nitState === 'resolved' && !S.nitContested && S.sung[p] && S.sung[p].t === 2 && !S.second[p] && S.hands[p].length === 2;
@@ -614,10 +616,28 @@ function singSecond(S, p) {
 function startSing(S, p) {
   sing(S, p);
   const order = [1,2,3].map(i => (p + i) % 4);
-  const resp = order.filter(q => S.dealCombos[q] && !S.sung[q] && !S.first[q]);
-  for (const q of resp) if (q !== 0) sing(S, q);
-  if (resp.includes(0)) { S.phase = 'singResp'; S.singer = p; }
+  const resp = order.filter(q => !S.sung[q] && combo(S.hands[q]));   // quien tenga pareja en la mano, la haya o no empezado a jugar
+  S.sWait = [];
+  for (const q of resp) { if (humanSeat(q)) S.sWait.push(q); else sing(S, q); }
+  if (S.sWait.length) { S.phase = 'singResp'; S.singer = p; }
   else resolveNit(S);
+}
+// Una persona contesta si canta o no cuando otro ha cantado (o al empezar el último reparto); al contestar todas se resuelve
+const nitAnswerOk = q => (S.phase === 'singResp' || S.phase === 'singLast') && (S.sWait || []).includes(q);
+function nitAnswer(S, q, yes) {
+  if (S.sWait === undefined && (S.phase === 'singResp' || S.phase === 'singLast')) S.sWait = [0];   // partida guardada antes del cambio
+  if (!(S.phase === 'singResp' || S.phase === 'singLast') || !(S.sWait || []).includes(q)) return false;
+  S.sWait = S.sWait.filter(x => x !== q);
+  if (yes) sing(S, q); else if (q === 0) say(S, L('No cantas de nit.', 'No cantes de nit.'));
+  if (!S.sWait.length) resolveNit(S);
+  return true;
+}
+// Si alguien de los que esperaban ya no es una persona (bot, sin conexión), canta por él el bot
+function nitAutoWait(S) {
+  if (!(S.phase === 'singResp' || S.phase === 'singLast') || !(S.sWait || []).length) return false;
+  const gone = S.sWait.filter(q => !humanSeat(q)); if (!gone.length) return false;
+  for (const q of gone) nitAnswer(S, q, true);
+  return true;
 }
 // Se resuelve el de nit: si solo canta una pareja se apunta 1 por cada canto; si cantan las dos, se habla
 function resolveNit(S) {
@@ -917,8 +937,9 @@ const INFER = { on: true };
 // porque tú puedes elegir no cantar.
 function noPairConf(S, q) {
   if (!SMART.np || !S.inf || !S.sung || S.sung[q]) return 0;
-  const could = S.round === 3 ? S.phase !== 'singLast' : (S.nitState !== 'open' || S.first[q]);
-  return could ? (q === 0 ? 0.9 : 1) : 0;
+  const pers = q === 0 || humanSeat(q);   // una persona puede cantar tarde: solo se sabe que no tiene si ya tocaba decir (alguien ha cantado)
+  const could = S.round === 3 ? S.phase !== 'singLast' : (pers ? S.nitState !== 'open' : (S.nitState !== 'open' || S.first[q]));
+  return could ? (pers ? 0.9 : 1) : 0;
 }
 const SMART = { on: true, opp2: 1, soft: 0.75, K: 60, sample: false, no: true, boost: 0.6, r3: true, np: true, keep: 2 };
 // Reparte al azar las cartas que el bot no ve, pero respetando lo que se ha visto en la mesa:
@@ -1955,9 +1976,9 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-27-11';
+const APP_VER = 'cau-2026-11-27-13';
 // Número que se ve en el menú de la oficial: la versión de la app de Android (1.2.4) y detrás un contador que sube con cada publicación en la oficial (1.2.4.1, 1.2.4.2…). Al subir la app de Android, se cambia el principio y el contador vuelve a 1.
-const APP_REL = '1.2.4.9';
+const APP_REL = '1.2.4.10';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
 // sus partidas llevan «-pruebas» en la versión y su online usa salas aparte (canales cc-p…), para no mezclarse con la oficial.
 const PRUEBAS = false;
@@ -2379,10 +2400,10 @@ function renderHand() {
 
 function renderBottom() {
   const el = $('bottom');
-  if ((S.phase === 'singLast' || S.phase === 'singResp') && !busy) {
+  if ((S.phase === 'singLast' || S.phase === 'singResp') && !busy && (S.sWait === undefined || S.sWait.includes(0))) {
     const head = S.phase === 'singLast' ? L('Último reparto', 'Últim repartiment') : L(`${NAMES[S.singer]} ha cantado de nit`, `${NAMES[S.singer]} ha cantat de nit`);
     const why = S.phase === 'singLast' ? L('En el último reparto se canta al principio.', "En l'últim repartiment es canta al principi.") : L('Si tú también tienes, lo dices ahora.', 'Si tu també en tens, ho dius ara.');
-    el.innerHTML = `<div class="nit"><h3>${head}</h3><p>${L('Tienes', 'Tens')} ${comboTxt(S.dealCombos[0])}. ${why}</p><div class="acts"><button class="btn sing" type="button" data-sing="resp">Cantar de nit</button><button class="btn" type="button" data-sing="skip">No cantar</button></div></div>`;
+    el.innerHTML = `<div class="nit"><h3>${head}</h3><p>${L('Tienes', 'Tens')} ${comboTxt(combo(S.hands[0]) || S.dealCombos[0])}. ${why}</p><div class="acts"><button class="btn sing" type="button" data-sing="resp">Cantar de nit</button><button class="btn" type="button" data-sing="skip">No cantar</button></div></div>`;
     return;
   }
   if (humanSpeaks(S) && !busy) {
@@ -2403,6 +2424,7 @@ function renderBottom() {
       else if (canSecond(S, 0)) btn = `<button class="btn sing" type="button" data-sing="second">${L('Cantar de nit otra vez', 'Tornar a cantar de nit')}</button>`;
     } else txt = `${L('Juega', 'Juga')} <b>${NAMES[S.turn]}</b>…`;
   } else if (S.phase === 'nit' && S.bet) txt = `${L('Habla el de nit', 'Parla el de nit')} <b>${speakerName(S)}</b>…`;
+  else if (S.phase === 'singLast' || S.phase === 'singResp' || S.phase === 'wait') txt = L('Esperando a que contesten el de nit…', 'Esperant que contesten el de nit…');
   el.innerHTML = `<div class="status ${S.turn === 0 && S.phase === 'play' ? 'mine' : ''}"><span>${txt}</span>${btn}</div>`;
 }
 
@@ -2697,6 +2719,7 @@ async function loop() {
       while (!$('overlay').hidden && !['handEnd','gameEnd'].includes(S.phase)) await new Promise(r => setTimeout(r, 200));
       save();
       if (S.over) break;
+      if ((S.phase === 'singResp' || S.phase === 'singLast') && nitAutoWait(S)) { render(); await drainFeed(); continue; }
       if (S.phase === 'play') {
         if (humanSeat(S.turn)) break;
         render();
@@ -2789,7 +2812,7 @@ function showRules(tab) {
   <h3>Jugades especials</h3>
   <div class="pts"><div><b>Bac · 2</b><span>Mates la carta que acaba de deixar el jugador anterior.</span></div><div><b>Rebac · 3</b><span>El següent mata el bac: el bac perd els seus 2 punts.</span></div><div><b>Sant Vicent · 5</b><span>La quarta carta mata el rebac: el rebac perd els seus 3.</span></div><div><b>Limpia · 1</b><span>Deixes el tapet buit.</span></div></div>
   <p>El bac queda pendent al tapet fins que juga el següent. Si fa rebac, l'escala és per a ell. Si el bac deixa el tapet buit també és limpia (3 punts), i si li fan rebac la limpia passa al que el fa. L'última jugada de la mà no fa limpia.</p>
-  <h3>De nit</h3><ul><li>Amb parella a la mà, cantes «de nit» en el teu torn, abans de jugar. Has de prémer el botó; si jugues sense cantar, el perds.</li><li>Amb rondí (trio), si ningú et discuteix el de nit, tornes a cantar quan et queden dues cartes: un altre punt.</li><li>Quan algú canta, els altres que també en tenen ho diuen en eixe moment. En l'últim repartiment canten tots al principi.</li><li>Si només canta una parella, s'apunta 1 per cada cant (tu i el teu company, 2).</li><li>Si canten les dues parelles, els punts dels cants es perden i només parlen els que han cantat, començant per la dreta del que dona: <b>xic</b> (1), <b>xac</b> (l'acceptes), <b>envide</b> (2), <b>torne a envidar</b> (2 més, només una vegada) o <b>la partida</b>. Es cobra només el que s'aposta.</li><li>Si els dos d'una parella tenen de nit, el que parla pot <b>passar la paraula</b> al seu company (només una vegada per parella): parla ell, i només compten les cartes de qui parla per cada parella. El company o juga o <b>no va</b>. Qui no té company amb de nit no pot passar la paraula: només pot no anar.</li><li>Si no es va o no es vol una aposta (o es passa a un xic), el que ha apostat cobra el que ja estava acceptat (mínim 1) i 1 més si té els dos de nit. Exemple: xic, envide, torne i no es vol, amb els dos de nit en la parella del xic: 3.</li><li>Qui guanya el de nit parlat no se sap fins que acaba eixe repartiment, tret que es jugueu <b>la partida</b>: això s'ensenya en el moment. Si abans una parella arriba a 40 (amb un bac, per exemple), guanya eixa i el de nit no es mira.</li><li>Guanya la jugada més alta: rondí a parella, i entre iguals la més alta (rei > cavall > sota > 7 … > as). Si empaten, guanya qui és mà.</li></ul>
+  <h3>De nit</h3><ul><li>Amb parella a la mà, cantes «de nit» en el teu torn, en qualsevol moment mentre la tingues a la mà. Has de prémer el botó. Però si abans canta un altre, ho has de dir en eixe moment: no pots esperar.</li><li>Amb rondí (trio), si ningú et discuteix el de nit, tornes a cantar quan et queden dues cartes: un altre punt.</li><li>Quan algú canta, els altres que també en tenen ho diuen en eixe moment. En l'últim repartiment canten tots al principi.</li><li>Si només canta una parella, s'apunta 1 per cada cant (tu i el teu company, 2).</li><li>Si canten les dues parelles, els punts dels cants es perden i només parlen els que han cantat, començant per la dreta del que dona: <b>xic</b> (1), <b>xac</b> (l'acceptes), <b>envide</b> (2), <b>torne a envidar</b> (2 més, només una vegada) o <b>la partida</b>. Es cobra només el que s'aposta.</li><li>Si els dos d'una parella tenen de nit, el que parla pot <b>passar la paraula</b> al seu company (només una vegada per parella): parla ell, i només compten les cartes de qui parla per cada parella. El company o juga o <b>no va</b>. Qui no té company amb de nit no pot passar la paraula: només pot no anar.</li><li>Si no es va o no es vol una aposta (o es passa a un xic), el que ha apostat cobra el que ja estava acceptat (mínim 1) i 1 més si té els dos de nit. Exemple: xic, envide, torne i no es vol, amb els dos de nit en la parella del xic: 3.</li><li>Qui guanya el de nit parlat no se sap fins que acaba eixe repartiment, tret que es jugueu <b>la partida</b>: això s'ensenya en el moment. Si abans una parella arriba a 40 (amb un bac, per exemple), guanya eixa i el de nit no es mira.</li><li>Guanya la jugada més alta: rondí a parella, i entre iguals la més alta (rei > cavall > sota > 7 … > as). Si empaten, guanya qui és mà.</li></ul>
   <h3>Punts</h3><ul><li>Es juga a 40: els primers 20 són «roïns» i els 20 següents, «bones». Guanya qui arriba a 40, en el moment en què hi arriba.</li><li>Al final de cada mà, qui arreplega l'últim s'endú el que queda al tapet (no és limpia), i cada parella suma un punt per cada carta que passe de 20.</li><li>Sóc socarrat (opcional): cada vegada que s'ha pixat, la parella que no dona s'apunta un punt.</li></ul>
   ${PRUEBAS ? `<h3>Dubtes pendents</h3><ul><li>Cap de moment.</li></ul>` : ''}
   ` : `<h2>Reglas del Cau</h2>
@@ -2799,7 +2822,7 @@ function showRules(tab) {
   <h3>Jugadas especiales</h3>
   <div class="pts"><div><b>Bac · 2</b><span>Matas la carta que acaba de dejar el jugador anterior.</span></div><div><b>Rebac · 3</b><span>El siguiente mata el bac: el bac pierde sus 2 puntos.</span></div><div><b>Sant Vicent · 5</b><span>La cuarta carta mata el rebac: el rebac pierde sus 3.</span></div><div><b>Limpia · 1</b><span>Dejas la mesa vacía.</span></div></div>
   <p>El bac queda pendiente en la mesa hasta que juega el siguiente. Si hace rebac, la escala es para él. Si el bac deja la mesa vacía también es limpia (3 puntos), y si le hacen rebac la limpia pasa al que lo hace. La última jugada de la mano no hace limpia.</p>
-  <h3>De nit</h3><ul><li>Con pareja en la mano, cantas «de nit» en tu turno, antes de jugar. Tienes que pulsar el botón; si juegas sin cantar, lo pierdes.</li><li>Con rondín (trío), si nadie te discute el de nit, vuelves a cantar cuando te quedan dos cartas: otro punto.</li><li>Cuando alguien canta, los demás que también tienen lo dicen en ese momento. En el último reparto cantan todos al principio.</li><li>Si solo canta una pareja, se apunta 1 por cada canto (tú y tu compañero, 2).</li><li>Si cantan las dos parejas, los puntos de los cantos se pierden y solo hablan los que han cantado, empezando por la derecha de quien reparte: <b>xic</b> (1), <b>xac</b> (lo aceptas), <b>envide</b> (2), <b>torne a envidar</b> (2 más, solo una vez) o <b>la partida</b>. Se cobra solo lo apostado.</li><li>Si los dos de una pareja tienen de nit, el que habla puede <b>pasar la palabra</b> a su compañero (una sola vez por pareja): habla él, y solo cuentan las cartas de quien habla por cada pareja. El compañero o juega o <b>no va</b>. Quien no tiene compañero con de nit no puede pasar la palabra: solo puede no ir.</li><li>Si no se va o no se quiere una apuesta (o se pasa a un xic), el que apostó cobra lo que ya estaba aceptado (mínimo 1) y 1 más si tiene los dos de nit. Ejemplo: xic, envide, torne y no se quiere, con los dos de nit en la pareja del xic: 3.</li><li>Quién gana el de nit hablado no se sabe hasta que acaba ese reparto, salvo si se juegan <b>la partida</b>: eso se enseña en el momento. Si antes una pareja llega a 40 (con un bac, por ejemplo), gana esa y el de nit no se mira.</li><li>Gana la jugada más alta: rondín a pareja, y entre iguales la más alta (rey > caballo > sota > 7 … > as). Si empatan, gana quien es mano.</li></ul>
+  <h3>De nit</h3><ul><li>Con pareja en la mano, cantas «de nit» en tu turno, en cualquier momento mientras la tengas en la mano. Tienes que pulsar el botón. Pero si antes canta otro, tienes que decirlo en ese momento: no puedes esperar.</li><li>Con rondín (trío), si nadie te discute el de nit, vuelves a cantar cuando te quedan dos cartas: otro punto.</li><li>Cuando alguien canta, los demás que también tienen lo dicen en ese momento. En el último reparto cantan todos al principio.</li><li>Si solo canta una pareja, se apunta 1 por cada canto (tú y tu compañero, 2).</li><li>Si cantan las dos parejas, los puntos de los cantos se pierden y solo hablan los que han cantado, empezando por la derecha de quien reparte: <b>xic</b> (1), <b>xac</b> (lo aceptas), <b>envide</b> (2), <b>torne a envidar</b> (2 más, solo una vez) o <b>la partida</b>. Se cobra solo lo apostado.</li><li>Si los dos de una pareja tienen de nit, el que habla puede <b>pasar la palabra</b> a su compañero (una sola vez por pareja): habla él, y solo cuentan las cartas de quien habla por cada pareja. El compañero o juega o <b>no va</b>. Quien no tiene compañero con de nit no puede pasar la palabra: solo puede no ir.</li><li>Si no se va o no se quiere una apuesta (o se pasa a un xic), el que apostó cobra lo que ya estaba aceptado (mínimo 1) y 1 más si tiene los dos de nit. Ejemplo: xic, envide, torne y no se quiere, con los dos de nit en la pareja del xic: 3.</li><li>Quién gana el de nit hablado no se sabe hasta que acaba ese reparto, salvo si se juegan <b>la partida</b>: eso se enseña en el momento. Si antes una pareja llega a 40 (con un bac, por ejemplo), gana esa y el de nit no se mira.</li><li>Gana la jugada más alta: rondín a pareja, y entre iguales la más alta (rey > caballo > sota > 7 … > as). Si empatan, gana quien es mano.</li></ul>
   <h3>Puntos</h3><ul><li>Se juega a 40: los primeros 20 son «malas» y los siguientes 20, «buenas». Gana quien llega a 40, en el momento en que llega.</li><li>Al final de cada mano, quien captura el último se lleva lo que queda en la mesa (no es limpia), y cada pareja suma un punto por cada carta que pase de 20.</li><li>Sóc socarrat (opcional): cada vez que s'ha pixat, la pareja que no reparte se apunta un punto.</li></ul>
   ${PRUEBAS ? `<h3>Dudas pendientes</h3><ul><li>Ninguna de momento.</li></ul>` : ''}
   `) + close);
@@ -3159,7 +3182,7 @@ function netCauView(g) {
   const names = [0, 1, 2, 3].map(v => { const p = (v + g) % 4; return v === 0 ? L('Tú', 'Tu') : p === 0 ? NET.name : NAMES[p]; });
   const b = S.bet, spk = cauSpeaker(S);
   return {
-    phase: S.phase === 'singResp' || S.phase === 'singLast' ? 'wait' : S.phase, handNo: S.handNo, round: S.round, dealer: rot(S.dealer), turn: rot(S.turn), dealStart: rot(S.dealStart), singer: rot(S.singer),
+    phase: (S.phase === 'singResp' || S.phase === 'singLast') && !(S.sWait || []).includes(g) ? 'wait' : S.phase, handNo: S.handNo, round: S.round, dealer: rot(S.dealer), turn: rot(S.turn), dealStart: rot(S.dealStart), singer: rot(S.singer),
     score: tm(S.score), cap: tm(S.cap), bon: tm(S.bon), over: S.over, winner: tt(S.winner), endFalta: S.endFalta, endMid: S.endMid,
     summary: tm(S.summary), duelNotes: (S.duelNotes || []).map(t => netNarr(t, g)),
     table: S.table.map(cc), slots: S.slots, chain: S.chain ? { ...S.chain, cards: S.chain.cards.map(cc), owner: rot(S.chain.owner) } : null,
@@ -3170,7 +3193,7 @@ function netCauView(g) {
     deck: S.deck.map((c, k) => ({ id: -200 - k, r: 0, s: 0 })), hands, names, myDeal: (S.dealSeq || []).filter(x => x.to === g && x.id != null).map(x => x.id),
     bubbles: seatArr(S.bubbles || ['', '', '', '']).map(x => netNarr(x || '', g)),
     sung: seatArr(S.sung || [null, null, null, null]).map((x, v) => v === 0 ? x : x ? { t: 1, r: -1 } : null),
-    first: seatArr(S.first || []), second: seatArr(S.second || []), dealCombos: [S.dealCombos ? S.dealCombos[g] : null, null, null, null],
+    first: seatArr(S.first || []), second: seatArr(S.second || []), dealCombos: [S.dealCombos ? (combo(S.hands[g]) || S.dealCombos[g]) : null, null, null, null], sWait: (S.sWait || []).includes(g) ? [0] : [],
     nitState: S.nitState, nitContested: S.nitContested,
     bet: b ? { base: b.base, acc: b.acc, passes: b.passes, turnTeam: tt(b.turnTeam), pending: b.pending ? { ...b.pending, by: tt(b.pending.by) } : null, order: b.order.map(rot), spk: b.spk ? tm(b.spk.map(rot)) : null, passed: b.passed ? tm(b.passed) : null } : null,
     netSpk: spk == null ? -1 : rot(spk),
@@ -3376,6 +3399,7 @@ function netWaitCheck() {
     if (W.length) key = `${G.partidaNo}.${G.handNo}.${G.trickNo}.${G.trick.length}.${W.join()}`;
   } else if (NET.started && !busy && !isCoto() && S && $('overlay').hidden) {
     if (S.phase === 'play' && S.turn !== 0 && humanSeat(S.turn)) W = [S.turn];
+    else if ((S.phase === 'singResp' || S.phase === 'singLast') && (S.sWait || []).length) W = S.sWait.filter(q => q !== 0 && humanSeat(q));
     else { const sp = cauSpeaker(S); if (sp != null && sp !== 0) W = [sp]; }
     if (W.length) key = `c${S.handNo}.${S.round}.${S.hands.map(h => h.length).join('')}.${S.phase}.${S.bet ? S.bet.turnTeam + '' + (S.bet.pending ? S.bet.pending.kind || 'f' : '') : ''}.${W.join()}`;
   }
@@ -3557,6 +3581,9 @@ async function netHostMsg(m) {
     if (!isCoto()) {
       if (busy || !S) return netSchedule();
       if (m.a === 'cplay' && S.phase === 'play' && S.turn === q && S.hands[q].some(c => c.id === m.card)) { busy = true; try { await doPlay(q, m.card); } finally { busy = false; } return loop(); }
+      if (m.a === 'csing' && (m.k === 'resp' || m.k === 'skip') && nitAnswerOk(q)) {
+        busy = true; try { nitAnswer(S, q, m.k === 'resp'); render(); await drainFeed(); } finally { busy = false; } render(); return loop();
+      }
       if (m.a === 'csing' && S.phase === 'play' && S.turn === q && ((m.k === 'first' && canFirst(S, q)) || (m.k === 'second' && canSecond(S, q)))) {
         busy = true; try { if (m.k === 'first') startSing(S, q); else singSecond(S, q); render(); await drainFeed(); } finally { busy = false; } render(); return loop();
       }
@@ -4235,8 +4262,8 @@ const TUT = {
       h: ['Los puntos de verdad están aquí:<br>• <b>Bac (2):</b> matas la carta que acaba de echar el anterior.<br>• <b>Rebac (3):</b> el siguiente mata el bac, y el bac pierde sus 2.<br>• <b>Sant Vicent (5):</b> la cuarta carta mata el rebac, que pierde sus 3.<br>• <b>Limpia (1):</b> dejas la mesa vacía.',
           'Els punts de veritat són ací:<br>• <b>Bac (2):</b> mates la carta que acaba de tirar l\'anterior.<br>• <b>Rebac (3):</b> el següent mata el bac, i el bac perd els seus 2.<br>• <b>Sant Vicent (5):</b> la quarta carta mata el rebac, que perd els seus 3.<br>• <b>Limpia (1):</b> deixes el tapet buit.'] },
     { t: ['De nit', 'De nit'], cards: [[8], [38]],
-      h: ['Si tienes <b>pareja</b> (dos cartas del mismo número) cantas «de nit» en tu turno, antes de jugar, con el botón que aparece. Si solo canta tu pareja, sumáis un punto por canto.<br><br>Si cantan las dos parejas, se apuesta: <b>xic</b> (1), <b>xac</b> (aceptar), <b>envide</b> (2), <b>torne</b> (2 más) o <b>la partida</b>. Gana la jugada más alta, y se sabe al acabar el reparto.',
-          'Si tens <b>parella</b> (dues cartes del mateix número) cantes «de nit» en el teu torn, abans de jugar, amb el botó que apareix. Si només canta la teua parella, sumeu un punt per cant.<br><br>Si canten les dues parelles, s\'aposta: <b>xic</b> (1), <b>xac</b> (acceptar), <b>envide</b> (2), <b>torne</b> (2 més) o <b>la partida</b>. Guanya la jugada més alta, i se sap en acabar el repartiment.'] },
+      h: ['Si tienes <b>pareja</b> (dos cartas del mismo número) cantas «de nit» en tu turno, mientras tengas la pareja en la mano, con el botón que aparece (si otro canta antes, lo dices en ese momento). Si solo canta tu pareja, sumáis un punto por canto.<br><br>Si cantan las dos parejas, se apuesta: <b>xic</b> (1), <b>xac</b> (aceptar), <b>envide</b> (2), <b>torne</b> (2 más) o <b>la partida</b>. Gana la jugada más alta, y se sabe al acabar el reparto.',
+          'Si tens <b>parella</b> (dues cartes del mateix número) cantes «de nit» en el teu torn, mentre tingues la parella a la mà, amb el botó que apareix (si un altre canta abans, ho dius en eixe moment). Si només canta la teua parella, sumeu un punt per cant.<br><br>Si canten les dues parelles, s\'aposta: <b>xic</b> (1), <b>xac</b> (acceptar), <b>envide</b> (2), <b>torne</b> (2 més) o <b>la partida</b>. Guanya la jugada més alta, i se sap en acabar el repartiment.'] },
     { t: ['Puntos y un consejo', 'Punts i un consell'], cards: [],
       h: ['Al acabar la mano, cada pareja suma un punto por cada carta que tenga por encima de 20. Se juega a 40: las primeras 20 son «malas» y las siguientes, «buenas».<br><br><b>Consejo:</b> fíjate en qué carta deja el rival de tu izquierda; si tienes una igual, ¡bac! Y en Ajustes puedes poner las <b>ayudas</b>, que te dicen qué pasa si juegas cada carta.',
           'En acabar la mà, cada parella suma un punt per cada carta que tinga per damunt de 20. Es juga a 40: els primers 20 són «roïns» i els següents, «bones».<br><br><b>Consell:</b> fixa\'t en quina carta deixa el rival de la teua esquerra; si en tens una d\'igual, bac! I en Ajusts pots posar les <b>ajudes</b>, que et diuen què passa si jugues cada carta.'] }
@@ -4438,8 +4465,7 @@ $('bottom').addEventListener('click', async e => {
       const waiting = S.phase === 'singLast' || S.phase === 'singResp';
       if (k === 'first' && canFirst(S, 0)) startSing(S, 0);
       else if (k === 'second' && canSecond(S, 0)) singSecond(S, 0);
-      else if (k === 'resp' && waiting) { sing(S, 0); resolveNit(S); }
-      else if (k === 'skip' && waiting) { say(S, L('No cantas de nit.', 'No cantes de nit.')); resolveNit(S); }
+      else if ((k === 'resp' || k === 'skip') && waiting) nitAnswer(S, 0, k === 'resp');
       render(); await drainFeed();
     } finally { busy = false; }
     render(); loop();
