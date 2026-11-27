@@ -2,7 +2,7 @@
 <html lang="es" data-color="verde">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-FHAPs4nKzr5r1i5QhbcGny2DPn8T0RyNowTq69Ftt5g=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-kWppoSrPiAn5V8+UwrfCzExQZxieLYgUH8o+ikQD0vk=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script>(()=>{try{const P='pr.',S=Storage.prototype,g=S.getItem,s=S.setItem,r=S.removeItem;S.getItem=function(k){return g.call(this,P+k)};S.setItem=function(k,v){return s.call(this,P+k,v)};S.removeItem=function(k){return r.call(this,P+k)};}catch(e){}})();</script>
 <meta name="theme-color" content="#07170e">
@@ -1956,7 +1956,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-27-8';
+const APP_VER = 'cau-2026-11-27-9';
 // Número que se ve en el menú de la oficial: la versión de la app de Android (1.2.4) y detrás un contador que sube con cada publicación en la oficial (1.2.4.1, 1.2.4.2…). Al subir la app de Android, se cambia el principio y el contador vuelve a 1.
 const APP_REL = '1.2.4.7';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
@@ -3770,6 +3770,7 @@ function netGuestMsg(m) {
   { const e = m.ep | 0; if (e < (NET.ep | 0)) return; if (e > (NET.ep | 0)) NET.ep = e; }   // lo de una época anterior (un anfitrión que ya cedió el mando) se ignora
   NET.lastHost = Date.now();
   if (m.t === 'rl') return netRelayStore(m);
+  if (m.t === 'hgone') { if (NET.rl) NET.lastHost = Date.now() - NET_RELAY_MS * (NET.rl.thr === 1 ? 2 : 1) - 100; return; }   // 27 nov: el anfitrión se ha ido a propósito: el relevo empieza ya, sin esperar los 30 s
   if (m.t === 'ret') { rkNetDiscard(); netRoomClear(); netLeave(true); showPanel(`<h2>${L('Ya no estás en esta partida', 'Ja no estàs en esta partida')}</h2><p>${L('Saliste de la partida y no se puede volver a entrar.', 'Vas eixir de la partida i no es pot tornar a entrar.')}</p><div class="acts"><button class="btn primary" type="button" data-act="menu">${L('Menú', 'Menú')}</button></div>`); return; }
   if (m.snap) netRelaySnapIn(m.snap); if (NET.banner) { NET.banner = null; if (G) render(); }
   if (m.t === 'lobby') {
@@ -3934,13 +3935,15 @@ function netGuestSummary() {
 }
 function netAskLeave() {
   const host = NET.role === 'host';
-  showPanel(`<h2>${L('¿Salir de la partida online?', 'Eixir de la partida online?')}</h2><p>${host ? L('Eres el anfitrión: si sales, la partida se acaba para todos.', 'Eres l\'amfitrió: si n\'ixes, la partida s\'acaba per a tots.') : L('Si sales, un bot jugará por ti hasta el final y no podrás volver a esta partida.', 'Si n\'ixes, un bot jugarà per tu fins al final i no podràs tornar a esta partida.')}</p><div class="acts"><button class="btn" type="button" data-act="net-leave">${L('Salir', 'Eixir')}</button><button class="btn primary" type="button" data-act="net-stay">${L('Seguir jugando', 'Continuar jugant')}</button></div>`);
+  showPanel(`<h2>${L('¿Salir de la partida online?', 'Eixir de la partida online?')}</h2><p>${host ? (netCanHandOver() ? L('Eres el anfitrión: si sales, otro jugador tomará el mando y la partida seguirá sin ti, con un bot en tu sitio. No podrás volver a esta partida.', 'Eres l\'amfitrió: si n\'ixes, un altre jugador prendrà el comandament i la partida continuarà sense tu, amb un bot al teu lloc. No podràs tornar a esta partida.') : L('Eres el anfitrión: si sales, la partida se acaba para todos.', 'Eres l\'amfitrió: si n\'ixes, la partida s\'acaba per a tots.')) : L('Si sales, un bot jugará por ti hasta el final y no podrás volver a esta partida.', 'Si n\'ixes, un bot jugarà per tu fins al final i no podràs tornar a esta partida.')}</p><div class="acts"><button class="btn" type="button" data-act="net-leave">${L('Salir', 'Eixir')}</button><button class="btn primary" type="button" data-act="net-stay">${L('Seguir jugando', 'Continuar jugant')}</button></div>`);
 }
+// 27 nov: el anfitrión que se va a propósito a mitad de partida deja el mando a un invitado si ya tienen la copia de la mesa y hay bastantes conectados
+const netCanHandOver = () => !!(NET && NET.role === 'host' && NET.started && NET.relay && NET.relay.snap && [1, 2, 3].filter(q => NET.seats[q].kind === 'human' && NET.seats[q].online && !NET.seats[q].away).length >= NET.relay.thr);
 const netHostGone = () => !!(NET && NET.role === 'guest' && NET.started && Date.now() - NET.lastHost > 12000);   // 26 nov: el anfitrión no da señales: salir ahora no penaliza
 function netLeave(quiet) {
   if (!NET) return;
   if (NET.started) { if (netHostGone()) rkNetDiscard(); else rkNetQuit('R'); }   // salir a mitad de una partida cuenta como retirada (si se fue el anfitrión o te echó, ya se descartó antes)
-  if (NET.role === 'host') { hostRoomClear(); netSend({ t: 'bye' }); netPresenceTrack(false).then(netPresenceClose, netPresenceClose); }
+  if (NET.role === 'host') { hostRoomClear(); netSend(netCanHandOver() && !quiet ? { t: 'hgone' } : { t: 'bye' }); netPresenceTrack(false).then(netPresenceClose, netPresenceClose); }
   else { if (!quiet) netRoomClear(); netSend(NET.started && !quiet ? { t: 'leave', fin: 1 } : { t: 'leave' }); netRelayClear(); }   // 27 nov: irse a propósito a mitad es definitivo (el anfitrión no le deja volver); cerrar la app o perder la conexión, no   // salir de la sala antes de empezar: ya no hay partida que recuperar
   clearInterval(NET.timer); clearTimeout(NET.sched); if (NET.fast) clearInterval(NET.fast);
   const chans = [NET.pub, ...(NET.role === 'host' ? Object.values(NET.priv || {}) : [NET.priv])];
