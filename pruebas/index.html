@@ -2,7 +2,7 @@
 <html lang="es" data-color="verde">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-kWppoSrPiAn5V8+UwrfCzExQZxieLYgUH8o+ikQD0vk=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-TgJhdqkz/rT1oxDU8kAx4pqELStIwUy/Lg2LT7dC3xw=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script>(()=>{try{const P='pr.',S=Storage.prototype,g=S.getItem,s=S.setItem,r=S.removeItem;S.getItem=function(k){return g.call(this,P+k)};S.setItem=function(k,v){return s.call(this,P+k,v)};S.removeItem=function(k){return r.call(this,P+k)};}catch(e){}})();</script>
 <meta name="theme-color" content="#07170e">
@@ -1956,7 +1956,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-27-9';
+const APP_VER = 'cau-2026-11-27-10';
 // Número que se ve en el menú de la oficial: la versión de la app de Android (1.2.4) y detrás un contador que sube con cada publicación en la oficial (1.2.4.1, 1.2.4.2…). Al subir la app de Android, se cambia el principio y el contador vuelve a 1.
 const APP_REL = '1.2.4.7';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
@@ -1998,8 +1998,8 @@ fitZoom();
   let tm = 0; const refit = () => { clearTimeout(tm); tm = setTimeout(() => { const z0 = ZOOM; if (fitZoom() && (ZOOM !== z0 || ZOOM > 1 || Math.min(innerWidth, innerHeight) >= 600)) { try { render(); } catch (e) {} } }, 150); };
   addEventListener('resize', refit); addEventListener('focusout', refit); }
 const SUPA = { url: 'https://fzctetcrmrtxwzisxsig.supabase.co/rest/v1/partidas', key: 'sb_publishable_dg8jQx8W7KcVCcEg2KPVnA_ExvQR1gb' };
-function deviceId() {
-  try { let id = localStorage.getItem('cau.uid'); if (!id) { id = Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4); localStorage.setItem('cau.uid', id); } return id; } catch (e) { return 'anon'; }
+function deviceId() {   // 27 nov: los códigos nuevos usan el azar de seguridad (antes Math.random)
+  try { let id = localStorage.getItem('cau.uid'); if (!id) { id = Array.from(crypto.getRandomValues(new Uint8Array(12)), b => (b % 36).toString(36)).join('') + Date.now().toString(36).slice(-4); localStorage.setItem('cau.uid', id); } return id; } catch (e) { return 'anon'; }
 }
 let shareBusy = false;
 async function shareFlush() {
@@ -2159,9 +2159,52 @@ function showRank() {
   // 27 nov: recordatorio bien visible arriba (antes era una línea pequeña debajo de la tabla) para quien no tiene activado «Aparecer en la clasificación»
   const aviso = SETTINGS.rank ? '' : `<div class="rkaviso">🔔 <b>${L('Tú no sales en la clasificación.', 'Tu no eixes en la classificació.')}</b> ${L('Para aparecer, activa «Aparecer en la clasificación» en Ajustes → Perfil.', 'Per a aparéixer, activa «Aparéixer en la classificació» en Ajusts → Perfil.')} <button class="btn" type="button" data-act="rank-go">${L('Ir a Ajustes', 'Anar a Ajusts')}</button></div>`;
   showPanel(`<h2 data-rk>${L('Clasificación', 'Classificació')}</h2>${aviso}${tab('modo', M, RK.modo, 2)}${tab('juego', J, RK.juego, 3)}${body}<p class="desc rknote">${nota}</p>${PRUEBAS ? `<p class="desc" style="font-size:11px;opacity:.7">diag: interruptor ${SETTINGS.rank ? 'sí' : 'NO'} · compañero ${SETTINGS.partner} · rivales ${SETTINGS.rivals} · en curso ${JSON.stringify(rkGet('cau.rkp', null))} · por enviar ${rkGet('cau.rkq', []).length} · último envío ${JSON.stringify(rkGet('cau.rkl', null))}</p>` : ''}
-  <div class="acts"><button class="btn primary" type="button" data-act="close">${L('Volver', 'Tornar')}</button></div>`); cover();
+  <div class="acts"><button class="btn" type="button" data-act="stats">📊 ${L('Mis estadísticas', 'Les meues estadístiques')}</button><button class="btn primary" type="button" data-act="close">${L('Volver', 'Tornar')}</button></div>`); cover();
   const box = $('panel').querySelector('.rkbox'), me = box && box.querySelector('tr.me');
   if (me) box.scrollTop = Math.max(0, me.offsetTop - box.clientHeight / 2);
+}
+// «Mis estadísticas» (27 nov): lo que cuenta de verdad para tu clasificación (tus últimas 50 partidas de cada juego y modo) y tus últimos resultados,
+// para poder comprobar que no te suman nada raro. Solo se consulta con el código de tu móvil; nadie más puede ver esto.
+let ST = { state: 'idle', rows: null, rk: null };
+async function stLoad() {
+  ST.state = 'loading'; showStats();
+  try {
+    const call = (fn, body) => fetch(RK_BASE + '/rest/v1/rpc/' + fn, { method: 'POST', headers: { apikey: SUPA.key, 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => { if (!r.ok) throw new Error('http ' + r.status); return r.json(); });
+    const [rows, rk] = await Promise.all([call('mis_resultados', { p_codigo: deviceId(), p_pruebas: PRUEBAS }), call('clasificacion', { p_codigo: deviceId(), p_pruebas: PRUEBAS }).catch(() => null)]);
+    ST.rows = Array.isArray(rows) ? rows : []; ST.rk = Array.isArray(rk) ? rk : null; ST.state = 'ok';
+  } catch (e) { ST.state = 'err'; }
+  if ($('panel').querySelector('[data-st]')) showStats();
+}
+function showStats() {
+  panelBack = 'menu';
+  const NOM = { G: L('Ganada', 'Guanyada'), P: L('Perdida', 'Perduda'), R: L('Abandono', 'Abandó'), D: L('Desconexión', 'Desconnexió') };
+  const COL = { G: '#7fd68a', P: '#e08a8a', R: '#e3b24f', D: '#e3b24f' };
+  let body;
+  if (ST.state === 'loading' || ST.state === 'idle') body = `<p class="desc" style="text-align:center">${L('Cargando…', 'Carregant…')}</p>`;
+  else if (ST.state === 'err') body = `<p class="desc" style="text-align:center">${L('No se han podido cargar tus estadísticas. Comprueba la conexión.', 'No s’han pogut carregar les teues estadístiques. Comprova la connexió.')}</p><div class="acts"><button class="btn primary" type="button" data-act="st-load">${L('Reintentar', 'Tornar-ho a provar')}</button></div>`;
+  else {
+    const grupos = [];
+    for (const modo of ['offline', 'online']) for (const juego of ['coto', 'cau']) {
+      const rs = ST.rows.filter(x => x.modo === modo && x.juego === juego); if (rs.length) grupos.push({ modo, juego, rs });
+    }
+    body = grupos.length ? grupos.map(({ modo, juego, rs }) => {
+      const c = k => rs.filter(x => x.resultado === k).length, g = c('G'), p = c('P'), r = c('R'), d = c('D');
+      const ult = Math.max(...rs.map(x => new Date(x.creado).getTime())), sem = Math.floor((Date.now() - ult) / 604800000), virt = Math.min(5, 0.5 * Math.max(0, sem));
+      const mi = (ST.rk || []).find(x => x.soy_yo && x.modo === modo && x.juego === juego);
+      const pts = mi && mi.en_tabla ? `<b>${mi.puntos}</b> ${L('puntos', 'punts')} · ${L('puesto', 'lloc')} ${mi.puesto}` : mi ? L(`te faltan ${Math.max(1, 10 - mi.partidas)} partidas para entrar en la tabla`, `et falten ${Math.max(1, 10 - mi.partidas)} partides per a entrar en la taula`) : '';
+      const f = t => { const x = new Date(t); return `${String(x.getDate()).padStart(2, '0')}/${String(x.getMonth() + 1).padStart(2, '0')} ${String(x.getHours()).padStart(2, '0')}:${String(x.getMinutes()).padStart(2, '0')}`; };
+      const ultimas = rs.slice(0, 10).map(x => `<span style="display:inline-block;margin:2px 8px 2px 0;white-space:nowrap"><span style="opacity:.7">${f(x.creado)}</span> <b style="color:${COL[x.resultado] || '#fff'}">${NOM[x.resultado] || x.resultado}</b></span>`).join('');
+      return `<div class="opt" style="border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:10px 12px"><label style="font-weight:700">${juego === 'coto' ? 'Coto' : 'Cau'} · ${modo === 'offline' ? L('contra bots', 'contra bots') : L('online', 'en línia')}</label>
+      <p class="desc" style="margin:4px 0">${L(`Cuentan tus últimas ${rs.length} partidas (como mucho 50).`, `Compten les teues últimes ${rs.length} partides (com a molt 50).`)}</p>
+      <p style="margin:4px 0;font-size:15px">✅ ${g} ${L('ganadas', 'guanyades')} · ❌ ${p} ${L('perdidas', 'perdudes')} · 🚪 ${r} ${L('abandonos (pesan el doble)', 'abandons (pesen el doble)')} · 📵 ${d} ${L('desconexiones sin volver', 'desconnexions sense tornar')}</p>
+      ${virt ? `<p class="desc" style="margin:4px 0">${L(`Llevas ${sem} semana(s) sin jugar: se te restan ${virt} partidas (se quita al volver a jugar).`, `Portes ${sem} setmana(es) sense jugar: se’t lleven ${virt} partides (s’lleva en tornar a jugar).`)}</p>` : ''}
+      ${pts ? `<p style="margin:4px 0">${pts}</p>` : ''}
+      <p class="desc" style="margin:6px 0 2px">${L('Últimos resultados:', 'Últims resultats:')}</p><div style="font-size:13px;line-height:1.5">${ultimas}</div></div>`;
+    }).join('') : `<p class="desc" style="text-align:center">${L('Todavía no hay partidas tuyas en la clasificación. Cuentan las que juegas con «Aparecer en la clasificación» activado.', 'Encara no hi ha partides teues en la classificació. Compten les que jugues amb «Aparéixer en la classificació» activat.')}</p>`;
+  }
+  showPanel(`<h2 data-st>${L('Mis estadísticas', 'Les meues estadístiques')}</h2><div style="max-height:calc(var(--vh,1vh)*62);overflow:auto;display:flex;flex-direction:column;gap:10px">${body}</div>
+  <p class="desc" style="font-size:12px;opacity:.75;margin-top:8px">${L('Solo tú ves esto. Es lo que usa la clasificación para calcular tus puntos.', 'Només tu veus açò. És el que usa la classificació per a calcular els teus punts.')}</p>
+  <div class="acts"><button class="btn primary" type="button" data-act="close">${L('Volver', 'Tornar')}</button></div>`); cover();
 }
 function showShareAsk() {
   showPanel(`<h2>${L('Ayuda a mejorar los bots', 'Ajuda a millorar els bots')}</h2>
@@ -4280,6 +4323,7 @@ function showSettings() {
     `<div class="opt"><label>${L('Alias', 'Àlies')}</label><div class="names" style="grid-template-columns:1fr"><span><input id="aliasset" type="text" maxlength="20" value="${esc(SETTINGS.alias || '')}" aria-label="${L('Alias', 'Àlies')}"></span></div></div>`,
     setOpt(L('Compartir mis partidas', 'Compartir les meues partides'), seg('share', off.map(([v]) => [v, v ? L('Sí', 'Sí') : 'No']), !!SETTINGS.share, true), L('Envía tus manos (cartas, jugadas y marcador, sin datos personales) para mejorar los bots.', 'Envia les teues mans (cartes, jugades i marcador, sense dades personals) per a millorar els bots.')),
     setOpt(L('Aparecer en la clasificación', 'Aparéixer en la classificació'), seg('rank', off.map(([v]) => [v, v ? L('Sí', 'Sí') : 'No']), !!SETTINGS.rank, true), L('Tus partidas contra bots «muy difícil» cuentan en la clasificación, con tu alias. Solo se envía el resultado de cada partida (ganada o perdida). Si lo quitas, dejas de aparecer y no se envía nada más.', 'Les teues partides contra bots «molt difícil» compten en la classificació, amb el teu àlies. Només s’envia el resultat de cada partida (guanyada o perduda). Si ho lleves, deixes d’aparéixer i no s’envia res més.')),
+    `<div class="opt"><button class="btn" type="button" data-act="stats">📊 ${L('Mis estadísticas', 'Les meues estadístiques')}</button></div>`,
     `<div class="opt"><label>${L('Tu código de recuperación', 'El teu codi de recuperació')}</label><p class="desc">${L('Guárdalo: si cambias de móvil o reinstalas la app, escríbelo aquí abajo y recuperas tu puntuación. No lo compartas: quien lo tenga puede jugar como tú.', 'Guarda’l: si canvies de mòbil o reinstal·les l’app, escriu-lo ací baix i recuperes la teua puntuació. No el compartisques: qui el tinga pot jugar com tu.')}</p><p class="rkcode"><b id="rkmine">${esc(deviceId())}</b> <button class="btn" type="button" data-act="rk-copy">${L('Copiar', 'Copiar')}</button></p><div class="names" style="grid-template-columns:1fr"><span><input id="rkcode" type="text" maxlength="16" placeholder="${L('Código de otro móvil', 'Codi d’un altre mòbil')}" aria-label="${L('Código de recuperación', 'Codi de recuperació')}" autocomplete="off" autocapitalize="off"></span></div><div class="acts"><button class="btn" type="button" data-act="rk-restore">${L('Recuperar', 'Recuperar')}</button></div><p class="desc" id="rkmsg"></p></div>`,
     `<div class="opt"><button class="btn" type="button" data-act="credits-set">${L('Créditos', 'Crèdits')}</button></div>`
   ].join('');
@@ -4448,6 +4492,7 @@ $('panel').addEventListener('click', e => {
   if (a === 'rk-copy') { rkCopyCode(); const m = $('rkmsg'); if (m) m.textContent = L('Código copiado.', 'Codi copiat.'); return; }
   if (a === 'rk-restore') { const el = $('rkcode'); const ok = el && rkRestoreCode(el.value); if (ok) return showSettings(); const m = $('rkmsg'); if (m) m.textContent = L('Ese código no es válido (8 a 16 letras y números).', 'Eixe codi no és vàlid (8 a 16 lletres i números).'); return; }
   if (a === 'rank') { rkLoad(); return; }
+  if (a === 'stats' || a === 'st-load') { stLoad(); return; }
   if (a === 'rk-tab') { RK[b.dataset.k] = b.dataset.v; showRank(); return; }
   if (a === 'rank-go') { SETTINGS.rankAsked = true; SETTINGS.setTab = 'perfil'; saveSettings(); return showSettings(); }
   if (a === 'rank-no') { SETTINGS.rankAsked = true; saveSettings(); return showMenu(); }
