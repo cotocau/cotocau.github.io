@@ -2,7 +2,7 @@
 <html lang="es" data-color="verde">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-+mcu3/qptYkonPKhVC6NvSwytrT/Tr4ws6GM6AKI6T8=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-pno+yrfzRofir/I/62p/ujTOjhXevH74uNLbyI77rts=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script>(()=>{try{const P='pr.',S=Storage.prototype,g=S.getItem,s=S.setItem,r=S.removeItem;S.getItem=function(k){return g.call(this,P+k)};S.setItem=function(k,v){return s.call(this,P+k,v)};S.removeItem=function(k){return r.call(this,P+k)};}catch(e){}})();</script>
 <meta name="theme-color" content="#07170e">
@@ -335,6 +335,8 @@ button{font:inherit;color:inherit}
 .opt .desc{font-size:13px;color:var(--ink-soft)}
 .opt .desc.tip{display:none}.opt.showinfo .desc.tip{display:block}
 .opt .info{border:0;background:none;color:var(--gold);font-size:16px;line-height:1;padding:0 4px;margin-left:2px;cursor:pointer;vertical-align:-1px}
+.setsub{font-weight:800;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin:4px 0 -6px}
+.lnk{align-self:flex-start;border:0;background:none;color:var(--gold);font:700 13px var(--f-body);text-decoration:underline;padding:2px 0;cursor:pointer}
 .settabs{grid-template-columns:repeat(4,1fr)}.settabs button{font-size:13px;padding:8px 2px;white-space:nowrap}
 .setbody{display:flex;flex-direction:column;gap:16px;min-height:min(430px,calc(var(--vh,1vh)*62))}
 .seg{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1px solid var(--line);border-radius:999px;padding:3px;background:rgba(0,0,0,.2)}
@@ -1977,7 +1979,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-27-13';
+const APP_VER = 'cau-2026-11-27-14';
 // Número que se ve en el menú de la oficial: la versión de la app de Android (1.2.4) y detrás un contador que sube con cada publicación en la oficial (1.2.4.1, 1.2.4.2…). Al subir la app de Android, se cambia el principio y el contador vuelve a 1.
 const APP_REL = '1.2.4.10';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
@@ -4311,47 +4313,64 @@ function showTutorial(g, i) {
 }
 // Ajustes en 4 pestañas (6 nov); las explicaciones salen al tocar «ⓘ».
 let CRED_FROM_SET = false;
+let SET_SEP = false, SET_NAMES = false, SET_REC = false;   // 27 nov: lo que se despliega en Ajustes (nivel por separado, nombres de los bots, recuperar puntuación)
 function setOpt(label, control, desc) {
   return `<div class="opt"><label>${label}${desc ? ` <button class="info" type="button" data-info aria-label="${L('Más información', 'Més informació')}">ⓘ</button>` : ''}</label>${control}${desc ? `<span class="desc tip">${desc}</span>` : ''}</div>`;
 }
 function showSettings() {
   panelBack = 'menu';
   const off = [[false, L('Quitadas', 'Llevades')], [true, L('Puestas', 'Posades')]];
-  const TABS = [['partida', '🎮', L('Partida', 'Partida')], ['sonido', '🔊', L('Sonido', 'So')], ['ayudas', '💡', L('Ayudas', 'Ajudes')], ['perfil', '👤', L('Perfil', 'Perfil')]];
+  const TABS = [['partida', '🎮', L('Partida', 'Partida')], ['aspecto', '🎨', L('Aspecto', 'Aspecte')], ['sonido', '🔊', L('Sonido', 'So')], ['perfil', '👤', L('Perfil', 'Perfil')]];
+  if (SETTINGS.setTab === 'ayudas') SETTINGS.setTab = 'aspecto';   // la pestaña Ayudas ya no existe (27 nov)
   const tab = TABS.some(t => t[0] === SETTINGS.setTab) ? SETTINGS.setTab : 'partida';
   const tabs = `<div class="tabs settabs" role="group">${TABS.map(([k, ic, l]) => `<button type="button" data-act="settab" data-t="${k}" aria-pressed="${k === tab}"><span aria-hidden="true">${ic}</span> ${l}</button>`).join('')}</div>`;
   let body = '';
-  if (tab === 'partida') body = [
-    setOpt(L('Idioma', 'Idioma'), seg('lang', [['es','Castellano'],['va','Valencià']], LANG, true)),
-    setOpt(L('Color', 'Color'), seg('color', [['granate', L('Granate', 'Granat')], ['verde', L('Verde', 'Verd')]], SETTINGS.color === 'granate' ? 'granate' : 'verde', true), L('Verde: el tapete de siempre en la mesa y en toda la interfaz. Granate: el color de las primeras versiones.', 'Verd: el tapet de sempre a la taula i en tota la interfície. Granat: el color de les primeres versions.')),
-    setOpt(L('Baraja', 'Baralla'), seg('deck', [['moderna','Moderna'],['clasica', L('Clásica', 'Clàssica')]], SETTINGS.deck, true), L('La clásica es la «Baraja española» de Basquetteur (Wikimedia Commons, licencia CC BY-SA). Más en Créditos.', 'La clàssica és la «Baraja española» de Basquetteur (Wikimedia Commons, llicència CC BY-SA). Més en Crèdits.')),
-    setOpt(L('Ritmo', 'Ritme'), seg('speed', [[0, L('Lento', 'Lent')], [1, 'Normal'], [2, L('Rápido', 'Ràpid')]], speedIx), L('Lo que tardan los bots en jugar, las pausas y también el reparto de las cartas (su sonido va al mismo ritmo).', 'El que tarden els bots a jugar, les pauses i també el repartiment de les cartes (el seu so va al mateix ritme).')),
-    setOpt(L('Coto al mejor de', 'Coto al millor de'), seg('cotoBest', [[3, L('3 partidas', '3 partides')], [5, L('5 partidas', '5 partides')]], SETTINGS.cotoBest || 5, true)),
-    setOpt(L(`Tu compañero (${esc(NAMES[2])})`, `El teu company (${esc(NAMES[2])})`), seg('partner', LVL(), SETTINGS.partner)),
-    setOpt(L(`Rivales (${esc(NAMES[1])} y ${esc(NAMES[3])})`, `Rivals (${esc(NAMES[1])} i ${esc(NAMES[3])})`), seg('rivals', LVL(), SETTINGS.rivals)),
-    `<div class="opt"><label>${L('Nombres de los bots', 'Noms dels bots')}</label><div class="names">
+  if (tab === 'partida') {
+    const sep = SET_SEP || SETTINGS.partner !== SETTINGS.rivals;
+    body = [
+      setOpt(L('Ritmo', 'Ritme'), seg('speed', [[0, L('Lento', 'Lent')], [1, 'Normal'], [2, L('Rápido', 'Ràpid')]], speedIx), L('Lo que tardan los bots en jugar, las pausas y también el reparto de las cartas (su sonido va al mismo ritmo).', 'El que tarden els bots a jugar, les pauses i també el repartiment de les cartes (el seu so va al mateix ritme).')),
+      setOpt(L('Coto al mejor de', 'Coto al millor de'), seg('cotoBest', [[3, L('3 partidas', '3 partides')], [5, L('5 partidas', '5 partides')]], SETTINGS.cotoBest || 5, true)),
+      sep ? [
+        setOpt(L(`Tu compañero (${esc(NAMES[2])})`, `El teu company (${esc(NAMES[2])})`), seg('partner', LVL(), SETTINGS.partner), L('«Muy difícil» es el único nivel que cuenta para la clasificación (los dos, compañero y rivales).', '«Molt difícil» és l’únic nivell que compta per a la classificació (els dos, company i rivals).')),
+        setOpt(L(`Rivales (${esc(NAMES[1])} y ${esc(NAMES[3])})`, `Rivals (${esc(NAMES[1])} i ${esc(NAMES[3])})`), seg('rivals', LVL(), SETTINGS.rivals)),
+        `<button class="lnk" type="button" data-act="setsame">${L('Usar el mismo nivel para todos', 'Usar el mateix nivell per a tots')}</button>`
+      ].join('') : [
+        setOpt(L('Nivel de los bots', 'Nivell dels bots'), seg('bots', LVL(), SETTINGS.partner), L('Vale para tu compañero y para los rivales. «Muy difícil» es el único nivel que cuenta para la clasificación.', 'Val per al teu company i per als rivals. «Molt difícil» és l’únic nivell que compta per a la classificació.')),
+        `<button class="lnk" type="button" data-act="setsep">${L('Ajustar compañero y rivales por separado', 'Ajustar company i rivals per separat')}</button>`
+      ].join(''),
+      SET_NAMES ? `<div class="opt"><label>${L('Nombres de los bots', 'Noms dels bots')}</label><div class="names">
     <span><small>${L('Compañero', 'Company')}</small><input id="nm2" type="text" maxlength="14" value="${esc(NAMES[2])}"></span>
     <span><small>${L('Rival de la derecha', 'Rival de la dreta')}</small><input id="nm1" type="text" maxlength="14" value="${esc(NAMES[1])}"></span>
-    <span><small>${L('Rival de la izquierda', "Rival de l'esquerra")}</small><input id="nm3" type="text" maxlength="14" value="${esc(NAMES[3])}"></span></div></div>`,
-    setOpt('Sóc socarrat', seg('socarrat', [[false,'No'],[true,'Sí']], SETTINGS.socarrat, true), L("A la manera de Cocentaina: cada vez que s'ha pixat al repartir, la pareja que no reparte se apunta un punto.", "A la manera de Cocentaina: cada vegada que s'ha pixat en repartir, la parella que no dona s'apunta un punt."))
-  ].join('');
+    <span><small>${L('Rival de la izquierda', "Rival de l'esquerra")}</small><input id="nm3" type="text" maxlength="14" value="${esc(NAMES[3])}"></span></div>
+    <button class="lnk" type="button" data-act="setnames">${L('Ocultar nombres', 'Amagar els noms')}</button></div>`
+        : `<div class="opt"><button class="btn" type="button" data-act="setnames">${L('Cambiar nombres de los bots', 'Canviar els noms dels bots')}</button></div>`,
+      setOpt('Sóc socarrat', seg('socarrat', [[false,'No'],[true,'Sí']], SETTINGS.socarrat, true), L("A la manera de Cocentaina: cada vez que s'ha pixat al repartir, la pareja que no reparte se apunta un punto.", "A la manera de Cocentaina: cada vegada que s'ha pixat en repartir, la parella que no dona s'apunta un punt."))
+    ].join('');
+  }
   if (tab === 'sonido') body = [
     setOpt(L('Sonidos de cartas', 'Sons de cartes'), seg('sonidos', off, SETTINGS.sonidos !== false, true), L('Al echar carta, llevarse cartas, repartir y robar.', 'En tirar carta, endur-se cartes, repartir i robar.')),
     setOpt(L('Voces', 'Veus'), seg('voces', off, SETTINGS.voces !== false, true), L('Se oye «Bac!», «De nit!», «Les quaranta!»… cuando pasa en la mesa (Cau y Coto).', 'Se sent «Bac!», «De nit!», «Les quaranta!»… quan passa al tapet (Cau i Coto).')),
     SETTINGS.voces !== false ? setOpt(L('Tu voz', 'La teua veu'), seg('voz', Array.from({ length: VOZ_N }, (_, i) => [i + 1, L('Voz ', 'Veu ') + (i + 1)]), vozNum(SETTINGS.voz), VOZ_N === 2), L('Al tocar una, la oyes. Los demás jugadores hablan con las otras; en el online, cada uno con la que haya elegido.', "En tocar-ne una, la sents. La resta de jugadors parlen amb les altres; en l'online, cadascú amb la que haja triat.")) : ''
   ].join('');
-  if (tab === 'ayudas') body = [
-    setOpt(L('Ayudas en tus cartas (Cau)', 'Ajudes en les teues cartes (Cau)'), seg('hints', off, SETTINGS.hints, true), L('Muestran debajo de cada carta qué pasa si la juegas (Captura 3, Bac +2…).', 'Mostren davall de cada carta què passa si la jugues (Arreplega 3, Bac +2…).')),
-    setOpt(L('Ordenar mis cartas', 'Ordenar les meues cartes'), seg('ordenar', [['auto', L('Automático', 'Automàtic')], ['mano', L('A mano', 'A mà')]], SETTINGS.ordenar === 'mano' ? 'mano' : 'auto', true), L('A mano: arrastra una carta a su sitio (tocar sin mover sigue jugándola). Las cartas nuevas entran por la izquierda. Solo cambia cómo las ves tú.', "A mà: arrossega una carta al seu lloc (tocar-la sense moure la continua jugant). Les cartes noves entren per l'esquerra. Només canvia com les veus tu.")),
-    setOpt(L('Etiquetas bajo el nombre', 'Etiquetes davall del nom'), seg('labels', off, SETTINGS.labels, true), L('Recuerdan la última jugada de cada uno (Bac, Limpia, Captura 2…). El «De nit» se ve siempre.', "Recorden l'última jugada de cadascú (Bac, Limpia, Arreplega 2…). El «De nit» es veu sempre.")),
-    PRUEBAS ? setOpt(`🧪 ${L('Ver todas las cartas (pruebas)', 'Vore totes les cartes (proves)')}`, seg('showAll', off, !!SETTINGS.showAll, true), L('Para estudiar a los bots: enseña las cartas de tu compañero y de los rivales. Solo contra bots.', 'Per a estudiar els bots: mostra les cartes del teu company i dels rivals. Només contra bots.')) : ''
-  ].join('');
+  if (tab === 'aspecto') {
+    const ay = SETTINGS.hints ? 'todas' : SETTINGS.labels ? 'etiquetas' : 'ninguna';
+    body = [
+      setOpt(L('Idioma', 'Idioma'), seg('lang', [['es','Castellano'],['va','Valencià']], LANG, true)),
+      setOpt(L('Color', 'Color'), seg('color', [['granate', L('Granate', 'Granat')], ['verde', L('Verde', 'Verd')]], SETTINGS.color === 'granate' ? 'granate' : 'verde', true), L('Verde: el tapete de siempre en la mesa y en toda la interfaz. Granate: el color de las primeras versiones.', 'Verd: el tapet de sempre a la taula i en tota la interfície. Granat: el color de les primeres versions.')),
+      setOpt(L('Baraja', 'Baralla'), seg('deck', [['moderna','Moderna'],['clasica', L('Clásica', 'Clàssica')]], SETTINGS.deck, true), L('La clásica es la «Baraja española» de Basquetteur (Wikimedia Commons, licencia CC BY-SA). Más en Créditos.', 'La clàssica és la «Baraja española» de Basquetteur (Wikimedia Commons, llicència CC BY-SA). Més en Crèdits.')),
+      setOpt(L('Ordenar mis cartas', 'Ordenar les meues cartes'), seg('ordenar', [['auto', L('Automático', 'Automàtic')], ['mano', L('A mano', 'A mà')]], SETTINGS.ordenar === 'mano' ? 'mano' : 'auto', true), L('A mano: arrastra una carta a su sitio (tocar sin mover sigue jugándola). Las cartas nuevas entran por la izquierda. Solo cambia cómo las ves tú.', "A mà: arrossega una carta al seu lloc (tocar-la sense moure la continua jugant). Les cartes noves entren per l'esquerra. Només canvia com les veus tu.")),
+      setOpt(L('Ayudas (Cau)', 'Ajudes (Cau)'), seg('ayudas', [['ninguna', L('Ninguna', 'Cap')], ['etiquetas', L('Etiquetas', 'Etiquetes')], ['todas', L('Etiquetas y ayudas', 'Etiquetes i ajudes')]], ay), L('Etiquetas: recuerdan la última jugada de cada uno bajo su nombre (Bac, Limpia, Captura 2…). Ayudas: muestran debajo de cada una de tus cartas qué pasa si la juegas (Captura 3, Bac +2…). El «De nit» se ve siempre.', "Etiquetes: recorden l'última jugada de cadascú davall del seu nom (Bac, Limpia, Arreplega 2…). Ajudes: mostren davall de cada carta teua què passa si la jugues (Arreplega 3, Bac +2…). El «De nit» es veu sempre.")),
+      PRUEBAS ? setOpt(`🧪 ${L('Ver todas las cartas (pruebas)', 'Vore totes les cartes (proves)')}`, seg('showAll', off, !!SETTINGS.showAll, true), L('Para estudiar a los bots: enseña las cartas de tu compañero y de los rivales. Solo contra bots.', 'Per a estudiar els bots: mostra les cartes del teu company i dels rivals. Només contra bots.')) : ''
+    ].join('');
+  }
   if (tab === 'perfil') body = [
     `<div class="opt"><label>${L('Alias', 'Àlies')}</label><div class="names" style="grid-template-columns:1fr"><span><input id="aliasset" type="text" maxlength="20" value="${esc(SETTINGS.alias || '')}" aria-label="${L('Alias', 'Àlies')}"></span></div></div>`,
+    `<div class="setsub">${L('Privacidad', 'Privadesa')}</div>`,
     setOpt(L('Compartir mis partidas', 'Compartir les meues partides'), seg('share', off.map(([v]) => [v, v ? L('Sí', 'Sí') : 'No']), !!SETTINGS.share, true), L('Envía tus manos (cartas, jugadas y marcador, sin datos personales) para mejorar los bots.', 'Envia les teues mans (cartes, jugades i marcador, sense dades personals) per a millorar els bots.')),
     setOpt(L('Aparecer en la clasificación', 'Aparéixer en la classificació'), seg('rank', off.map(([v]) => [v, v ? L('Sí', 'Sí') : 'No']), !!SETTINGS.rank, true), L('Tus partidas contra bots «muy difícil» cuentan en la clasificación, con tu alias. Solo se envía el resultado de cada partida (ganada o perdida). Si lo quitas, dejas de aparecer y no se envía nada más.', 'Les teues partides contra bots «molt difícil» compten en la classificació, amb el teu àlies. Només s’envia el resultat de cada partida (guanyada o perduda). Si ho lleves, deixes d’aparéixer i no s’envia res més.')),
+    `<div class="setsub">${L('Tu cuenta', 'El teu compte')}</div>`,
     `<div class="opt"><button class="btn" type="button" data-act="stats">📊 ${L('Mis estadísticas', 'Les meues estadístiques')}</button></div>`,
-    `<div class="opt"><label>${L('Tu código de recuperación', 'El teu codi de recuperació')}</label><p class="desc">${L('Guárdalo: si cambias de móvil o reinstalas la app, escríbelo aquí abajo y recuperas tu puntuación. No lo compartas: quien lo tenga puede jugar como tú.', 'Guarda’l: si canvies de mòbil o reinstal·les l’app, escriu-lo ací baix i recuperes la teua puntuació. No el compartisques: qui el tinga pot jugar com tu.')}</p><p class="rkcode"><b id="rkmine">${esc(deviceId())}</b> <button class="btn" type="button" data-act="rk-copy">${L('Copiar', 'Copiar')}</button></p><div class="names" style="grid-template-columns:1fr"><span><input id="rkcode" type="text" maxlength="16" placeholder="${L('Código de otro móvil', 'Codi d’un altre mòbil')}" aria-label="${L('Código de recuperación', 'Codi de recuperació')}" autocomplete="off" autocapitalize="off"></span></div><div class="acts"><button class="btn" type="button" data-act="rk-restore">${L('Recuperar', 'Recuperar')}</button></div><p class="desc" id="rkmsg"></p></div>`,
+    SET_REC ? `<div class="opt"><label>${L('Tu código de recuperación', 'El teu codi de recuperació')}</label><p class="desc">${L('Guárdalo: si cambias de móvil o reinstalas la app, escríbelo aquí abajo y recuperas tu puntuación. No lo compartas: quien lo tenga puede jugar como tú.', 'Guarda’l: si canvies de mòbil o reinstal·les l’app, escriu-lo ací baix i recuperes la teua puntuació. No el compartisques: qui el tinga pot jugar com tu.')}</p><p class="rkcode"><b id="rkmine">${esc(deviceId())}</b> <button class="btn" type="button" data-act="rk-copy">${L('Copiar', 'Copiar')}</button></p><div class="names" style="grid-template-columns:1fr"><span><input id="rkcode" type="text" maxlength="16" placeholder="${L('Código de otro móvil', 'Codi d’un altre mòbil')}" aria-label="${L('Código de recuperación', 'Codi de recuperació')}" autocomplete="off" autocapitalize="off"></span></div><div class="acts"><button class="btn" type="button" data-act="rk-restore">${L('Recuperar', 'Recuperar')}</button></div><p class="desc" id="rkmsg"></p><button class="lnk" type="button" data-act="setrec">${L('Ocultar', 'Amagar')}</button></div>` : `<div class="opt"><button class="btn" type="button" data-act="setrec">${L('Cambiar de móvil o recuperar puntuación', 'Canviar de mòbil o recuperar la puntuació')}</button></div>`,
     `<div class="opt"><button class="btn" type="button" data-act="credits-set">${L('Créditos', 'Crèdits')}</button></div>`
   ].join('');
   showPanel(`<h2>${L('Ajustes', 'Ajusts')}</h2>${tabs}<div class="setbody">${body}</div>
@@ -4486,6 +4505,8 @@ $('panel').addEventListener('click', e => {
     if (k === 'hints' || k === 'labels' || k === 'socarrat' || k === 'showAll' || k === 'share' || k === 'rank' || k === 'voces' || k === 'sonidos') SETTINGS[k] = v === 'true';
     else if (k === 'speed') speedIx = +v;
     else if (k === 'cotoBest') SETTINGS.cotoBest = +v;
+    else if (k === 'bots') { SETTINGS.partner = v; SETTINGS.rivals = v; }   // un solo nivel para compañero y rivales
+    else if (k === 'ayudas') { SETTINGS.hints = v === 'todas'; SETTINGS.labels = v !== 'ninguna'; }
     else if (k === 'voz') { SETTINGS.voz = vozNum(v); const sv = SETTINGS.voces; SETTINGS.voces = true; vozPlay('denit', SETTINGS.voz); SETTINGS.voces = sv; }
     else SETTINGS[k] = v;
     if (k === 'lang') applyLang(SETTINGS.lang, SETTINGS.names);
@@ -4522,7 +4543,11 @@ $('panel').addEventListener('click', e => {
   if (a === 'rk-tab') { RK[b.dataset.k] = b.dataset.v; showRank(); return; }
   if (a === 'rank-go') { SETTINGS.rankAsked = true; SETTINGS.setTab = 'perfil'; saveSettings(); return showSettings(); }
   if (a === 'rank-no') { SETTINGS.rankAsked = true; saveSettings(); return showMenu(); }
-  if (a === 'settab') { SETTINGS.setTab = b.dataset.t; saveSettings(); showSettings(); }
+  if (a === 'settab') { SETTINGS.setTab = b.dataset.t; saveSettings(); showSettings(); return; }
+  if (a === 'setsep') { SET_SEP = true; return showSettings(); }
+  if (a === 'setsame') { SET_SEP = false; SETTINGS.rivals = SETTINGS.partner; saveSettings(); return showSettings(); }
+  if (a === 'setnames') { SET_NAMES = !SET_NAMES; return showSettings(); }
+  if (a === 'setrec') { SET_REC = !SET_REC; return showSettings(); }
   if (a === 'learn') showTutorial('coto', 0);
   if (a === 'tut') showTutorial(b.dataset.g, +b.dataset.i);
   if (a === 'tut-play') startGame(b.dataset.g);
