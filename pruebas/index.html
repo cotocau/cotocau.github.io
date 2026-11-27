@@ -2,7 +2,7 @@
 <html lang="es" data-color="verde">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-y9P8pCR5T8v4rnsQH5mRtxT358CfI4/kkT2qUZRtSCw=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-fEKESJqdaAlPKWBDnGPUyGCrUCWe64r460CTFWsf89E=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script>(()=>{try{const P='pr.',S=Storage.prototype,g=S.getItem,s=S.setItem,r=S.removeItem;S.getItem=function(k){return g.call(this,P+k)};S.setItem=function(k,v){return s.call(this,P+k,v)};S.removeItem=function(k){return r.call(this,P+k)};}catch(e){}})();</script>
 <meta name="theme-color" content="#07170e">
@@ -338,6 +338,9 @@ button{font:inherit;color:inherit}
 .setsub{font-weight:800;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin:4px 0 -6px}
 .lnk{align-self:flex-start;border:0;background:none;color:var(--gold);font:700 13px var(--f-body);text-decoration:underline;padding:2px 0;cursor:pointer}
 .settabs{grid-template-columns:repeat(4,1fr)}.settabs button{font-size:13px;padding:8px 2px;white-space:nowrap}
+.tabs.settabs{gap:0;border:0;border-bottom:1px solid var(--line);border-radius:0;padding:0;background:none}
+.tabs.settabs button{border-radius:10px 10px 0 0;padding:10px 2px 9px;margin-bottom:-1px;border-bottom:3px solid transparent;background:none;color:var(--ink-soft)}
+.tabs.settabs button[aria-pressed="true"]{background:rgba(227,178,79,.14);color:var(--gold);border-bottom-color:var(--gold)}
 .setbody{display:flex;flex-direction:column;gap:16px;min-height:min(430px,calc(var(--vh,1vh)*62))}
 .seg{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1px solid var(--line);border-radius:999px;padding:3px;background:rgba(0,0,0,.2)}
 .seg.two{grid-template-columns:repeat(2,1fr)}
@@ -1981,7 +1984,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-27-15';
+const APP_VER = 'cau-2026-11-27-16';
 // Número que se ve en el menú de la oficial: la versión de la app de Android (1.2.4) y detrás un contador que sube con cada publicación en la oficial (1.2.4.1, 1.2.4.2…). Al subir la app de Android, se cambia el principio y el contador vuelve a 1.
 const APP_REL = '1.2.4.10';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
