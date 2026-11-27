@@ -2,7 +2,7 @@
 <html lang="es" data-color="verde">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-MBSovN/RP4L6jWXeZD0HExc5pAQAcI7E7TRdCgUoht0=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-IauXe3lqjyMgQMYiIWTf/ruJjHnJJuOvl/M/sZGHcq0=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script>(()=>{try{const P='pr.',S=Storage.prototype,g=S.getItem,s=S.setItem,r=S.removeItem;S.getItem=function(k){return g.call(this,P+k)};S.setItem=function(k,v){return s.call(this,P+k,v)};S.removeItem=function(k){return r.call(this,P+k)};}catch(e){}})();</script>
 <meta name="theme-color" content="#07170e">
@@ -1956,7 +1956,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-27-3';
+const APP_VER = 'cau-2026-11-27-5';
 // Número que se ve en el menú de la oficial: la versión de la app de Android (1.2.4) y detrás un contador que sube con cada publicación en la oficial (1.2.4.1, 1.2.4.2…). Al subir la app de Android, se cambia el principio y el contador vuelve a 1.
 const APP_REL = '1.2.4.7';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
@@ -3412,7 +3412,7 @@ async function netHostResume(rec, ghost) {
     const priv = await crypto.subtle.importKey('jwk', r.keys.priv, NET_EC, true, ['deriveBits']);
     applyLang(SETTINGS.lang, SETTINGS.names);
     NET = { role: 'host', ghost: !!ghost, ghostId: ghost ? String(r.by || '') : '', ep: r.ep | 0, code: r.code, name: r.name, mode: r.mode, open: !!r.open, best: r.best, started: true, warned: true, priv: {}, pks: {}, kicked: new Set(r.kicked || []), rk: r.rk || null, vseq: (r.vseq || 0) + 1000, fp: r.fp, keys: { priv, raw: r.keys.raw }, keyJwk: r.keys.priv,
-      seats: r.seats.map(x => x.kind === 'human' ? { kind: 'human', id: x.id, name: cleanName(x.name), voz: vozNum(x.voz), away: !!x.away, online: false, last: 0 } : { kind: x.kind, name: x.name }) };
+      seats: r.seats.map(x => x.kind === 'human' ? { kind: 'human', id: x.id, name: cleanName(x.name), voz: vozNum(x.voz), away: !!x.away, online: !x.away, last: Date.now() } : { kind: x.kind, name: x.name }) };
     r.seats.forEach(x => { if (x.kind === 'human' && x.pk) NET.pks[x.id] = x.pk; });
     APP.mode = r.appMode; APP.M = r.M; G = r.G || null; S = r.S || newGame();
     S.feed = []; if (G) G.feed = [];
