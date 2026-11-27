@@ -2,7 +2,7 @@
 <html lang="es" data-color="verde">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-YjSu803++U5MLP37aSvnfAbA7Xz3tHusyeQEHADXF28=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Zb+jAGoC+tYZ71kwpSTVyl4fw0ZeHmcDWFoi4mmEXg=' 'sha256-RZRK6JBH2PoGcZtwzGIfJHtmLhIY4ZCnKZygo/N+0w8=' 'sha256-TJtgwZVCgRjMPHo/MpdSY8Y5m3S2RCSUilc4wgvvXBY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fzctetcrmrtxwzisxsig.supabase.co wss://fzctetcrmrtxwzisxsig.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script>(()=>{try{const P='pr.',S=Storage.prototype,g=S.getItem,s=S.setItem,r=S.removeItem;S.getItem=function(k){return g.call(this,P+k)};S.setItem=function(k,v){return s.call(this,P+k,v)};S.removeItem=function(k){return r.call(this,P+k)};}catch(e){}})();</script>
 <meta name="theme-color" content="#07170e">
@@ -1324,7 +1324,7 @@ function coEndHand(G) {
     if (a || b) return coEndPartida(G, a && b ? team(G.lastWinner) : (a ? 0 : 1), false);
     G.phase = 'handEnd';
     if (G.rec) G.rec.ev.push(`FIN DE MANO: nadie llega a 101 | marcador ${G.score[0]}-${G.score[1]} | se juega de vueltas`);
-    coSay(G, L(`Nadie llega a 101: se juega de vueltas. ${TEAMN[0]} ${G.score[0]}, ${TEAMN[1]} ${G.score[1]}.`, `Ningú arriba a 101: es juga de voltes. ${TEAMN[0]} ${G.score[0]}, ${TEAMN[1]} ${G.score[1]}.`), 'pts');
+    coSay(G, L(`Nadie llega a 51 buenas: se juega de vueltas. ${TEAMN[0]} ${G.score[0]}, ${TEAMN[1]} ${G.score[1]}.`, `Ningú arriba a 51 bones: es juga de voltes. ${TEAMN[0]} ${G.score[0]}, ${TEAMN[1]} ${G.score[1]}.`), 'pts');
     return;
   }
   coEndPartida(G, G.score[0] >= G.score[1] ? 0 : 1, false);
@@ -1956,7 +1956,7 @@ let S = null, busy = false, fx = null, nextConfirm = false, narr = '';
 const SPEEDS = [['lento', 1.6], ['normal', 1], ['rápido', 0.55]];
 let speedIx = SETTINGS.speed >= 0 && SETTINGS.speed < 3 ? SETTINGS.speed : 1;
 /* ---------- compartir partidas (Supabase: la clave pública solo permite insertar) ---------- */
-const APP_VER = 'cau-2026-11-27-1';
+const APP_VER = 'cau-2026-11-27-2';
 // Número que se ve en el menú de la oficial: la versión de la app de Android (1.2.4) y detrás un contador que sube con cada publicación en la oficial (1.2.4.1, 1.2.4.2…). Al subir la app de Android, se cambia el principio y el contador vuelve a 1.
 const APP_REL = '1.2.4.7';
 // Versión de pruebas (cotocau.github.io/pruebas/): build_pwa.py --pruebas pone esto a true. Solo ahí está «ver todas las cartas»,
@@ -3295,7 +3295,7 @@ function netLobby() {
 }
 // Quién hay en cada sitio, visto desde el asiento g: 'p' persona conectada, 'off' sin conexión, 'away' juega un bot por ella, 'bot'
 function netWho(g) {
-  return [0, 1, 2, 3].map(v => { const st = NET.seats[(v + g) % 4]; if (st.kind === 'host') return GHOST() ? 'away' : 'h'; if (st.kind !== 'human') return 'bot'; return st.away ? 'away' : st.online ? 'p' : 'off'; });
+  return [0, 1, 2, 3].map(v => { const st = NET.seats[(v + g) % 4]; if (st.kind === 'host') return GHOST() ? 'away' : 'h'; if (st.kind !== 'human') return 'bot'; if (NET.ghostId && st.id === NET.ghostId && st.online) return 'H'; return st.away ? 'away' : st.online ? 'p' : 'off'; });
 }
 // Marca de la mesa online para el sitio p (0 = abajo): punto verde en las personas, 🤖 en los bots
 function netSeatMark(p, role) {
@@ -3303,6 +3303,7 @@ function netSeatMark(p, role) {
   const w = (NET.role === 'host' ? netWho(0) : NET.who || [])[p];
   if (w === 'h') { if (NET.role === 'guest' && NET.started && Date.now() - NET.lastHost > 12000) return { av: '', sub: `<span class="sub off">📵 ${L('Sin conexión', 'Sense connexió')}</span>` }; return { av: ' live', sub: `<span class="sub">${role}</span>` }; }   // el anfitrión: el invitado lo ve sin conexión si lleva un rato sin saber de él
   if (w === 'p') return { av: ' live', sub: `<span class="sub">${role}</span>` };
+  if (w === 'H') return { av: ' live', sub: `<span class="sub">👑 ${L('Anfitrión', 'Amfitrió')}</span>` };   // tras un relevo: el jugador cuyo móvil hace de árbitro
   if (w === 'bot') return { av: '', sub: `<span class="sub bot">🤖 Bot</span>` };
   if (w === 'off') return { av: '', sub: `<span class="sub off">📵 ${L('Sin conexión', 'Sense connexió')}</span>` };
   if (w === 'away') return { av: '', sub: `<span class="sub bot">🤖 ${L('Juega un bot', 'Juga un bot')}</span>` };
@@ -3410,7 +3411,7 @@ async function netHostResume(rec, ghost) {
   try {
     const priv = await crypto.subtle.importKey('jwk', r.keys.priv, NET_EC, true, ['deriveBits']);
     applyLang(SETTINGS.lang, SETTINGS.names);
-    NET = { role: 'host', ghost: !!ghost, ep: r.ep | 0, code: r.code, name: r.name, mode: r.mode, open: !!r.open, best: r.best, started: true, warned: true, priv: {}, pks: {}, kicked: new Set(r.kicked || []), rk: r.rk || null, vseq: (r.vseq || 0) + 1000, fp: r.fp, keys: { priv, raw: r.keys.raw }, keyJwk: r.keys.priv,
+    NET = { role: 'host', ghost: !!ghost, ghostId: ghost ? String(r.by || '') : '', ep: r.ep | 0, code: r.code, name: r.name, mode: r.mode, open: !!r.open, best: r.best, started: true, warned: true, priv: {}, pks: {}, kicked: new Set(r.kicked || []), rk: r.rk || null, vseq: (r.vseq || 0) + 1000, fp: r.fp, keys: { priv, raw: r.keys.raw }, keyJwk: r.keys.priv,
       seats: r.seats.map(x => x.kind === 'human' ? { kind: 'human', id: x.id, name: cleanName(x.name), voz: vozNum(x.voz), away: !!x.away, online: false, last: 0 } : { kind: x.kind, name: x.name }) };
     r.seats.forEach(x => { if (x.kind === 'human' && x.pk) NET.pks[x.id] = x.pk; });
     APP.mode = r.appMode; APP.M = r.M; G = r.G || null; S = r.S || newGame();
@@ -3892,7 +3893,7 @@ async function netRelayGo() {
     const key = shamirJoin([...G0.got].slice(0, R.thr).map(([x, y]) => ({ x, y })));
     const rec = await relayOpen(key, NET.snap.d);
     if (NET !== yo || !rec || rec.code !== NET.code || (NET.hfp && rec.fp !== NET.hfp)) throw new Error('copia');
-    rec.ep = Math.max(rec.ep | 0, NET.ep | 0) + 1;
+    rec.ep = Math.max(rec.ep | 0, NET.ep | 0) + 1; rec.by = NET.id || '';   // quién abre la copia: se marca como anfitrión en la mesa
     localStorage.setItem('cau.relevo', JSON.stringify(rec));
     const f = document.createElement('iframe'); f.id = 'arbitro'; f.setAttribute('aria-hidden', 'true'); f.tabIndex = -1;
     f.style.cssText = 'position:fixed;left:0;top:0;width:390px;height:780px;opacity:0;pointer-events:none;border:0;z-index:-1';
@@ -3917,7 +3918,7 @@ function netGuestTick() {
 }
 function netGuestSummary() {
   const H = G.handSummary; const sc = i => { const [n, w] = coScoreTxt(G.score[i]); return `${n} ${w}`; };
-  const title = G.phase === 'handEnd' ? L('Nadie llega a 101: mano de vueltas', 'Ningú arriba a 101: mà de voltes') : G.phase === 'cotoEnd' ? (G.winner === 0 ? L('¡Habéis ganado el coto!', 'Heu guanyat el coto!') : L('Han ganado el coto ellos', 'Han guanyat el coto ells')) : (G.partidaWinner === 0 ? L('¡Ganáis la partida!', 'Guanyeu la partida!') : L('Ellos ganan la partida', 'Ells guanyen la partida'));
+  const title = G.phase === 'handEnd' ? L('Nadie llega a 51 buenas: mano de vueltas', 'Ningú arriba a 51 bones: mà de voltes') : G.phase === 'cotoEnd' ? (G.winner === 0 ? L('¡Habéis ganado el coto!', 'Heu guanyat el coto!') : L('Han ganado el coto ellos', 'Han guanyat el coto ells')) : (G.partidaWinner === 0 ? L('¡Ganáis la partida!', 'Guanyeu la partida!') : L('Ellos ganan la partida', 'Ells guanyen la partida'));
   showPanel(`<h2>${title}</h2><p class="big-result">${TEAMN[0]} ${sc(0)} · ${TEAMN[1]} ${sc(1)}</p><p style="text-align:center">Coto ${G.wins[0]}–${G.wins[1]}</p>${G.phase === 'cotoEnd' && !NET.match ? netEndWait() : netGuestWait()}${netRxBar()}`);
 }
 function netAskLeave() {
@@ -4760,7 +4761,7 @@ function showCotoSummary() {
   const row = (l, k) => `<tr><td>${l}</td><td>${H[0][k]}</td><td>${H[1][k]}</td></tr>`;
   const sc = i => { const [n, w] = coScoreTxt(G.score[i]); return `${n} ${w}`; };
   let title, btn;
-  if (G.phase === 'handEnd') { title = L('Nadie llega a 101: mano de vueltas', 'Ningú arriba a 101: mà de voltes'); btn = `<button class="btn primary" type="button" data-act="co-next">${L('Jugar de vueltas', 'Jugar de voltes')}</button>`; }
+  if (G.phase === 'handEnd') { title = L('Nadie llega a 51 buenas: mano de vueltas', 'Ningú arriba a 51 bones: mà de voltes'); btn = `<button class="btn primary" type="button" data-act="co-next">${L('Jugar de vueltas', 'Jugar de voltes')}</button>`; }
   else if (G.phase === 'partidaEnd') {
     title = G.partidaWinner === 0 ? L('Partida para vosotros', 'Partida per a vosaltres') : L('Partida para ellos', 'Partida per a ells');
     btn = `<button class="btn primary" type="button" data-act="co-next">${L('Siguiente partida', 'Partida següent')}</button>`;
@@ -4864,7 +4865,7 @@ function showPlay() {
   $('panel').classList.add('menu'); cover();
 }
 
-if (PRUEBAS || /net=local/.test(location.search + location.hash)) window.CAU = { APP, netInfo: () => ({ evN: NET && NET.evN, vseq: NET && NET.vseq, seq: NET && NET.seq, ep: NET && NET.ep, role: NET && NET.role, ghost: !!(NET && NET.ghost), hasRl: !!(NET && NET.rl), hasSnap: !!(NET && NET.snap), snapBytes: NET && NET.snap ? NET.snap.d.length : 0, relayRun: !!(NET && NET.relayRun), silent: NET && NET.lastHost ? Date.now() - NET.lastHost : null, hostRelay: !!(NET && NET.relay), cortar: v => { if (NET) NET.cut = !!v; }, empujar: () => netPushViews() }), rk: { net: { open: rkNetOpen, end: rkNetEnd, quit: rkNetQuit, discard: rkNetDiscard, begin: rkNetBegin }, start: rkStart, end: rkEnd, abandon: rkAbandon, stale: rkStale, flush: rkFlush, restore: rkRestoreCode }, get ZOOM() { return { zoom: ZOOM, factorMedido: ZK }; }, seatVoices, cotoNewMatch, coNext, exportText, coSwap, coCanSwap, coBotChoose, coPlay, coLegal, get G() { return G; }, set G(v) { G = v; }, set S(v) { S = v; }, render, matchNext, newGame, newHand, applyPlay, afterPlay, INFER, SMART, holdProb, determinize, botChoose, botChooseHard, botChooseNormal, botChooseEasy, botChooseDificil, botChooseExperto, botBet, botSing, SETTINGS, betAct, betOptions, sing, startSing, resolveNit, canFirst, canSecond, cardSVG, get S() { return S; } };
+if (PRUEBAS || /net=local/.test(location.search + location.hash)) window.CAU = { APP, netInfo: () => ({ who: NET && NET.who, gid: NET && NET.ghostId, myid: NET && NET.id, seats: NET && NET.seats && NET.seats.map(x => x && [x.kind, x.id, x.online]), evN: NET && NET.evN, vseq: NET && NET.vseq, seq: NET && NET.seq, ep: NET && NET.ep, role: NET && NET.role, ghost: !!(NET && NET.ghost), hasRl: !!(NET && NET.rl), hasSnap: !!(NET && NET.snap), snapBytes: NET && NET.snap ? NET.snap.d.length : 0, relayRun: !!(NET && NET.relayRun), silent: NET && NET.lastHost ? Date.now() - NET.lastHost : null, hostRelay: !!(NET && NET.relay), cortar: v => { if (NET) NET.cut = !!v; }, empujar: () => netPushViews() }), rk: { net: { open: rkNetOpen, end: rkNetEnd, quit: rkNetQuit, discard: rkNetDiscard, begin: rkNetBegin }, start: rkStart, end: rkEnd, abandon: rkAbandon, stale: rkStale, flush: rkFlush, restore: rkRestoreCode }, get ZOOM() { return { zoom: ZOOM, factorMedido: ZK }; }, seatVoices, cotoNewMatch, coNext, exportText, coSwap, coCanSwap, coBotChoose, coPlay, coLegal, get G() { return G; }, set G(v) { G = v; }, set S(v) { S = v; }, render, matchNext, newGame, newHand, applyPlay, afterPlay, INFER, SMART, holdProb, determinize, botChoose, botChooseHard, botChooseNormal, botChooseEasy, botChooseDificil, botChooseExperto, botBet, botSing, SETTINGS, betAct, betOptions, sing, startSing, resolveNit, canFirst, canSecond, cardSVG, get S() { return S; } };
 
 // ---- Árbitro invisible del relevo: copia de la app dentro de un iframe del móvil que toma el mando. Sin pantalla ni sonido; el sitio 0 lo juega un bot.
 async function arbiterBoot() {
@@ -4880,7 +4881,7 @@ function ghostTick() {
   if ($('overlay').hidden) { ghostSeen = { k: '', t: 0 }; return; }
   const pn = $('panel'), k = pn.textContent.slice(0, 240);
   if (k !== ghostSeen.k) { ghostSeen = { k, t: Date.now() }; return; }
-  if (Date.now() - ghostSeen.t < 7000) return;   // se deja ver el resultado antes de seguir
+  if (Date.now() - ghostSeen.t < 4000) return;   // se deja ver el resultado antes de seguir
   const b = pn.querySelector('[data-act="co-next"],[data-act="nexthand"],[data-act="match"],[data-act="match-tb"]');
   if (b) { ghostSeen = { k: '', t: 0 }; b.click(); return; }
   if ($('netvote')) netGhostEnd();
